@@ -703,6 +703,17 @@ function renderFeedback(){const box=$('fb-stars');box.innerHTML=FB_Q.map(([k,l])
 $('fb-wa').addEventListener('click',()=>{fbUpdate();const n=$('fb-note');n.hidden=false;n.textContent='If WhatsApp did not open, tap "Copy text" and paste it into a message.'});
 $('fb-copy').onclick=async()=>{fbUpdate();const n=$('fb-note');n.hidden=false;try{await navigator.clipboard.writeText(fbText());n.textContent='Copied. Paste it into WhatsApp or email.'}catch(e){const p=$('fb-preview');p.hidden=false;p.focus();p.select();n.textContent='Select the text below and copy it.'}};
 
+/* ======================= SHARE ======================= */
+const SHARE_URL='https://scentationalcandlesofficial.github.io/haathi-sound-forest/';
+const SHARE_TEXT="Try Haathi's Sound Forest: a free game for kids aged 3 to 6 with letter sounds, counting, maths and writing. Opens in any phone browser, no sign-up.";
+$('share-wa').href='https://wa.me/?text='+encodeURIComponent(SHARE_TEXT+' '+SHARE_URL);
+function shareNote(t){const n=$('share-note');if(n){n.hidden=false;n.textContent=t}}
+async function copyLink(){try{await navigator.clipboard.writeText(SHARE_URL);shareNote('Link copied. Paste it into any chat.');return true}catch(e){shareNote('Copy this link: '+SHARE_URL);return false}}
+async function shareGame(){unlockAudio();FX.tap();
+  if(navigator.share){try{await navigator.share({title:"Haathi's Sound Forest",text:SHARE_TEXT,url:SHARE_URL});return}catch(e){if(e&&e.name==='AbortError')return}}
+  if(!(await copyLink()))window.open('https://wa.me/?text='+encodeURIComponent(SHARE_TEXT+' '+SHARE_URL),'_blank')}
+$('btn-share').onclick=shareGame;$('btn-share-start').onclick=shareGame;$('share-copy').onclick=()=>{FX.tap();copyLink()};
+
 /* ======================= BOOT ======================= */
 document.addEventListener('visibilitychange',()=>{if(document.hidden){save();stopVoice()}else if(actx&&actx.state!=='running')actx.resume()});
 document.addEventListener('pointerdown',()=>{if(actx&&actx.state!=='running')actx.resume()},{passive:true});
