@@ -19,3 +19,8 @@ No accounts, no ads, no tracking. Progress and recordings stay on the device. No
 - `app.js`: game logic and learning engine
 - `clips.js`: built-in voice lines (computer voice, sentences and numbers only)
 - `sw.js`, `manifest.json`: offline support and home-screen install
+
+## How the game improves from families' feedback
+1. **On each phone:** after every game the child taps a face (loved it / okay / not keen). Liked games come up more often, disliked ones less, but weak skills always get practice. Parents' star ratings also tune the mix.
+2. **Across all families (only with parent consent):** if a parent ticks "share anonymous play data", the app sends age, minutes, skill scores, likes and feedback (no names, photos or recordings) to a private Google Sheet via `tools/feedback-sheet.gs`.
+3. **Updates:** the sheet is reviewed and `config.json` is updated. `weights` nudge how often each game appears for everyone (1 = normal, 1.3 = more, 0.7 = less), and `notes` tell parents what changed. Bigger fixes go into `app.js`. Every phone picks up changes the next time the game is opened online.

@@ -261,6 +261,10 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 .chalk.on{outline:4px solid var(--mango);outline-offset:2px}
 .slate canvas{background:#2c3a33!important;border:10px solid #8a5a33}
 .why-banner{font-family:var(--f-display);font-size:14px;color:var(--ink-soft);text-align:center}
+.faces{display:flex;gap:14px;justify-content:center}
+.faces button{width:64px;height:64px;border-radius:50%;background:#f4f8f5;font-size:38px;line-height:1;box-shadow:0 4px 0 var(--shadow)}
+.faces button.on{background:var(--mango);transform:scale(1.12)}
+.faces-q{font-family:var(--f-display);font-weight:700;color:var(--ink-soft);margin:0}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 
@@ -284,6 +288,7 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
     <div class="field"><label>Age</label><div class="agechips" id="agechips"></div></div>
     <div class="field"><label for="in-limit">Play time per session</label>
       <select id="in-limit"><option value="10">10 minutes</option><option value="15" selected>15 minutes</option><option value="20">20 minutes</option></select></div>
+    <label class="check" style="align-items:flex-start"><input type="checkbox" id="in-consent"> <span>Help improve the game: share anonymous play data and likes (age, scores, which games are enjoyed). No names, photos or recordings. You can turn this off any time in Grown-ups.</span></label>
     <button class="pill-btn primary" id="btn-setup-done" style="align-self:center;font-size:22px;padding:12px 28px">Start the journey</button>
   </div>
 </section>
@@ -318,6 +323,7 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 <section class="screen parent" id="s-parent" hidden>
   <div class="topbar"><button class="round" data-back aria-label="Back to map"></button><h2>Grown-ups</h2></div>
   <div class="p-grid">
+    <div class="panel" style="grid-column:1/-1" id="likes-panel"><h3>What your child enjoys</h3><p id="p-likes"></p><p class="note" id="p-global" hidden></p></div>
     <div class="panel" style="grid-column:1/-1"><h3>Share this game</h3>
       <p>Send the game to other parents. It opens in any phone browser, no sign-up.</p>
       <div class="row" style="justify-content:flex-start"><button class="pill-btn primary" id="btn-share">Share</button><a class="pill-btn" id="share-wa" target="_blank" rel="noopener" style="text-decoration:none">WhatsApp</a><button class="pill-btn" id="share-copy">Copy link</button></div>
@@ -332,6 +338,7 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
       <div class="field"><label for="fb-hard">What was confusing, boring or broken?</label><textarea id="fb-hard" rows="2" style="font:inherit;font-size:17px;padding:9px 12px;border-radius:14px;border:2px solid var(--shadow)"></textarea></div>
       <div class="field"><label for="fb-idea">Ideas, or would you pay for it? How much?</label><textarea id="fb-idea" rows="2" style="font:inherit;font-size:17px;padding:9px 12px;border-radius:14px;border:2px solid var(--shadow)"></textarea></div>
       <label class="check"><input type="checkbox" id="fb-sum" checked> Include a progress summary (minutes, chapters, skill scores; no names)</label>
+      <p class="note">Your star ratings also tune this phone's game: lower-rated areas get shorter turns, higher-rated ones more often.</p>
       <div class="row" style="justify-content:flex-start"><a class="pill-btn primary" id="fb-wa" href="https://wa.me/" target="_blank" rel="noopener" style="text-decoration:none">Send on WhatsApp</a><button class="pill-btn" id="fb-copy">Copy text</button></div>
       <p class="note" id="fb-note" hidden></p>
       <textarea id="fb-preview" rows="6" readonly hidden style="font:inherit;font-size:14px;padding:9px;border-radius:12px;border:2px solid var(--shadow)"></textarea>
@@ -354,6 +361,7 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
       <div class="field"><label for="ps-age">Age</label><select id="ps-age"><option>3</option><option>4</option><option>5</option><option>6</option></select></div>
       <div class="field"><label for="ps-limit">Session limit</label><select id="ps-limit"><option value="10">10 minutes</option><option value="15">15 minutes</option><option value="20">20 minutes</option></select></div>
       <label class="check"><input type="checkbox" id="ps-sfx"> Sound effects</label>
+      <label class="check"><input type="checkbox" id="ps-consent"> Share anonymous play data to help improve the game</label>
       <label class="check"><input type="checkbox" id="ps-unlock"> Unlock every game in the corners (for grown-ups trying it)</label>
       <button class="pill-btn primary" id="ps-save" style="align-self:flex-start">Save settings</button>
       <span id="ps-saved" class="note" hidden>Saved.</span>

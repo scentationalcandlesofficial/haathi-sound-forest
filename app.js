@@ -39,8 +39,8 @@ const SHOP_ITEMS=[['🍎','apple'],['🎈','balloon'],['🍦','ice cream'],['�
 /* ======================= STORE ======================= */
 const KEY='haathi-journey-v3';
 let S=load();
-function blank(){return {profile:null,chapters:[],intro:[],lastIntroCh:-9,sounds:{},sk:{},minutes:{},settings:{sfx:true,unlock:false},said:0}}
-function load(){try{const r=localStorage.getItem(KEY);if(r){const o=Object.assign(blank(),JSON.parse(r));o.settings=Object.assign(blank().settings,o.settings);return o}}catch(e){}return blank()}
+function blank(){return {profile:null,chapters:[],intro:[],lastIntroCh:-9,sounds:{},sk:{},minutes:{},settings:{sfx:true,unlock:false,consent:false},said:0,likes:{},fbPrefs:{},device:null,lastSync:0,sentFb:0}}
+function load(){try{const r=localStorage.getItem(KEY);if(r){const o=Object.assign(blank(),JSON.parse(r));o.settings=Object.assign(blank().settings,o.settings);o.likes=o.likes||{};o.fbPrefs=o.fbPrefs||{};return o}}catch(e){}return blank()}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 const dkey=dt=>dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
 const today=()=>dkey(new Date());
@@ -104,13 +104,23 @@ function weakestLetter(forWriting){const L=S.intro.length?S.intro:['s'];
 function pickWord(){const ok=CVC.filter(w=>[...w].every(c=>S.intro.includes(c)||(c==='c'&&S.intro.includes('k'))));return rnd(ok.length?ok:CVC.slice(0,6))}
 function readyForNewLetter(chIdx){if(S.intro.length>=LET.length)return false;if(S.intro.length<2)return true;
   const settled=S.intro.every(l=>{const a=rec(l).att;return a.length>=3&&accuracy(l)>=.6});return settled||chIdx-S.lastIntroCh>=3}
+/* ---- preferences: child's faces + parent ratings + all-families config ---- */
+let CFG={weights:{},notes:[]};
+if(window.fetch)fetch('config.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(j=>{if(j)CFG=Object.assign(CFG,j)}).catch(()=>{});
+const GROUP_OF=id=>SK[id]?SK[id].sub:(['bubbles','snack','meet'].includes(id)?'Letters':'');
+function likeScore(t){const L=S.likes[t];if(!L)return 0;const n=L.up+L.mid+L.down;if(!n)return 0;return (L.up-L.down)/n*Math.min(1,n/3)}
+function prefBonus(id){let b=likeScore(id)*.6;const g=GROUP_OF(id);const r=S.fbPrefs[g==='Maths'?'maths':g==='Writing'?'write':''];if(r)b+=(r-3)*.15;
+  const w=CFG.weights&&CFG.weights[id];if(typeof w==='number')b+=(w-1)*.5;return b}
 /* chapter composer */
-function score(id){const s=S.sk[id];if(!s||!s.n)return 2.2+Math.random()*.3;const age=s.last?Math.min(7,daysBetween(s.last,today())):7;return (1-s.p)*2+age*.15+Math.random()*.35}
-function why(id){const s=S.sk[id];const nm=SK[id].name;if(!s||!s.n)return `New game: ${nm}`;if(s.p<.6)return `Extra practice: ${nm} (${Math.round(s.p*100)}% right lately)`;if(s.up&&daysBetween(s.up,today())<=2)return `Levelled up: ${nm}, now ${SK[id].lab(param(id))}`;return `Keeping it fresh: ${nm}`}
+function recentPenalty(id){let p=0;S.chapters.slice(-2).forEach((c,i)=>{if(c.nodes.some(n=>(n.skill||n.t)===id))p+=i===1?1.1:.6});return p}
+function score(id){return baseScore(id)+Math.max(-.5,Math.min(.5,prefBonus(id)))-recentPenalty(id)}
+function baseScore(id){const s=S.sk[id];if(!s||!s.n)return 2.2+Math.random()*.3;const age=s.last?Math.min(7,daysBetween(s.last,today())):7;return (1-s.p)*2+age*.15+Math.random()*.35}
+function why(id){const s=S.sk[id];const nm=SK[id].name;if(likeScore(id)>.4&&s&&s.n)return `Enjoyed: ${nm} (child gave it smiles)`;if(!s||!s.n)return `New game: ${nm}`;if(s.p<.6)return `Extra practice: ${nm} (${Math.round(s.p*100)}% right lately)`;if(s.up&&daysBetween(s.up,today())<=2)return `Levelled up: ${nm}, now ${SK[id].lab(param(id))}`;return `Keeping it fresh: ${nm}`}
 function compose(){
   const idx=S.chapters.length,reasons=[],nodes=[];
   let newL=null;if(readyForNewLetter(idx)){newL=LET.find(l=>!S.intro.includes(l));if(newL){S.intro.push(newL);S.lastIntroCh=idx;if(newL==='c'&&!S.intro.includes('k')){} }}
-  const L1=newL?{t:'meet',l:newL}:{t:rnd(['bubbles','snack']),focus:weakestLetter(),pool:S.intro.slice()};
+  const lg=likeScore('bubbles')+(CFG.weights.bubbles||1)-likeScore('snack')-(CFG.weights.snack||1);const lp=lg>.2?'bubbles':lg<-.2?'snack':rnd(['bubbles','snack']);
+  const L1=newL?{t:'meet',l:newL}:{t:lp,focus:weakestLetter(),pool:S.intro.slice()};
   if(newL)reasons.push(`New letter: ${newL} (${KEYW(newL)[0]})`);else reasons.push(`Letter practice: ${L1.focus} (${Math.round(accuracy(L1.focus)*100)}% right lately)`);
   const f2=weakestLetter();const L2={t:L1.t==='bubbles'?'snack':'bubbles',focus:newL||f2,pool:S.intro.slice()};
   reasons.push(newL?`Hear and find the new letter in a game`:`Letter practice: ${f2}`);
@@ -251,7 +261,7 @@ function begin(){unlockAudio();FX.trumpet();if(!S.profile){go('setup');return}go
 $('btn-start').onclick=begin;$('start-haathi').onclick=begin;
 let setupAge=4;
 function renderSetup(){const ac=$('agechips');ac.innerHTML='';[3,4,5,6].forEach(a=>{const b=document.createElement('button');b.textContent=a;b.setAttribute('aria-pressed',a===setupAge);b.onclick=()=>{setupAge=a;FX.tap();renderSetup()};ac.appendChild(b)})}
-$('btn-setup-done').onclick=()=>{unlockAudio();S.profile={name:$('in-name').value.trim()||'friend',age:setupAge,limit:+$('in-limit').value,created:today()};
+$('btn-setup-done').onclick=()=>{unlockAudio();S.profile={name:$('in-name').value.trim()||'friend',age:setupAge,limit:+$('in-limit').value,created:today()};S.settings.consent=$('in-consent').checked;
   if(setupAge>=5){S.sk.count={lvl:1,p:.6,n:0,ln:0,last:null};S.sk.numfind={lvl:2,p:.6,n:0,ln:0,last:null}}
   save();go('map');setTimeout(()=>{FX.trumpet();say([300,'P_hello',300,'P_map_hi'],null)},400)};
 
@@ -313,7 +323,7 @@ $('play-back').onclick=()=>{FX.tap();const f=RUN&&RUN.from;RUN=null;f&&f.corner?
 const TITLES={meet:'Meet a letter',bubbles:'Sound Bubbles',snack:"Haathi's Snack",count:'Count with me',numfind:'Number Balloons',more:'Which has more?',add:'Put them together',takeaway:'Monkey takes away',shape:'Shape Hunt',pattern:'What comes next?',dice:'Quick look',next:'Before and after',bigger:'Bigger number',missing:'Missing number',share:'Share fairly',shop:'Mela shop',length:'Long and short',
   wpre:'Draw patterns',wshape:'Draw shapes',wletter:'Write a letter',wcap:'Big letter',wnum:'Write a number',wname:'Write my name',wword:'Write a word',dots:'Dot-to-dot',slate:'Magic slate',friend:'A new friend!'};
 function startRun(n,from){
-  let rounds=ROUNDS[n.t]||3;if(n.t==='wname')rounds=Math.min(8,nameChars().length);
+  let rounds=ROUNDS[n.t]||3;if(n.t[0]==='w'&&rounds===3&&((S.fbPrefs.write||3)<=2||likeScore(n.t)<-.4))rounds=2;if(n.t==='wname')rounds=Math.min(8,nameChars().length);
   RUN={node:n,from,round:0,rounds,ok:[],prompt:null};
   go('play');$('play-title').textContent=TITLES[n.t];$('actions').innerHTML='';$('cap').textContent='';$('play-body').innerHTML='';
   let delay=250;if(from.first){const ch=S.chapters.find(c=>c.id===from.chapter);say(ch&&ch.id%3===0?[REGIONS[ch.region].clip,200,'P_chapter']:['P_chapter'],null);delay=1700}
@@ -333,8 +343,10 @@ function finishRun(){
   const nb=document.createElement('button');nb.className='big-btn go';nb.innerHTML=ICON.next.replace('currentColor','#fff')+(nextFn?'Next stop':'Again');
   nb.onclick=()=>{FX.tap();$('reward').hidden=true;nextFn?nextFn():startRun(n,run.from)};
   const hb=document.createElement('button');hb.className='big-btn soft';hb.textContent=run.from.corner?'Back':'Map';hb.onclick=()=>{FX.tap();$('reward').hidden=true;run.from.corner?openCorner(run.from.corner):go('map')};
+  if(!isFriend){const fq=document.createElement('div');fq.innerHTML='<p class="faces-q">Did you like this game?</p><div class="faces"><button data-f="up" aria-label="Loved it">😀</button><button data-f="mid" aria-label="Okay">😐</button><button data-f="down" aria-label="Did not like">🙁</button></div>';
+    fq.querySelectorAll('button').forEach(b=>b.onclick=()=>{fq.querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');FX.tap();const L=S.likes[n.t]||(S.likes[n.t]={up:0,mid:0,down:0});if(fq.dataset.v)L[fq.dataset.v]--;L[b.dataset.f]++;fq.dataset.v=b.dataset.f;save()});box.appendChild(fq)}
   const row=document.createElement('div');row.className='row';row.append(hb,nb);box.appendChild(row);
-  $('reward').hidden=false;confetti();FX.fanfare();
+  $('reward').hidden=false;confetti();FX.fanfare();sync(false);
   say(isFriend?[600,'P_new_friend',W(REGIONS[n.r].friend[1])]:[500,'P_star',300,rnd(['P_pr1','P_pr2','P_pr5','P_pr6'])],null);RUN=null}
 const PRAISE=['P_pr1','P_pr2','P_pr3','P_pr4','P_pr5','P_pr6'],RETRY=['P_listen_again','P_little_sound','P_close','P_together'];
 const body=()=>$('play-body');
@@ -680,9 +692,9 @@ function renderParent(){
     const chip=!un?'<span class="chip locked">locked</span>':!s||!s.n?'<span class="chip new">not tried</span>':s.p>=.75?'<span class="chip strong">strong</span>':s.p<.55?'<span class="chip weak">practising</span>':'';
     return `<tr><td>${SK[id].sub}: ${SK[id].name}${chip}</td><td>${SK[id].lab(param(id))}</td><td>${s&&s.n?`<div class="bar"><i style="width:${Math.round(s.p*100)}%"></i></div>${Math.round(s.p*100)}% · ${s.n} tries`:'–'}</td></tr>`}).join('');
   $('p-map').innerHTML=ORDER.map(l=>{const st=S.intro.includes(l)||S.intro.includes(SAME[l])?status(l):'none',lab={none:S.intro.includes(l)?'met':'not yet',prac:'practising',mast:'mastered',due:'review'}[st];return `<div class="scell st-${st}"><div class="l">${l}</div><div class="s">${lab}</div></div>`}).join('');
-  $('ps-name').value=S.profile.name;$('ps-age').value=S.profile.age;$('ps-limit').value=S.profile.limit;$('ps-sfx').checked=S.settings.sfx!==false;$('ps-unlock').checked=!!S.settings.unlock;
+  $('ps-name').value=S.profile.name;$('ps-age').value=S.profile.age;$('ps-limit').value=S.profile.limit;$('ps-sfx').checked=S.settings.sfx!==false;$('ps-unlock').checked=!!S.settings.unlock;$('ps-consent').checked=!!S.settings.consent;renderLikes();
   renderStudio();resetZone();renderFeedback()}
-$('ps-save').onclick=()=>{S.profile.name=$('ps-name').value.trim()||S.profile.name;S.profile.age=+$('ps-age').value;S.profile.limit=+$('ps-limit').value;S.settings.sfx=$('ps-sfx').checked;S.settings.unlock=$('ps-unlock').checked;save();$('ps-saved').hidden=false;setTimeout(()=>$('ps-saved').hidden=true,1600)};
+$('ps-save').onclick=()=>{S.profile.name=$('ps-name').value.trim()||S.profile.name;S.profile.age=+$('ps-age').value;S.profile.limit=+$('ps-limit').value;S.settings.sfx=$('ps-sfx').checked;S.settings.unlock=$('ps-unlock').checked;S.settings.consent=$('ps-consent').checked;save();$('ps-saved').hidden=false;setTimeout(()=>$('ps-saved').hidden=true,1600)};
 function resetZone(){const z=$('reset-zone');z.innerHTML='<button class="pill-btn danger" id="p-reset">Reset all progress</button>';
   $('p-reset').onclick=()=>{z.innerHTML='<p>This deletes chapters, stars and skill levels (recordings are kept). It cannot be undone.</p><div class="row" style="justify-content:flex-start"><button class="pill-btn" id="r-no">Keep progress</button><button class="pill-btn danger" id="r-yes">Delete progress</button></div>';
     $('r-no').onclick=resetZone;$('r-yes').onclick=()=>{S=blank();save();sessSec=0;go('setup')}}}
@@ -698,10 +710,23 @@ function fbText(){const v=id=>$(id).value.trim();const st=FB_Q.map(([k,l])=>`${l
   return t}
 function fbUpdate(){const t=fbText();$('fb-wa').href='https://wa.me/?text='+encodeURIComponent(t);$('fb-preview').value=t}
 function renderFeedback(){const box=$('fb-stars');box.innerHTML=FB_Q.map(([k,l])=>`<div class="field"><label>${l}</label><div class="row" style="justify-content:flex-start;gap:4px" data-q="${k}">${[1,2,3,4,5].map(i=>`<button class="star-b" data-v="${i}" aria-label="${i} of 5" style="width:40px;height:40px">${i<=(fb[k]||0)?STAR:STAR_OFF}</button>`).join('')}</div></div>`).join('');
-  box.querySelectorAll('[data-q]').forEach(r=>r.querySelectorAll('button').forEach(b=>b.onclick=()=>{fb[r.dataset.q]=+b.dataset.v;renderFeedback()}));
+  box.querySelectorAll('[data-q]').forEach(r=>r.querySelectorAll('button').forEach(b=>b.onclick=()=>{fb[r.dataset.q]=+b.dataset.v;S.fbPrefs[r.dataset.q]=+b.dataset.v;save();renderFeedback()}));
   ['fb-name','fb-age','fb-liked','fb-hard','fb-idea','fb-sum'].forEach(id=>{$(id).oninput=fbUpdate;$(id).onchange=fbUpdate});fbUpdate()}
-$('fb-wa').addEventListener('click',()=>{fbUpdate();const n=$('fb-note');n.hidden=false;n.textContent='If WhatsApp did not open, tap "Copy text" and paste it into a message.'});
-$('fb-copy').onclick=async()=>{fbUpdate();const n=$('fb-note');n.hidden=false;try{await navigator.clipboard.writeText(fbText());n.textContent='Copied. Paste it into WhatsApp or email.'}catch(e){const p=$('fb-preview');p.hidden=false;p.focus();p.select();n.textContent='Select the text below and copy it.'}};
+$('fb-wa').addEventListener('click',()=>{fbUpdate();sendFeedback();const n=$('fb-note');n.hidden=false;n.textContent='If WhatsApp did not open, tap "Copy text" and paste it into a message.'});
+$('fb-copy').onclick=async()=>{fbUpdate();sendFeedback();const n=$('fb-note');n.hidden=false;try{await navigator.clipboard.writeText(fbText());n.textContent='Copied. Paste it into WhatsApp or email.'}catch(e){const p=$('fb-preview');p.hidden=false;p.focus();p.select();n.textContent='Select the text below and copy it.'}};
+
+/* ======================= ANONYMOUS SYNC (only with parent consent) ======================= */
+const ENDPOINT='';  // Google Apps Script web-app URL; empty = nothing is ever sent
+function devId(){if(!S.device){S.device='d'+Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);save()}return S.device}
+function snapshot(){const tot=Object.values(S.minutes).reduce((a,b)=>a+b,0);const sk={};Object.keys(S.sk).forEach(id=>{const x=S.sk[id];if(x.n)sk[id]={lvl:x.lvl,p:Math.round(x.p*100),n:x.n}});
+  return {app:'v5',age:S.profile&&S.profile.age,days:Object.keys(S.minutes).length,minutes:Math.round(tot),chapters:S.chapters.filter(c=>c.done).length,letters:S.intro.length,
+    mastered:ORDER.filter(l=>['mast','due'].includes(status(l))).length,said:S.said||0,recorded:Object.keys(REC).length,skills:sk,likes:S.likes,ratings:S.fbPrefs}}
+function post(type,data){if(!ENDPOINT||!S.settings.consent||!S.profile)return;try{fetch(ENDPOINT,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({type,device:devId(),at:new Date().toISOString(),data})}).catch(()=>{})}catch(e){}}
+function sync(force){if(!ENDPOINT||!S.settings.consent)return;const now=Date.now();if(!force&&now-(S.lastSync||0)<20*60*1000)return;S.lastSync=now;save();post('progress',snapshot())}
+function sendFeedback(){const v=id=>$(id).value.trim();post('feedback',Object.assign({ratings:Object.assign({},fb),enjoyed:v('fb-liked'),problems:v('fb-hard'),ideas:v('fb-idea'),childAge:$('fb-age').value},snapshot()))}
+function renderLikes(){const rows=Object.keys(S.likes).map(t=>[t,likeScore(t),S.likes[t]]).filter(r=>r[2].up+r[2].mid+r[2].down).sort((a,b)=>b[1]-a[1]);
+  const nm=t=>TITLES[t]||t;$('p-likes').innerHTML=rows.length?`<b>Loves:</b> ${rows.filter(r=>r[1]>.3).map(r=>nm(r[0])).join(', ')||'not clear yet'}<br><b>Not keen on:</b> ${rows.filter(r=>r[1]<-.3).map(r=>nm(r[0])).join(', ')||'nothing so far'}<br><span style="font-size:13px">From the faces your child taps after each game. Liked games come up more often; weak skills still get practice.</span>`:'After each game your child can tap a face. Their likes will show here and shape the next chapters.';
+  const g=$('p-global');if(CFG.notes&&CFG.notes.length){g.hidden=false;g.innerHTML='<b>Updates from all families\' feedback:</b><br>'+CFG.notes.map(x=>'• '+x).join('<br>')}}
 
 /* ======================= SHARE ======================= */
 const SHARE_URL='https://scentationalcandlesofficial.github.io/haathi-sound-forest/';
@@ -715,7 +740,7 @@ async function shareGame(){unlockAudio();FX.tap();
 $('btn-share').onclick=shareGame;$('btn-share-start').onclick=shareGame;$('share-copy').onclick=()=>{FX.tap();copyLink()};
 
 /* ======================= BOOT ======================= */
-document.addEventListener('visibilitychange',()=>{if(document.hidden){save();stopVoice()}else if(actx&&actx.state!=='running')actx.resume()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){save();stopVoice();sync(false)}else if(actx&&actx.state!=='running')actx.resume()});
 document.addEventListener('pointerdown',()=>{if(actx&&actx.state!=='running')actx.resume()},{passive:true});
 window.__haathi={SK,LS,CS,DIG,PREP,DOTPICS,S:()=>S,compose,learn,startRun};
 go('start');
