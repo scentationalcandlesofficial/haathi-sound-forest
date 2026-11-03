@@ -351,7 +351,12 @@ function playChapterNode(ch,i){const n=ch.nodes[i];const first=i===0&&n.stars==n
 
 /* ======================= ACTIVITY RUNNER ======================= */
 let RUN=null;
-const ROUNDS={meet:1,friend:1,wletter:3,wcap:3,wnum:3,wpre:2,wshape:2,wword:1,dots:1,slate:1,memory:1,sortsound:1,hunt:2,mole:1,stones:1,fishing:2,buildword:2,rocket:1,order:1,sortcolour:1,colour:1,joinmatch:1,maze:2,tracepic:2,drawshapes:1,finishpic:1,wrainbow:3,wheard:2,countwrite:2,wcopy:2,wlines:1};
+const ROUNDS={meet:1,friend:1,slate:1,
+ /* multi-step games: each round is already several taps */
+ memory:3,sortsound:3,stones:3,mole:3,rocket:3,order:3,sortcolour:3,share:4,shop:5,hunt:5,fishing:5,buildword:5,beats:6,
+ /* writing */
+ wletter:3,wcap:3,wnum:3,wrainbow:3,wpre:4,wshape:3,wword:2,dots:3,maze:4,tracepic:4,drawshapes:3,finishpic:3,wcopy:4,wheard:4,countwrite:5,wlines:3,joinmatch:3,colour:2,wname:8};
+const DEFAULT_ROUNDS=8;
 function setRounds(){const r=$('rounds');r.innerHTML='';for(let i=0;i<RUN.rounds;i++){const e=document.createElement('i');if(i<RUN.round)e.className='ok';else if(i===RUN.round)e.className='on';r.appendChild(e)}}
 function actions(list){const a=$('actions');a.innerHTML='';list.forEach(([cls,label,fn,icon,id])=>{const b=document.createElement('button');b.className='big-btn '+cls;if(id)b.id=id;b.innerHTML=(icon||'')+label;b.onclick=()=>{unlockAudio();FX.tap();fn()};a.appendChild(b)})}
 $('play-hear').onclick=()=>{unlockAudio();FX.tap();RUN&&RUN.prompt&&RUN.prompt()};
@@ -362,7 +367,7 @@ const TITLES={bigsmall:'Big and small letters',sameletter:'Same letter',oddsound
  meet:'Meet a letter',bubbles:'Sound Bubbles',snack:"Haathi's Snack",count:'Count with me',numfind:'Number Balloons',more:'Which has more?',add:'Put them together',takeaway:'Monkey takes away',shape:'Shape Hunt',pattern:'What comes next?',dice:'Quick look',next:'Before and after',bigger:'Bigger number',missing:'Missing number',share:'Share fairly',shop:'Mela shop',length:'Long and short',
   wpre:'Draw patterns',wshape:'Draw shapes',wletter:'Write a letter',wcap:'Big letter',wnum:'Write a number',wname:'Write my name',wword:'Write a word',dots:'Dot-to-dot',slate:'Magic slate',friend:'A new friend!'};
 function startRun(n,from){
-  let rounds=ROUNDS[n.t]||3;if(n.t[0]==='w'&&rounds===3&&((S.fbPrefs.write||3)<=2||likeScore(n.t)<-.4))rounds=2;if(n.t==='wname')rounds=Math.min(8,nameChars().length);
+  let rounds=ROUNDS[n.t]||DEFAULT_ROUNDS;if(SUBJ(n)==='write'&&rounds>2&&((S.fbPrefs.write||3)<=2||likeScore(n.t)<-.4))rounds=Math.max(2,rounds-1);if(n.t==='wname')rounds=Math.min(8,nameChars().length);
   RUN={node:n,from,round:0,rounds,ok:[],prompt:null};
   go('play');$('play-title').textContent=TITLES[n.t];$('actions').innerHTML='';$('cap').textContent='';$('play-body').innerHTML='';
   let delay=250;if(from.first){const ch=S.chapters.find(c=>c.id===from.chapter);say(ch&&ch.id%3===0?[REGIONS[ch.region].clip,200,'P_chapter']:['P_chapter'],null);delay=1700}
@@ -607,8 +612,8 @@ function numStrokes(v){const ds=String(v).split('');if(ds.length===1)return {s:D
 const MODES=['full','faint','own'];
 const MODE_CAP={full:'Watch the dot, then follow it with your finger.',faint:'Again, with fewer helper lines.',own:'Now on your own! Start at the green dot.'};
 const MODE_CLIP={full:'P_watch_dot',faint:'P_fewer_helpers',own:'P_your_own'};
-ACT.wpre=(n,round)=>{const k=n.k;const mode=round===0?'full':'faint';writeGlyph(PREP[k],{w:100,mode,intro:[mode==='full'?PREP_CLIP[k]:'P_fewer_helpers'],cap:mode==='full'?PREP_TXT[k]:MODE_CAP.faint,lines:false,done:ok=>{learnN(n,ok);roundDone(ok)}})};
-ACT.wshape=(n,round)=>{const k=n.k;const mode=round===0?'full':'faint';writeGlyph(PREP[k],{w:100,mode,intro:mode==='full'?['P_draw_shape',W(k)]:['P_fewer_helpers'],cap:`Draw a ${k}!`,lines:false,done:ok=>{learnN(n,ok);roundDone(ok)}})};
+ACT.wpre=(n,round)=>{const k=round<2?n.k:(n._k2||(n._k2=fresh('wp2',PRE_ALL.filter(x=>x!==n.k))));const mode=round%2===0?'full':'faint';if(round===3)n._k2=null;writeGlyph(PREP[k],{w:100,mode,intro:[mode==='full'?PREP_CLIP[k]:'P_fewer_helpers'],cap:mode==='full'?PREP_TXT[k]:MODE_CAP.faint,lines:false,done:ok=>{learnN(n,ok);roundDone(ok)}})};
+ACT.wshape=(n,round)=>{const k=round<2?n.k:fresh('ws2',['square','triangle','rectangle','star'].filter(x=>x!==n.k));const mode=round===1?'faint':'full';writeGlyph(PREP[k],{w:100,mode,intro:mode==='full'?['P_draw_shape',W(k)]:['P_fewer_helpers'],cap:`Draw a ${k}!`,lines:false,done:ok=>{learnN(n,ok);roundDone(ok)}})};
 ACT.wletter=(n,round)=>{const l=n.l,mode=MODES[round];writeGlyph(LS[l],{w:100,mode,intro:[MODE_CLIP[mode]],cap:`Write ${l}. `+MODE_CAP[mode],lines:true,done:ok=>{learnN(Object.assign({},n,{skill:'wletter'}),ok);if(round===2)airStep(l,sndOf(l),ok);else roundDone(ok)}})};
 ACT.wcap=(n,round)=>{const L=n.l.toUpperCase(),mode=MODES[round];writeGlyph(CS[L],{w:100,mode,intro:round===0?['P_capital',L_(n.l)]:[MODE_CLIP[mode]],cap:`Big ${L}. `+MODE_CAP[mode],lines:true,done:ok=>{learnN(n,ok);if(round===2)airStep(L,[L_(n.l)],ok);else roundDone(ok)}})};
 ACT.wnum=(n,round)=>{const v=n.n,mode=MODES[round],g=numStrokes(v);writeGlyph(g.s,{w:g.w,mode,intro:round===0?['P_draw_number',N(v)]:[MODE_CLIP[mode]],cap:`Write ${v}. `+MODE_CAP[mode],lines:false,done:ok=>{learnN(n,ok);if(round===2)airStep(String(v),[N(v)],ok);else roundDone(ok)}})};
@@ -890,7 +895,7 @@ const SHAPEPICS=[{w:'house',s:[[[24,96],[24,58],[76,58],[76,96],[24,96]],[[18,60
 const HALVES=[{w:'heart',pre:[smooth([[50,40],[38,26],[22,30],[16,46],[28,66],[50,88]],2)]},{w:'butterfly',pre:[smooth([[50,40],[34,18],[14,24],[16,50],[38,58],[50,58],[30,74],[22,94],[42,92],[50,72]],2)]},
  {w:'tree',pre:[[[50,14],[18,70],[44,70],[44,100],[50,100]]]},{w:'house',pre:[[[50,22],[16,56],[24,56],[24,100],[50,100]]]}];
 ACT.maze=(n,round)=>{writeGlyph(mazePath(),{w:100,mode:'full',road:true,ends:['🐘','🥭'],intro:['P_maze'],cap:'Help Haathi reach the mango! Follow the road.',lines:false,done:ok=>{learnN(n,ok);roundDone(ok)}})};
-ACT.tracepic=(n,round)=>{if(!n._p)n._p=fresh('tp',TRACEPICS);const p=n._p;writeGlyph(p.s,{w:100,mode:round===0?'full':'faint',intro:round===0?['P_trace_pic',W(p.w)]:['P_fewer_helpers'],cap:`Trace the ${p.w}!`,lines:false,done:ok=>{learnN(n,ok);if(round===1)n._p=null;roundDone(ok)}})};
+ACT.tracepic=(n,round)=>{if(round%2===0)n._p=fresh('tp',TRACEPICS);const p=n._p;writeGlyph(p.s,{w:100,mode:round%2===0?'full':'faint',intro:round%2===0?['P_trace_pic',W(p.w)]:['P_fewer_helpers'],cap:`Trace the ${p.w}!`,lines:false,done:ok=>{learnN(n,ok);roundDone(ok)}})};
 ACT.drawshapes=(n)=>{const p=fresh('ds',SHAPEPICS);writeGlyph(p.s,{w:100,mode:'full',intro:['P_draw_shape',W(p.w)],cap:`Draw a ${p.w==='icecream'?'ice cream':p.w} with shapes!`,lines:false,done:ok=>{learnN(n,ok);roundDone(ok)}})};
 ACT.finishpic=(n)=>{const p=fresh('fp',HALVES);writeGlyph(p.pre.map(mirror),{w:100,mode:'faint',pre:p.pre,intro:['P_finish_pic'],cap:`Finish the ${p.w}! Draw the other side.`,lines:false,done:ok=>{learnN(n,ok);roundDone(ok)}})};
 const RAINBOW=['#e2563f','#f6a821','#147a8a'];
