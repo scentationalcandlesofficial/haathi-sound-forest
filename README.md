@@ -6,9 +6,9 @@ A phonics, maths and writing game for children aged 3 to 6, made India-first.
 
 ## What's inside
 - Journey map with chapters planned by an on-device learning engine (about 20 skills, each with levels).
-- Letters: letter sounds, Sound Bubbles, Haathi's Snack.
-- Maths: counting to 30, number recognition, quick-look dots, more/less, before/after, bigger number, missing number, adding, taking away, fair sharing, mela shop with coins, shapes, patterns, longer/shorter.
-- Writing: patterns, shapes, small and capital letters, numbers 0 to 30, own name, words, dot-to-dot, magic slate.
+- Letters (22 games): sounds, picture-letter matching, rhymes, word building, memory pairs, letter fishing, moles, river stones and more.
+- Maths (32 games): counting to 30, number order, countdown, drum beats, more/fewer, bigger/smaller, before/after, skip counting, number line, adding, taking away, doubles, number bonds, make 10, sharing, coins and shopping, shapes, patterns, sorting, size, weight, length, position.
+- Writing (20 games): 12 pre-writing patterns, straight lines, road maze, colouring, tracing pictures, drawing with shapes, finish the picture, dot-to-dot, small and capital letters, numbers 0-30, rainbow writing, copying, write what you hear, count and write, join the pairs, own name, words, magic slate.
 - Grown-ups area: progress, skill levels, why each chapter was chosen, Sound Studio for recording real letter sounds, reviewer feedback form (sends via WhatsApp).
 
 ## Privacy
