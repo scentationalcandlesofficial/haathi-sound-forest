@@ -1306,7 +1306,7 @@ $('fb-copy').onclick=async()=>{fbUpdate();sendFeedback();const n=$('fb-note');n.
 /* ======================= ANONYMOUS SYNC (only with parent consent) ======================= */
 /* ---- anonymous usage counts (GoatCounter): no names, no cookies, no child data. Only: app opened, child's age group, shares, feedback sent. ---- */
 const GC='rajat';        // GoatCounter site code, e.g. 'haathi' for haathi.goatcounter.com; empty = nothing is counted
-const FB_WA='';     // WhatsApp number for feedback with country code, digits only, e.g. '91XXXXXXXXXX'; empty = parent picks the chat
+const FB_WA='917827208494';     // WhatsApp number for feedback with country code, digits only, e.g. '91XXXXXXXXXX'; empty = parent picks the chat
 function gc(path,title,daily){if(!GC||!navigator.onLine)return;try{if(daily){const k='gc-'+path+'-'+today();if(localStorage.getItem(k))return;localStorage.setItem(k,'1')}
   new Image().src=`https://${GC}.goatcounter.com/count?p=${encodeURIComponent(path)}&t=${encodeURIComponent(title||path)}&e=true&r=${encodeURIComponent(document.referrer||'')}&rnd=${Date.now()}`}catch(e){}}
 setTimeout(()=>{gc('/open','App opened',true);if(S.profile)gc('/active/age-'+S.profile.age,'Child aged '+S.profile.age+' played today',true)},1500);
