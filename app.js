@@ -1156,7 +1156,7 @@ function renderLikes(){const rows=Object.keys(S.likes).map(t=>[t,likeScore(t),S.
 
 /* ======================= SHARE ======================= */
 const SHARE_URL='https://scentationalcandlesofficial.github.io/haathi-sound-forest/';
-const SHARE_TEXT="Try Haathi's Sound Forest: a free game for kids aged 3 to 6 with letter sounds, counting, maths and writing. Opens in any phone browser, no sign-up.";
+const SHARE_TEXT="Try Haathi's Sound Forest: a free learning game for kids aged 3 to 7 (letter sounds, maths, writing, and 26 topics about the world). No sign-up. Tip: open the link in Chrome (or Safari on iPhone), then tap \"Install the app\" to put it on your home screen.";
 $('share-wa').href='https://wa.me/?text='+encodeURIComponent(SHARE_TEXT+' '+SHARE_URL);
 function shareNote(t){const n=$('share-note');if(n){n.hidden=false;n.textContent=t}}
 async function copyLink(){try{await navigator.clipboard.writeText(SHARE_URL);shareNote('Link copied. Paste it into any chat.');return true}catch(e){shareNote('Copy this link: '+SHARE_URL);return false}}
@@ -1164,6 +1164,23 @@ async function shareGame(){unlockAudio();FX.tap();
   if(navigator.share){try{await navigator.share({title:"Haathi's Sound Forest",text:SHARE_TEXT,url:SHARE_URL});return}catch(e){if(e&&e.name==='AbortError')return}}
   if(!(await copyLink()))window.open('https://wa.me/?text='+encodeURIComponent(SHARE_TEXT+' '+SHARE_URL),'_blank')}
 $('btn-share').onclick=shareGame;$('btn-share-start').onclick=shareGame;$('share-copy').onclick=()=>{FX.tap();copyLink()};
+
+/* ======================= INSTALL HELP ======================= */
+let installEvt=null;
+const UA=navigator.userAgent||'';
+const isIOS=/iPhone|iPad|iPod/i.test(UA)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const inApp=/FBAN|FBAV|FB_IAB|Instagram|WhatsApp|Line\/|Snapchat|; wv\)/i.test(UA);
+const isStandalone=()=>(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
+function installHelp(html){const h=$('install-help');h.hidden=false;h.innerHTML=html}
+function refreshInstall(){const b=$('btn-install');if(!b)return;if(isStandalone()){b.hidden=true;$('install-help').hidden=true;return}b.hidden=false}
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;refreshInstall()});
+window.addEventListener('appinstalled',()=>{installEvt=null;refreshInstall();installHelp('Installed! Find <b>Haathi</b> on your home screen.')});
+$('btn-install').onclick=async()=>{FX.tap();
+  if(installEvt){installEvt.prompt();try{await installEvt.userChoice}catch(e){}installEvt=null;return}
+  if(inApp){installHelp(`You opened this inside another app (like WhatsApp), which can't install apps.<br><b>Tap ⋮ or ··· at the top, then "Open in Chrome"</b>${isIOS?' (or "Open in Safari")':''}. Then tap Install again.<br><span style="font-size:13px">Or copy the link: ${SHARE_URL}</span>`);return}
+  if(isIOS){installHelp(`On iPhone or iPad, use <b>Safari</b>:<br>1. Tap the <b>Share</b> button (square with an arrow ⬆️).<br>2. Scroll and tap <b>Add to Home Screen</b>.<br>3. Tap <b>Add</b>.`);return}
+  installHelp(`In <b>Chrome</b>: tap the <b>⋮</b> menu (top right), then <b>Install app</b> or <b>Add to Home screen</b>.<br>Using another browser? Open this link in Chrome: ${SHARE_URL}`)};
+refreshInstall();
 
 /* ======================= BOOT ======================= */
 if(S.profile&&S.placed!==2)placeByAge();
