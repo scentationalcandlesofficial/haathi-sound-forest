@@ -297,6 +297,14 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 .ltile.used{opacity:.25}
 .huntgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:min(420px,92vw)}
 .huntgrid button{aspect-ratio:1;border-radius:16px;background:#fff;box-shadow:0 4px 0 var(--shadow);font-family:var(--f-letter);font-weight:700;font-size:clamp(30px,8vw,42px);color:var(--ink)}
+.xgrid{display:grid;gap:5px;width:min(360px,86vw)}
+.xc{aspect-ratio:1;border-radius:10px;background:#fff;border:3px solid var(--peacock);display:grid;place-items:center;font-family:var(--f-letter);font-weight:700;font-size:clamp(24px,7vw,36px);color:var(--peacock)}
+.xc.off{visibility:hidden}.xc.on{background:#fff6d6;border-color:var(--mango-deep)}
+.xclues{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.xclue{background:#fff;border-radius:16px;padding:6px 12px;box-shadow:0 4px 0 var(--shadow);display:flex;flex-direction:column;align-items:center;font-size:34px;line-height:1.1}
+.xclue small{font-size:14px;font-family:var(--f-display);color:var(--ink-soft);font-weight:700}
+.xclue.sel{outline:4px solid var(--mango)}.xclue.done{background:var(--leaf-2);opacity:.75}
+.huntgrid button.pick{background:var(--mango);color:#3b2400}
 .huntgrid button.got{background:var(--leaf-2);color:#fff}
 .holes{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(10px,3vw,22px);width:min(480px,94vw)}
 .hole{aspect-ratio:1;border-radius:50%;background:radial-gradient(ellipse at 50% 70%,#5a3d22 0 45%,#8a5a33 46% 60%,transparent 61%);position:relative;overflow:hidden}

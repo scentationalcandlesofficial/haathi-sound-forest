@@ -108,13 +108,15 @@ const SK={
  wcopy:{sub:'Writing',name:'Copying letters and numbers',levels:[0],lab:()=>'copy',unlock:()=>n_('wletter')>=2,node:()=>({t:'wcopy'})},
  wlines:{sub:'Writing',name:'Straight lines',levels:[0],lab:()=>'dot to dot',unlock:()=>true,node:()=>({t:'wlines'})},
  joinmatch:{sub:'Writing',name:'Join the pairs',levels:[0],lab:()=>'lines',unlock:()=>S.intro.length>=3,node:()=>({t:'joinmatch'})},
- colour:{sub:'Writing',name:'Colouring',levels:[0],lab:()=>'fine motor',unlock:()=>true,node:()=>({t:'colour'})}
+ colour:{sub:'Writing',name:'Colouring',levels:[0],lab:()=>'fine motor',unlock:()=>true,node:()=>({t:'colour'})},
+ read:{sub:'Reading',name:'Reading words',levels:[3,4,5],lab:v=>'words up to '+v+' letters',unlock:()=>readUnlock(),node:()=>({t:'readpic'})}
 };
 /* letter games: picked by the chapter planner from what is unlocked */
 const LGAMES={bubbles:()=>true,snack:()=>true,picletter:()=>true,letterpic:()=>true,samesound:()=>true,oddsound:()=>S.intro.length>=2,fishing:()=>true,stones:()=>true,mole:()=>true,hunt:()=>true,
  sortsound:()=>S.intro.length>=2,memory:()=>S.intro.length>=3,bigsmall:()=>true,sameletter:()=>true,shadow:()=>true,hidden:()=>true,nextletter:()=>S.intro.length>=6,missingletter:()=>S.intro.length>=6,
  rhyme:()=>true,buildword:()=>S.intro.length>=6,firstmissing:()=>S.intro.length>=4};
-function pickLetterGame(exclude){const c=Object.keys(LGAMES).filter(g=>g!==exclude&&(S.settings.unlock||LGAMES[g]()));
+function pickLetterGame(exclude){let c=Object.keys(LGAMES).filter(g=>g!==exclude&&(S.settings.unlock||LGAMES[g]()));
+  if(ageR()>=6){const rc=c.filter(g=>READ_G[g]||g==='buildword'||g==='rhyme');if(rc.length)c=rc}
   let best=null,bs=-9;c.forEach(g=>{const sc=Math.random()*1.4+Math.max(-.5,Math.min(.5,prefBonus(g)))-recentPenalty(g);if(sc>bs){bs=sc;best=g}});return best||'bubbles'}
 function st(id){return S.sk[id]||(S.sk[id]={lvl:0,p:.5,n:0,ln:0,last:null,up:null})}
 const lv=id=>(S.sk[id]||{lvl:0}).lvl, pr=id=>(S.sk[id]||{p:0}).p, n_=id=>(S.sk[id]||{n:0}).n;
@@ -132,9 +134,9 @@ const PLACE={
  5:{count:3,numfind:2,dice:2,more:1,fewer:1,next:1,bigger:1,smaller:1,missing:1,add:1,takeaway:1,matchgroup:2,order:1,rocket:1,beats:1,hiding:1,maketen:1,shop:1,
     tens:0,skip:0,shape:2,pattern:2,length:1,countshapes:1,wnum:2,wpre:6,dots:1,countwrite:1},
  6:{count:4,numfind:4,dice:2,more:3,fewer:3,next:3,bigger:3,smaller:3,missing:3,add:2,takeaway:2,matchgroup:2,order:2,rocket:1,beats:2,hiding:1,maketen:1,shop:2,share:1,
-    tens:1,skip:1,frog:1,money:1,double:1,clock:0,tenmore:0,shape:3,pattern:2,length:1,countshapes:1,wnum:3,wpre:11,dots:2,countwrite:1},
+    tens:1,skip:1,frog:1,money:1,double:1,clock:0,tenmore:0,read:0,shape:3,pattern:2,length:1,countshapes:1,wnum:3,wpre:11,dots:2,countwrite:1},
  7:{count:4,numfind:5,dice:2,more:3,fewer:3,next:4,bigger:4,smaller:4,missing:4,add:4,takeaway:4,matchgroup:2,order:2,rocket:1,beats:2,hiding:1,maketen:1,shop:2,share:2,
-    tens:2,skip:2,frog:1,money:1,double:1,clock:1,tenmore:1,shape:3,pattern:2,length:1,countshapes:1,wnum:5,wpre:11,dots:2,countwrite:1}};
+    tens:2,skip:2,frog:1,money:1,double:1,clock:1,tenmore:1,read:1,shape:3,pattern:2,length:1,countshapes:1,wnum:5,wpre:11,dots:2,countwrite:1}};
 const LETTERS_BY_AGE={3:3,4:6,5:10,6:18,7:18};
 function placeByAge(){const age=Math.min(7,Math.max(3,(S.profile&&S.profile.age)||4));const P=PLACE[age];
   Object.keys(P).forEach(id=>{if(!SK[id])return;const s=st(id);const tgt=Math.min(P[id],SK[id].levels.length-1);if(s.lvl<tgt){s.lvl=tgt;s.ln=0;s.p=Math.max(s.p,.55)}});
@@ -180,9 +182,9 @@ function compose(){
   let newL=null;if(readyForNewLetter(idx)){newL=LET.find(l=>!S.intro.includes(l));if(newL){S.intro.push(newL);S.lastIntroCh=idx;if(newL==='c'&&!S.intro.includes('k')){} }}
   const lg=likeScore('bubbles')+(CFG.weights.bubbles||1)-likeScore('snack')-(CFG.weights.snack||1);const lp=lg>.2?'bubbles':lg<-.2?'snack':rnd(['bubbles','snack']);
   const L1=newL?{t:'meet',l:newL}:{t:pickLetterGame(),focus:weakestLetter(),pool:S.intro.slice()};
-  if(newL)reasons.push(`New letter: ${newL} (${KEYW(newL)[0]})`);else reasons.push(`Letter practice: ${L1.focus} (${Math.round(accuracy(L1.focus)*100)}% right lately)`);
+  if(READ_G[L1.t])reasons.push(`Reading: ${READ_G[L1.t][0]} (${SK.read.lab(param('read'))})`);else if(newL)reasons.push(`New letter: ${newL} (${KEYW(newL)[0]})`);else reasons.push(`Letter practice: ${L1.focus} (${Math.round(accuracy(L1.focus)*100)}% right lately)`);
   const f2=weakestLetter();const L2={t:pickLetterGame(L1.t),focus:newL||f2,pool:S.intro.slice()};
-  reasons.push(newL?`Hear and find the new letter in a game`:`Letter practice: ${f2}`);
+  reasons.push(READ_G[L2.t]?`Reading: ${READ_G[L2.t][0]}`:newL?`Hear and find the new letter in a game`:`Letter practice: ${f2}`);
   const maths=Object.keys(SK).filter(id=>SK[id].sub==='Maths'&&SK[id].unlock()).sort((a,b)=>score(b)-score(a)).slice(0,(S.profile&&S.profile.age>=5)?3:2);
   maths.forEach(id=>reasons.push(why(id)));
   const wOther=Object.keys(SK).filter(id=>SK[id].sub==='Writing'&&id!=='wletter'&&SK[id].unlock()).sort((a,b)=>score(b)-score(a))[0];
@@ -335,7 +337,7 @@ function nodeIcon(n){const t=n.t;if(t.startsWith('d_')&&DSEC[n.sec])return DSEC[
 const WRITE_T=new Set(['dots','slate','maze','tracepic','drawshapes','finishpic','countwrite','joinmatch','colour']);
 const SUBJ=n=>n.t.startsWith('d_')?'discover':LGAMES[n.t]||n.t==='meet'?'letter':n.t==='friend'?'friend':(n.t[0]==='w'||WRITE_T.has(n.t))?'write':'number';
 function nodeColor(n){const s=SUBJ(n);if(s==='discover')return '#2f8a5f';return s==='letter'?'#147a8a':s==='number'?'#e07a12':s==='write'?'#8a5cc2':'#f6a821'}
-function renderMap(){
+function renderMap(){{const lc=document.querySelector('[data-corner="letters"]');if(lc){lc.querySelector('span').textContent=ageR()>=6?'Reading':'Letters';lc.querySelector('b').textContent=ageR()>=6?'Read':'abc'}}
   const cur=curChapter();const W=Math.min(560,$('map-scroll').clientWidth||360);
   const chs=S.chapters.slice(-4);let y=0,svg='';const pos=[],meta=[];
   const GAP=100,HEAD=86;
@@ -382,7 +384,7 @@ function playChapterNode(ch,i){const n=ch.nodes[i];const first=i===0&&n.stars==n
 let RUN=null;
 const ROUNDS={meet:1,friend:1,slate:1,
  /* multi-step games: each round is already several taps */
- memory:3,sortsound:3,stones:3,mole:3,rocket:3,order:3,sortcolour:3,share:4,shop:5,hunt:5,fishing:5,buildword:5,beats:6,
+ memory:3,sortsound:3,stones:3,mole:3,rocket:3,order:3,sortcolour:3,share:4,shop:5,hunt:5,fishing:5,buildword:5,beats:6,crossword:3,wordsearch:3,jumble:6,spell:6,
  /* writing */
  wletter:3,wcap:3,wnum:3,wrainbow:3,wpre:4,wshape:3,wword:2,dots:3,maze:4,tracepic:4,drawshapes:3,finishpic:3,wcopy:4,wheard:4,countwrite:5,wlines:3,joinmatch:3,colour:2,wname:8};
 const DEFAULT_ROUNDS=8;
@@ -404,7 +406,7 @@ function startRun(n,from){
 }
 function nextRound(){if(!RUN)return;setRounds();$('actions').innerHTML='';{const id=RUN.node.skill||RUN.node.t;if(SK[id]&&RUN.node.max!=null&&typeof param(id)==='number'&&RUN.node.max!==param(id)){const up=param(id)>RUN.node.max;RUN.node.max=param(id);if(up){FX.sparkle();$('cap').textContent='Level up! Numbers up to '+RUN.node.max}}}ACT[RUN.node.t](RUN.node,RUN.round)}
 function roundDone(ok){if(!RUN||RUN._lock===RUN.round)return;RUN._lock=RUN.round;RUN.ok.push(!!ok);RUN.round++;setRounds();if(RUN.round>=RUN.rounds)finishRun();else{const r=RUN;setTimeout(()=>{if(RUN===r)nextRound()},600)}}
-const learnN=(n,ok)=>{if(n.skill||SK[n.t])learn(n.skill||n.t,ok)};
+const learnN=(n,ok)=>{const id=n.skill||(SK[n.t]?n.t:(typeof READ_G!=='undefined'&&READ_G[n.t])?'read':null);if(id)learn(id,ok)};
 function finishRun(){
   const run=RUN,n=run.node;const stars=Math.max(1,Math.round(run.ok.filter(Boolean).length/run.ok.length*3));
   let nextFn=null;
@@ -986,20 +988,21 @@ ACT.colour=(n)=>{const k=fresh('col',Object.keys(COLOURPICS));const PAL=['#e2563
   actions([['go',"I'm done",()=>{if(filled.size<3){say(['P_keep_going'],'Colour a few more parts!');return}learnN(n,true);FX.sparkle();say([rnd(PRAISE)],'Beautiful colours!').then(()=>roundDone(true))},ICON.check]])};
 
 /* ======================= DISCOVER: 26 topics about the world ======================= */
-const DSC=window.DISCOVER||{sections:[],reg:{},match:{},sort:{},order:{},sounds:{},quiz:{}};
+const DSC=window.DISCOVER||{sections:[],reg:{},match:{},sort:{},order:{},sounds:{},quiz:{},mcq:{}};DSC.mcq=DSC.mcq||{};
 const DSEC={};DSC.sections.forEach(s=>DSEC[s.id]=s);
 const DI=k=>DSC.reg[k]||{e:'❓',n:k,f:'',c:''};
 const DN=k=>'D_'+k, DF=k=>DI(k).f?['F_'+k]:[];
 const ageNow=()=>(S.profile&&S.profile.age)||4;
-const GLABEL={learn:'Learn',find:'Find it',odd:'Odd one out',colour:'What colour?',memory:'Memory',sound:'Animal sounds',quiz:'True or false?',sort:'Sorting',match:'Matching',order:'In order'};
-const GICON={learn:'📖',find:'🔍',odd:'🙃',colour:'🎨',memory:'🃏',sound:'🔊',quiz:'👍',sort:'🧺',match:'🔗',order:'1️⃣'};
-DSC.sections.forEach(s=>{SK['d_'+s.id]={sub:'Discover',name:s.name,levels:[0,1,2],lab:v=>['starter set','more items','all items'][v],unlock:()=>ageNow()>=s.age,node:()=>dNode(s.id)}});
+const GLABEL={learn:'Learn',find:'Find it',odd:'Odd one out',colour:'What colour?',memory:'Memory',sound:'Animal sounds',quiz:'True or false?',sort:'Sorting',match:'Matching',order:'In order',mcq:'Quiz time'};
+const GICON={learn:'📖',find:'🔍',odd:'🙃',colour:'🎨',memory:'🃏',sound:'🔊',quiz:'👍',sort:'🧺',match:'🔗',order:'1️⃣',mcq:'❓'};
+const inAge=s=>ageNow()>=s.age&&ageNow()<=(s.maxAge||99);
+DSC.sections.forEach(s=>{SK['d_'+s.id]={sub:'Discover',name:s.name,levels:[0,1,2],lab:v=>['starter set','more items','all items'][v],unlock:()=>inAge(s),node:()=>dNode(s.id)}});
 function dPool(id){const s=DSEC[id];const sz=[6,10,99][Math.min(2,lv('d_'+id))]+(ageNow()>=5?4:0);return s.items.slice(0,Math.max(4,sz)).map(i=>i.k)}
 function gLabel(g){const [t,a]=g.split(':');if(t==='sort')return DSC.sort[a].name;if(t==='match')return DSC.match[a].name;if(t==='order')return DSC.order[a].name;return GLABEL[t]}
 const GAME_AGE={'order:months':6};const dGames=s=>s.games.filter(g=>S.settings.unlock||ageNow()>=(GAME_AGE[g]||0));
 function dNode(id,g){const s=DSEC[id];if(!g){const tried=S.sk['d_'+id]&&S.sk['d_'+id].n;const gs=dGames(s).filter(x=>x!=='learn');g=!tried&&s.games.includes('learn')?'learn':fresh('dg'+id,gs.length?gs:s.games)}
   const [t,arg]=g.split(':');const n={t:'d_'+t,sec:id,arg,skill:'d_'+id,title:s.name+': '+gLabel(g)};
-  if(t==='learn')n.rounds=Math.min(8,dPool(id).length);if(t==='memory'||t==='sort')n.rounds=1;if(t==='order')n.rounds=(DSC.order[arg].steps.length>4?3:2);if(t==='quiz')n.rounds=Math.min(8,(DSC.quiz[id]||[]).length);
+  if(t==='learn')n.rounds=Math.min(8,dPool(id).length);if(t==='memory'||t==='sort')n.rounds=1;if(t==='order')n.rounds=(DSC.order[arg].steps.length>4?3:2);if(t==='quiz')n.rounds=Math.min(8,(DSC.quiz[id]||[]).length);if(t==='mcq')n.rounds=Math.min(8,(DSC.mcq[id]||[]).length);
   return n}
 const dCard=(k,big)=>`<span style="font-size:${big?'clamp(70px,20vw,120px)':'clamp(44px,12vw,72px)'};line-height:1">${DI(k).e}</span>`;
 const dWithName=k=>`<div style="display:flex;flex-direction:column;align-items:center;gap:4px">${dCard(k)}<b style="font-family:var(--f-display);font-size:15px;color:var(--ink-soft)">${DI(k).n}</b></div>`;
@@ -1011,7 +1014,7 @@ ACT.d_learn=(n,round)=>{if(!n._ord)n._ord=shuffle(dPool(n.sec));const k=n._ord[r
 ACT.d_find=(n)=>{const pool=dPool(n.sec);const t=deck('df'+n.sec+pool.length,pool);
   pickRound({items:dOpts(pool,t,nopt()).map(k=>({h:dCard(k),v:k,label:DI(k).n})),ans:t,say:['P_d_find',DN(t)],cap:`Can you find the ${DI(t).n.toLowerCase()}?`,right:[DN(t),300,...DF(t)],rightCap:DI(t).f||`Yes, the ${DI(t).n.toLowerCase()}!`,wrong:it=>['P_hmm_thats',DN(it.v)]})};
 ACT.d_odd=(n)=>{const s=DSEC[n.sec];const pool=dPool(n.sec);const three=shuffle(pool).slice(0,Math.max(2,nopt()-1));
-  const others=DSC.sections.filter(x=>x.id!==n.sec&&x.age<=Math.max(ageNow(),s.age)&&!['colours','days','routine','cycles','science','opposites','safety','india'].includes(x.id)).flatMap(x=>x.items.map(i=>i.k)).filter(k=>!s.items.some(i=>i.k===k));
+  const others=DSC.sections.filter(x=>x.id!==n.sec&&x.age<=Math.max(ageNow(),s.age)&&ageNow()<=(x.maxAge||99)&&!['colours','days','routine','cycles','science','opposites','safety','india'].includes(x.id)).flatMap(x=>x.items.map(i=>i.k)).filter(k=>!s.items.some(i=>i.k===k));
   const odd=rnd(others);const items=shuffle([...three,odd]);
   pickRound({top:`<div class="card-note">These are ${s.name.toLowerCase()}. One is not!</div>`,items:items.map(k=>({h:dWithName(k),v:k,label:DI(k).n})),itemCls:'pcard grp',ans:odd,say:['P_d_odd'],cap:'Which one does not belong?',right:[DN(odd),250,rnd(PRAISE)],rightCap:`Yes! The ${DI(odd).n.toLowerCase()} does not belong.`,wrong:it=>[DN(it.v),300,'P_d_odd']})};
 const COLS={red:'#e2563f',blue:'#2f6fd0',yellow:'#f6c821',green:'#2f8a5f',orange:'#f08a24',purple:'#8a5cc2',brown:'#8a5a33',white:'#ffffff',black:'#222222',pink:'#ff9ac1'};
@@ -1048,15 +1051,17 @@ ACT.d_order=(n)=>{const o=DSC.order[n.arg];let steps=o.steps;const win=ageNow()<
       if(pos===steps.length){learnN(n,!wrong);FX.chime();burst($('or'),16);say([400,...steps.flatMap(x=>[DN(x),150]),rnd(PRAISE)],steps.map(x=>DI(x).n).join(' → ')).then(()=>roundDone(!wrong))}}
     else{wrong=true;FX.boing();anim(b,'wiggle',500);say([pos===0?'P_d_order':'P_d_next'],pos===0?'What comes first?':'What comes next?')}};$('oc').appendChild(b)});
   RUN.prompt=()=>say(['OQ_'+n.arg,300,'P_d_order'],o.name+'. What comes first?');RUN.prompt()};
+ACT.d_mcq=(n)=>{const qs=DSC.mcq[n.sec]||[];const qid=deck('dmc'+n.sec,qs.map(x=>x[0]));const [id,a,ds,text]=qs.find(x=>x[0]===qid);const opts=shuffle([a,...ds]);
+  pickRound({top:`<div class="card-note" style="font-size:clamp(18px,4.6vw,24px)">${text}</div>`,items:opts.map(k=>({h:dWithName(k),v:k,label:DI(k).n})),itemCls:'pcard grp',ans:a,say:['MC_'+id],cap:text,right:[DN(a),300,...DF(a),250,rnd(PRAISE)],rightCap:DI(a).f||`Yes! ${DI(a).n}!`,wrong:it=>[DN(it.v),300,'P_listen_again','MC_'+id]})};
 function openDiscover(secId){const b=$('corner-body');b.innerHTML='';
   if(!secId){$('corner-title').textContent='Discover';
-    const sur=document.createElement('button');sur.className='go-btn';sur.style.cssText='width:100%;max-width:640px;animation:none';const open=DSC.sections.filter(s=>S.settings.unlock||ageNow()>=s.age);
+    const sur=document.createElement('button');sur.className='go-btn';sur.style.cssText='width:100%;max-width:640px;animation:none';const open=DSC.sections.filter(s=>S.settings.unlock||inAge(s));
     sur.innerHTML=`🎲 Surprise me <span style="font-size:15px;font-weight:600">(${open.length} topics open)</span>`;sur.onclick=()=>{unlockAudio();FX.sparkle();const s=fresh('dsur',open.map(x=>x.id));say(['P_surprise'],null);setTimeout(()=>startRun(dNode(s),{corner:'discover',sec:s}),700)};b.appendChild(sur);
     const g=document.createElement('div');g.className='tiles';b.appendChild(g);
-    DSC.sections.forEach(s=>{const lk=!S.settings.unlock&&ageNow()<s.age;const t=document.createElement('button');t.className='tile';if(lk)t.style.opacity='.42';
+    DSC.sections.filter(s=>S.settings.unlock||ageNow()<=(s.maxAge||99)).forEach(s=>{const lk=!S.settings.unlock&&ageNow()<s.age;const t=document.createElement('button');t.className='tile';if(lk)t.style.opacity='.42';
       t.innerHTML=`<div class="ico">${s.icon}</div><span>${s.name}</span><small class="agebadge">${s.age}+</small>`;
       t.onclick=()=>{unlockAudio();if(lk){FX.boing();anim(t,'wiggle',500);return}FX.tap();say(['SEC_'+s.id],null);openDiscover(s.id)};g.appendChild(t)});
-    const p=document.createElement('p');p.className='card-note';p.textContent=`${DSC.sections.length} topics. Faded ones are for older children (age shown on each); grown-ups can unlock them in settings.`;b.appendChild(p);
+    const p=document.createElement('p');p.className='card-note';p.textContent=ageNow()>=6?'Science and knowledge topics for big kids. The picture topics for little ones are hidden; grown-ups can show them with the unlock switch in settings.':`Faded topics are for older children (age shown on each); grown-ups can unlock them in settings.`;b.appendChild(p);
     say(['P_d_pick'],null);return}
   const s=DSEC[secId];$('corner-title').textContent=s.name;
   const back=document.createElement('button');back.className='pill-btn small';back.textContent='← All topics';back.onclick=()=>{FX.tap();openDiscover()};b.appendChild(back);
@@ -1066,6 +1071,112 @@ function openDiscover(secId){const b=$('corner-body');b.innerHTML='';
   dGames(s).forEach(gm=>{const t0=gm.split(':')[0];const t=document.createElement('button');t.className='tile';t.innerHTML=`<div class="ico">${GICON[t0]}</div><span>${gLabel(gm)}</span>`;
     t.onclick=()=>{unlockAudio();FX.tap();startRun(dNode(secId,gm),{corner:'discover',sec:secId})};g.appendChild(t)});
 }
+
+/* ======================= READING (ages 6 to 7): words, not single letters ======================= */
+/* Reading games never say the target word before the child answers: the point is to read it. */
+const RB={cat:'🐈',dog:'🐕',pig:'🐖',hen:'🐔',cow:'🐄',fox:'🦊',bat:'🦇',rat:'🐀',ant:'🐜',bee:'🐝',owl:'🦉',sun:'☀️',bus:'🚌',car:'🚗',van:'🚐',cup:'☕',pen:'🖊️',bed:'🛏️',hat:'👒',cap:'🧢',
+ box:'📦',bag:'👜',map:'🗺️',egg:'🥚',nut:'🥜',leg:'🦵',ear:'👂',eye:'👁️',key:'🔑',ten:'🔟',web:'🕸️',log:'🪵',hut:'🛖',bug:'🐞',
+ moon:'🌙',star:'⭐',tree:'🌳',leaf:'🍃',rose:'🌹',ship:'🚢',boat:'⛵',kite:'🪁',ball:'⚽',doll:'🪆',drum:'🥁',bell:'🔔',book:'📕',milk:'🥛',cake:'🎂',corn:'🌽',pear:'🍐',frog:'🐸',duck:'🦆',goat:'🐐',
+ lion:'🦁',bear:'🐻',deer:'🦌',crab:'🦀',fish:'🐟',hand:'✋',foot:'🦶',nose:'👃',sock:'🧦',shoe:'👟',ring:'💍',lock:'🔒',fork:'🍴',bird:'🐦',king:'🤴',rain:'🌧️',lips:'👄',gift:'🎁',coat:'🧥',
+ apple:'🍎',mango:'🥭',snake:'🐍',tiger:'🐅',horse:'🐎',house:'🏠',train:'🚆',clock:'🕒',chair:'🪑',sheep:'🐑',teeth:'🦷',plant:'🪴',bread:'🍞',cloud:'☁️',zebra:'🦓',lemon:'🍋',camel:'🐫',onion:'🧅',
+ robot:'🤖',shirt:'👕',brush:'🪥',chick:'🐥',shell:'🐚',juice:'🧃',spoon:'🥄',panda:'🐼',truck:'🚚',whale:'🐳',mouse:'🐭'};
+const RWORDS=Object.keys(RB);
+const READ_G={readpic:['Read and match','📖'],picword:['Picture to word','🖼️'],jumble:['Jumbled words','🔀'],misspos:['Fill the gap','c_t'],spell:['Listen and spell','👂'],
+ sight:['Sight words','👀'],sentence:['Finish the sentence','✍️'],crossword:['Mini crossword','✚'],wordsearch:['Word search','🔎'],rhymeread:['Rhyming words','🎵'],digraph:['sh, ch, th','sh']};
+const RHYME_T=[['cat','hat','bat','rat','mat'],['dog','log','frog','fog'],['sun','bun','run','fun'],['hen','ten','pen','men'],['pig','big','wig','dig'],['top','mop','hop','shop'],
+ ['cake','lake','make','snake'],['ring','king','sing','wing'],['bed','red','fed'],['bug','jug','mug','hug'],['bee','tree','see','three'],['star','car','jar','far'],['boat','goat','coat'],
+ ['moon','spoon','soon'],['bell','shell','well','tell'],['ball','tall','wall','call']];
+const DIGRAPH={sh:['ship','shoe','fish','shell','sheep','shirt','brush'],ch:['chick','cheese','chair','cherry','chips','watch'],th:['thumb','three','teeth','bath']};
+const DG_E={ship:'🚢',shoe:'👟',fish:'🐟',shell:'🐚',sheep:'🐑',shirt:'👕',brush:'🪥',chick:'🐥',cheese:'🧀',chair:'🪑',cherry:'🍒',chips:'🍟',watch:'⌚',thumb:'👍',three:'3️⃣',teeth:'🦷',bath:'🛁'};
+const SIGHT=['the','and','is','it','in','to','you','my','we','can','see','he','she','go','no','look','come','here','play','said','are','for','like','this','what','was','they','have','all','big','little','up','down','on','at'];
+const SENT=[['The ___ can fly.','bird',['cow','pig']],['A fish can ___.','swim',['read','sing']],['I see with my ___.','eyes',['ears','feet']],['I hear with my ___.','ears',['eyes','hands']],
+ ['The sun is ___.','hot',['cold','wet']],['Ice is very ___.','cold',['hot','red']],['A cow gives us ___.','milk',['eggs','rice']],['A hen lays ___.','eggs',['milk','nuts']],
+ ['We sleep on a ___.','bed',['cup','bus']],['I wear a ___ on my head.','hat',['sock','shoe']],['Grass is ___.','green',['red','blue']],['I drink water from a ___.','cup',['bed','hat']],
+ ['At night we see the ___.','moon',['sun','rain']],['A dog can ___.','run',['fly','read']],['Five and five make ___.','ten',['six','two']],['We read a ___.','book',['cake','shoe']]];
+const RTRY=['P_r_try','P_close','P_together'];
+const ageR=()=>(S.profile&&S.profile.age)||4;
+const readUnlock=()=>ageR()>=6||(ageR()>=5&&S.intro.length>=10&&letterSkill()>=.75);
+Object.keys(READ_G).forEach(g=>LGAMES[g]=readUnlock);
+const wordH=(w,sz)=>`<span style="font-family:var(--f-letter);font-weight:700;font-size:${sz||'clamp(30px,8vw,46px)'};color:var(--peacock);line-height:1.1;letter-spacing:.04em">${w}</span>`;
+/* word pool sized by the reading level: 3 letters, then 3 to 4, then 4 to 5 */
+function rPool(){const mx=param('read');const p=RWORDS.filter(w=>w.length<=mx&&w.length>=Math.max(3,mx-1));return p.length>=6?p:RWORDS.filter(w=>w.length<=mx)}
+const lookAlike=(t,pool,n)=>shuffle(pool.filter(w=>w!==t&&RB[w]!==RB[t])).sort((a,b)=>(Math.abs(a.length-t.length)-(a[0]===t[0]?1:0)-(a.slice(-1)===t.slice(-1)?.5:0))-(Math.abs(b.length-t.length)-(b[0]===t[0]?1:0)-(b.slice(-1)===t.slice(-1)?.5:0))).slice(0,n);
+ACT.readpic=()=>{const t=deck('rp'+param('read'),rPool());const opts=shuffle([t,...lookAlike(t,RWORDS,nopt()-1)]);
+  pickRound({top:bigShow(wordH(t,'clamp(44px,12vw,72px)')),items:opts.map(w=>({h:picH(RB[w]),v:w,label:'picture'})),ans:t,say:['P_r_readpic'],cap:'Read the word. Which picture is it?',
+    right:[W(t),250,rnd(PRAISE)],rightCap:`Yes! ${t}!`,wrong:it=>[W(it.v),300,'P_r_try']})};
+ACT.picword=()=>{const t=deck('pw'+param('read'),rPool());const opts=shuffle([t,...lookAlike(t,rPool(),nopt()-1)]);
+  pickRound({top:bigShow(picH(RB[t])),items:opts.map(w=>({h:wordH(w),v:w,label:w})),ans:t,say:['P_r_picword'],cap:'Which word goes with the picture?',
+    right:[W(t),250,rnd(PRAISE)],rightCap:`Yes! ${t}!`,wrong:()=>[rnd(RTRY)]})};
+ACT.misspos=()=>{const t=deck('mp'+param('read'),rPool());const h=ri(0,t.length-1),ans=t[h];const opts=shuffle([ans,...others(ALPHA,ans,nopt()-1,x=>t.includes(x))]);
+  pickRound({top:`<div class="pic">${RB[t]}</div><div class="word">${[...t].map((c,i)=>i===h?'<b>_</b>':c).join('')}</div>`,items:opts.map(v=>({h:letH(v),v})),ans,say:['P_missing_letter'],cap:'Which letter is missing?',
+    right:[W(t),250,rnd(PRAISE)],rightCap:`${t}!`,wrong:()=>[rnd(RTRY)]})};
+/* tile speller shared by jumbled words and listen-and-spell */
+function spellRound(w,o){const extra=o.extra?others(ALPHA.filter(c=>!w.includes(c)),'',o.extra):[];let tiles=shuffle([...w,...extra]);if(!o.extra&&tiles.join('')===w)tiles=[...w].reverse();let pos=0,wrong=false;
+  body().innerHTML=`<div class="pic" id="spic">${o.pic?RB[w]||DG_E[w]||'':'❓'}</div><div class="slots">${[...w].map(()=>'<span class="slot"></span>').join('')}</div><div class="tiles2" id="tl"></div>`;
+  tiles.forEach(c=>{const b=document.createElement('button');b.className='ltile';b.textContent=c;
+    b.onclick=()=>{if(b.disabled||pos>=w.length)return;if(c===w[pos]){b.disabled=true;b.classList.add('used');body().querySelectorAll('.slot')[pos].textContent=c;pos++;FX.tick(pos);
+      if(pos===w.length){learnN(RUN.node,!wrong);FX.chime();if(!o.pic&&$('spic'))$('spic').textContent=RB[w]||'⭐';burst(body().querySelector('.slots'),16);say([400,W(w),250,rnd(PRAISE)],w+'!').then(()=>roundDone(!wrong))}}
+      else{wrong=true;FX.boing();anim(b,'wiggle',500);say(o.hint(),o.hintCap)}};$('tl').appendChild(b)});
+  RUN.prompt=()=>say(o.say,o.cap);RUN.prompt()}
+ACT.jumble=()=>{const w=deck('jb'+param('read'),rPool());spellRound(w,{pic:true,extra:0,say:['P_r_jumble'],cap:'The letters are jumbled! Put them in order.',hint:()=>[rnd(RTRY)],hintCap:'Look at the picture and try again!'})};
+ACT.spell=()=>{const w=deck('sp'+param('read'),rPool());spellRound(w,{pic:false,extra:2,say:['P_r_spell',300,W(w)],cap:'Listen and spell the word.',hint:()=>['P_listen_again',W(w)],hintCap:'Listen again'})};
+ACT.sight=()=>{const t=deck('sw',SIGHT);const sim=SIGHT.filter(x=>x!==t).sort((a,b)=>(Math.abs(a.length-t.length)-(a[0]===t[0]?1:0))-(Math.abs(b.length-t.length)-(b[0]===t[0]?1:0)));
+  const opts=shuffle([t,...shuffle(sim.slice(0,6)).slice(0,nopt()-1)]);
+  pickRound({items:opts.map(w=>({h:wordH(w),v:w,label:w})),ans:t,say:['P_r_sight',300,'SW_'+t],cap:'Find the word you hear.',right:['SW_'+t,250,rnd(PRAISE)],rightCap:`Yes! "${t}"`,wrong:it=>['SW_'+it.v,300,'P_listen_again','SW_'+t]})};
+ACT.sentence=()=>{const i=deck('sen',SENT.map((_,k)=>k));const [s,a,ds]=SENT[i];const opts=shuffle([a,...ds]);
+  pickRound({top:`<div class="card-note" style="font-size:clamp(22px,5.6vw,32px);font-weight:700;color:var(--ink)">${s.replace('___','<u style="color:var(--peacock)">&nbsp;?&nbsp;&nbsp;</u>')}</div>`,items:opts.map(w=>({h:wordH(w),v:w,label:w})),ans:a,
+    say:['P_r_sentence'],cap:'Read the sentence. Which word fits?',right:['SEN_'+i,250,rnd(PRAISE)],rightCap:s.replace('___',a),wrong:()=>[rnd(RTRY)]})};
+ACT.rhymeread=()=>{const fam=fresh('rr',RHYME_T);const [t,a]=shuffle(fam).slice(0,2);const pool=RHYME_T.filter(f=>f!==fam).flat().filter(w=>w.slice(-2)!==t.slice(-2));
+  const opts=shuffle([a,...shuffle(pool.filter(w=>w[0]===t[0]||w.length===t.length)).concat(shuffle(pool)).filter((x,k,arr)=>arr.indexOf(x)===k).slice(0,nopt()-1)]);
+  pickRound({top:bigShow(wordH(t,'clamp(44px,12vw,72px)')),items:opts.map(w=>({h:wordH(w),v:w,label:w})),ans:a,say:['P_r_rhyme'],cap:'Which word rhymes with this one?',
+    right:[W(t),W(a),250,'P_rhymes_yes'],rightCap:`${t}, ${a}. They rhyme!`,wrong:it=>[W(it.v),W(t),300,'P_r_try']})};
+ACT.digraph=()=>{const all=Object.entries(DIGRAPH).flatMap(([d,ws])=>ws.map(w=>[w,d]));const [w,d]=fresh('dg',all);
+  pickRound({top:`<div class="pic">${DG_E[w]}</div><div class="word">${w.replace(d,'<b>__</b>')}</div>`,items:Object.keys(DIGRAPH).map(x=>({h:wordH(x,'clamp(40px,11vw,60px)'),v:x,label:x})),ans:d,
+    say:['P_r_digraph',300,W(w)],cap:'Which two letters make the sound?',right:[W(w),250,rnd(PRAISE)],rightCap:`${w}: ${d}!`,wrong:()=>['P_listen_again',W(w)]})};
+/* mini crossword: 2 words (3 for stronger readers) crossing on a shared letter, picture clues */
+function makeCross(){const pool=shuffle(rPool().length>=8?rPool():RWORDS.filter(w=>w.length<=5));const want=lv('read')>=1?3:2;
+  for(const A of pool){if(A.length<3)continue;const out=[{w:A,r:0,c:0,d:'a'}];const used=new Set();
+    for(const B of pool){if(out.length>=want)break;if(out.some(o=>o.w===B))continue;
+      for(let i=0;i<A.length&&out.length<want;i++){if(used.has(i)||used.has(i-1)||used.has(i+1))continue;const j=B.indexOf(A[i]);if(j<0)continue;out.push({w:B,r:-j,c:i,d:'d'});used.add(i);break}}
+    if(out.length>=want){const r0=Math.min(...out.map(o=>o.r)),rows=Math.max(...out.map(o=>o.r+(o.d==='d'?o.w.length:1)))-r0;out.forEach(o=>o.r-=r0);return {words:out,rows,cols:A.length}}}
+  return null}
+const cellsOf=o=>[...o.w].map((ch,k)=>[o.d==='a'?o.r:o.r+k,o.d==='a'?o.c+k:o.c,ch]);
+ACT.crossword=()=>{const X=makeCross();if(!X){ACT.jumble();return}let cur=0,pos=0,wrong=false;const filled={};
+  body().innerHTML=`<div class="xclues" id="xc"></div><div class="xgrid" id="xg" style="grid-template-columns:repeat(${X.cols},1fr)"></div><div class="tiles2" id="tl"></div>`;
+  const grid={};X.words.forEach((o,wi)=>cellsOf(o).forEach(([r,c,ch])=>{grid[r+','+c]=ch}));
+  for(let r=0;r<X.rows;r++)for(let c=0;c<X.cols;c++){const e=document.createElement('span');e.className=grid[r+','+c]?'xc':'xc off';e.id='x'+r+'_'+c;$('xg').appendChild(e)}
+  X.words.forEach((o,wi)=>{const b=document.createElement('button');b.className='xclue';b.id='xq'+wi;b.innerHTML=`<span>${RB[o.w]}</span><small>${o.d==='a'?'across':'down'}</small>`;b.onclick=()=>{if(b.classList.contains('done'))return;FX.tap();selWord(wi)};$('xc').appendChild(b)});
+  const skipFilled=()=>{const cs=cellsOf(X.words[cur]);while(pos<cs.length&&filled[cs[pos][0]+','+cs[pos][1]])pos++};
+  function selWord(wi){cur=wi;pos=0;skipFilled();body().querySelectorAll('.xc').forEach(e=>e.classList.remove('on'));cellsOf(X.words[cur]).forEach(([r,c])=>$('x'+r+'_'+c).classList.add('on'));
+    body().querySelectorAll('.xclue').forEach((e,k)=>e.classList.toggle('sel',k===cur));const w=X.words[cur].w;const need=cellsOf(X.words[cur]).filter(([r,c])=>!filled[r+','+c]).map(x=>x[2]);
+    $('tl').innerHTML='';shuffle([...need,...others(ALPHA.filter(c=>!w.includes(c)),'',2)]).forEach(ch=>{const t=document.createElement('button');t.className='ltile';t.textContent=ch;t.onclick=()=>tap(t,ch);$('tl').appendChild(t)});
+    say([W(w)],null)}
+  function tap(t,ch){const cs=cellsOf(X.words[cur]);if(t.disabled||pos>=cs.length)return;const [r,c,want]=cs[pos];
+    if(ch===want){t.disabled=true;t.classList.add('used');filled[r+','+c]=1;$('x'+r+'_'+c).textContent=ch;pos++;FX.tick(pos);skipFilled();
+      if(pos>=cs.length){$('xq'+cur).classList.add('done');FX.chime();const nx=X.words.findIndex((o,k)=>!$('xq'+k).classList.contains('done'));
+        if(nx<0){learnN(RUN.node,!wrong);burst($('xg'),18);say([rnd(PRAISE)],'Crossword done!').then(()=>roundDone(!wrong))}else say([W(X.words[cur].w),300,'P_r_next'],'Now the next word!').then(()=>{if(alive('crossword'))selWord(nx)})}}
+    else{wrong=true;FX.boing();anim(t,'wiggle',500)}}
+  RUN.prompt=()=>say(['P_r_cross'],'Fill the crossword. Each picture is a word.').then(()=>{if(alive('crossword')&&pos===0)selWord(cur)});RUN.prompt()};
+/* word search: find 3 hidden words, across or down */
+ACT.wordsearch=()=>{const N=5;let words,G;
+  for(let tries=0;tries<60;tries++){G=Array.from({length:N},()=>Array(N).fill(''));words=[];const cand=shuffle(rPool().filter(w=>w.length<=N));
+    for(const w of cand){if(words.length>=3)break;for(let k=0;k<25;k++){const d=Math.random()<.5?'a':'d';const r=ri(0,d==='d'?N-w.length:N-1),c=ri(0,d==='a'?N-w.length:N-1);
+      const cs=[...w].map((ch,i)=>[d==='a'?r:r+i,d==='a'?c+i:c,ch]);if(cs.every(([y,x])=>!G[y][x])){cs.forEach(([y,x,ch])=>G[y][x]=ch);words.push({w,cs});break}}}
+    if(words.length>=3)break}
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++)if(!G[y][x])G[y][x]=rnd('abcdefghiklmnoprstuw'.split(''));
+  let sel=[],found=0,wrong=false;
+  body().innerHTML=`<div class="xclues">${words.map((o,k)=>`<div class="xclue" id="wq${k}"><span>${RB[o.w]}</span><small>${o.w}</small></div>`).join('')}</div><div class="huntgrid" id="hg" style="grid-template-columns:repeat(${N},1fr)"></div>`;
+  const key=(y,x)=>y+','+x;
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){const b=document.createElement('button');b.textContent=G[y][x];b.dataset.k=key(y,x);
+    b.onclick=()=>{if(b.classList.contains('got'))return;if(b.classList.contains('pick')){b.classList.remove('pick');sel=sel.filter(s=>s!==b.dataset.k);return}
+      sel.push(b.dataset.k);b.classList.add('pick');FX.tap();
+      const fits=words.filter(o=>!o.done&&sel.every(s=>o.cs.some(([yy,xx])=>key(yy,xx)===s)));
+      if(!fits.length){wrong=true;FX.boing();setTimeout(()=>{body().querySelectorAll('.pick').forEach(e=>e.classList.remove('pick'));sel=[]},350);return}
+      const hit=fits.find(o=>o.cs.length===sel.length);
+      if(hit){hit.done=true;found++;body().querySelectorAll('.pick').forEach(e=>{e.classList.remove('pick');e.classList.add('got')});sel=[];const qi=words.indexOf(hit);$('wq'+qi).classList.add('done');FX.chime();burst($('wq'+qi),10);
+        if(found===words.length){learnN(RUN.node,!wrong);say([W(hit.w),300,rnd(PRAISE)],'All words found!').then(()=>roundDone(!wrong))}else say([W(hit.w),250,'P_r_found'],`${hit.w}! Find the next one.`)}};
+    $('hg').appendChild(b)}
+  RUN.prompt=()=>say(['P_r_search'],'Find the hidden words. Tap each letter.');RUN.prompt()};
 
 /* ======================= PRACTICE CORNERS ======================= */
 const CORNER={
@@ -1098,8 +1209,9 @@ function cornerNode(id,kind){const pool=S.intro.length?S.intro:['s','a'];
   return {t:id}}
 function cornerLocked(id){if(S.settings.unlock)return false;if(id==='wname')return !nameChars().length;if(LGAMES[id])return !LGAMES[id]();if(SK[id])return !unlocked(id);return false}
 function openCorner(kind,sec){go('corner');if(kind==='discover'){openDiscover(sec);return}const b=$('corner-body');const from={corner:kind};b.innerHTML='';
-  $('corner-title').textContent={letters:'Letters',numbers:'Numbers',writing:'Writing'}[kind];
-  const list=CORNER[kind];const open=list.filter(([id])=>!cornerLocked(id));
+  const big=kind==='letters'&&ageR()>=6;$('corner-title').textContent=big?'Reading':{letters:'Letters',numbers:'Numbers',writing:'Writing'}[kind];
+  const RL=Object.keys(READ_G).map(g=>[g,...READ_G[g]]);const KEEP=['buildword','rhyme'];
+  const list=kind!=='letters'?CORNER[kind]:big?[...RL,...CORNER.letters.filter(x=>KEEP.includes(x[0])),...(S.settings.unlock?CORNER.letters.filter(x=>!KEEP.includes(x[0])):[])]:[...CORNER.letters,...RL];const open=list.filter(([id])=>!cornerLocked(id));
   const sur=document.createElement('button');sur.className='go-btn';sur.style.cssText='width:100%;max-width:640px;animation:none';sur.innerHTML=`🎲 Surprise me <span style="font-size:15px;font-weight:600">(${open.length} games open)</span>`;
   sur.onclick=()=>{unlockAudio();FX.sparkle();const id=fresh('sur-'+kind,open.map(x=>x[0]));say(['P_surprise'],null);setTimeout(()=>startRun(cornerNode(id,kind),from),700)};b.appendChild(sur);
   const g=document.createElement('div');g.className='tiles';b.appendChild(g);
@@ -1107,7 +1219,7 @@ function openCorner(kind,sec){go('corner');if(kind==='discover'){openDiscover(se
     t.innerHTML=`<div class="ico" style="color:${COL_OF[kind]};font-size:${ico.length>3?22:34}px">${ico}</div><span>${label}</span>`;
     t.onclick=()=>{unlockAudio();if(lk){FX.boing();anim(t,'wiggle',500);return}FX.tap();startRun(cornerNode(id,kind),from)};g.appendChild(t)});
   const p=document.createElement('p');p.className='card-note';p.textContent=`${list.length} games here. Faded ones open as your child learns. Every game picks new questions at random and avoids repeating the last few.`;b.appendChild(p);
-  if(kind==='letters'){const h=document.createElement('h3');h.textContent='Meet any letter';h.style.cssText='font-family:var(--f-display);color:var(--leaf);margin:8px 0 0';b.appendChild(h);
+  if(kind==='letters'&&!big){const h=document.createElement('h3');h.textContent='Meet any letter';h.style.cssText='font-family:var(--f-display);color:var(--leaf);margin:8px 0 0';b.appendChild(h);
     const gp=document.createElement('div');gp.className='grid-pick';ORDER.forEach(l=>{const x=document.createElement('button');x.textContent=l;x.onclick=()=>{unlockAudio();FX.tap();startRun({t:'meet',l},from)};gp.appendChild(x)});b.appendChild(gp)}
   say(['P_pick'],null)}
 

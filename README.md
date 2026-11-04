@@ -1,12 +1,14 @@
 # Haathi's Sound Forest
 
-A phonics, maths and writing game for children aged 3 to 6, made India-first.
+A phonics, maths and writing game for children aged 3 to 7, made India-first.
 
 **Play:** open the GitHub Pages link on any phone or tablet. On Android Chrome, use "Add to Home screen" to install it like an app. It then works offline too.
 
 ## What's inside
 - Journey map with chapters planned by an on-device learning engine (about 20 skills, each with levels).
 - Letters (22 games): sounds, picture-letter matching, rhymes, word building, memory pairs, letter fishing, moles, river stones and more.
+- Reading (11 games, ages 6 to 7, or 5 when letters are strong): read and match, picture to word, jumbled words, fill the gap, listen and spell, sight words, finish the sentence, mini crossword, word search, rhyming words, sh/ch/th. Words grow from 3 to 5 letters as the child improves. At 6+ the Letters corner becomes Reading.
+- Discover at 6+: the picture topics for little ones (fruits, vegetables, animals, colours and so on) are hidden and replaced by science and knowledge quizzes: How Plants Work, Inside My Body, Solid/Liquid/Gas, Space and Planets, Water Cycle, Food Groups, Animal Science, India Quiz, Our World.
 - Maths (32 games): counting to 30, number order, countdown, drum beats, more/fewer, bigger/smaller, before/after, skip counting, number line, adding, taking away, doubles, number bonds, make 10, sharing, coins and shopping, shapes, patterns, sorting, size, weight, length, position.
 - Writing (20 games): 12 pre-writing patterns, straight lines, road maze, colouring, tracing pictures, drawing with shapes, finish the picture, dot-to-dot, small and capital letters, numbers 0-30, rainbow writing, copying, write what you hear, count and write, join the pairs, own name, words, magic slate.
 - Grown-ups area: progress, skill levels, why each chapter was chosen, Sound Studio for recording real letter sounds, reviewer feedback form (sends via WhatsApp).
@@ -30,3 +32,4 @@ Starting levels are set from the child's age, then adapt to how they do.
 - Maths follows the Head Start Early Learning Outcomes Framework for ages 3 to 5, and US Kindergarten (5-6) and Grade 1 (6-7) standards: e.g. age 4 starts counting objects to 10 and comparing groups to 5; age 5 adds within 10 and starts tens and ones; age 6 adds within 20, compares numbers to 50, tells time and does 10 more/10 less.
 - Writing follows typical pre-writing milestones (cross about 4 years, square about 4.5, triangle about 5): age 3 traces with full guides only; harder copying and writing from sound open at 5.
 - Age 3 games are 5 questions long; ages 4+ are 8.
+- Reading uses Dolch-style sight words and decodable 3 to 5 letter words; reading games never say the word before the child answers.
