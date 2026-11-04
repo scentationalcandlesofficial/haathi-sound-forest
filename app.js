@@ -42,6 +42,23 @@ let S=load();
 function blank(){return {profile:null,chapters:[],intro:[],lastIntroCh:-9,sounds:{},sk:{},minutes:{},settings:{sfx:true,unlock:false,consent:false},said:0,likes:{},fbPrefs:{},device:null,lastSync:0,sentFb:0}}
 function load(){try{const r=localStorage.getItem(KEY);if(r){const o=Object.assign(blank(),JSON.parse(r));o.settings=Object.assign(blank().settings,o.settings);o.likes=o.likes||{};o.fbPrefs=o.fbPrefs||{};return o}}catch(e){}return blank()}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+/* ---- several children on one phone: the active child lives in KEY, the others are parked under KEY::id ---- */
+const KIDS_KEY='haathi-kids-v1';
+function kidsIdx(){let k=null;try{k=JSON.parse(localStorage.getItem(KIDS_KEY)||'null')}catch(e){}
+  if(!k)k={list:[],active:null};if(S.profile&&!k.active){k.active='k'+Date.now().toString(36);k.list.push({id:k.active,name:S.profile.name,age:S.profile.age})}
+  const me=k.list.find(x=>x.id===k.active);if(me&&S.profile){me.name=S.profile.name;me.age=S.profile.age}
+  try{localStorage.setItem(KIDS_KEY,JSON.stringify(k))}catch(e){}return k}
+function parkActive(k){if(k.active&&S.profile){save();try{localStorage.setItem(KEY+'::'+k.active,JSON.stringify(S))}catch(e){}}}
+function switchKid(id){const k=kidsIdx();if(id===k.active)return;parkActive(k);let st=null;try{st=localStorage.getItem(KEY+'::'+id)}catch(e){}
+  if(!st)return;try{localStorage.setItem(KEY,st);k.active=id;localStorage.setItem(KIDS_KEY,JSON.stringify(k))}catch(e){}location.reload()}
+function addKid(){const k=kidsIdx();parkActive(k);try{localStorage.removeItem(KEY);k.active=null;localStorage.setItem(KIDS_KEY,JSON.stringify(k))}catch(e){}location.reload()}
+function removeKid(id){const k=kidsIdx();if(id===k.active)return;k.list=k.list.filter(x=>x.id!==id);try{localStorage.removeItem(KEY+'::'+id);localStorage.setItem(KIDS_KEY,JSON.stringify(k))}catch(e){}renderKids()}
+function renderKids(){const el=$('kids-list');if(!el)return;const k=kidsIdx();el.innerHTML='';
+  k.list.forEach(c=>{const r=document.createElement('div');r.className='kidrow'+(c.id===k.active?' on':'');r.innerHTML=`<b>${(c.name||'Child').replace(/</g,'')} · age ${c.age}</b>`;
+    if(c.id===k.active){const t=document.createElement('span');t.className='note';t.textContent='playing now';r.appendChild(t)}
+    else{const p=document.createElement('button');p.className='pill-btn small primary';p.textContent='Play as';p.onclick=()=>switchKid(c.id);r.appendChild(p);
+      const d=document.createElement('button');d.className='pill-btn small';d.textContent='Remove';d.onclick=()=>{if(d.dataset.sure){removeKid(c.id)}else{d.dataset.sure=1;d.textContent='Tap again to remove'}};r.appendChild(d)}
+    el.appendChild(r)})}
 const dkey=dt=>dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
 const today=()=>dkey(new Date());
 const daysBetween=(a,b)=>Math.round((new Date(b)-new Date(a))/864e5);
@@ -325,6 +342,8 @@ $('btn-parent').onclick=()=>{FX.tap();openGate(()=>go('parent'))};
 function renderStart(){$('start-haathi').innerHTML=haathi('happy');if(S.profile)$('cap-start').textContent=`Hi ${S.profile.name}! Turn the volume up.`}
 function begin(){unlockAudio();FX.trumpet();if(!S.profile){go('setup');return}go('map');setTimeout(()=>say(['P_welcome',200,'P_map_hi'],null),600)}
 $('btn-start').onclick=begin;$('start-haathi').onclick=begin;
+$('kid-add').onclick=()=>{FX.tap();addKid()};
+{const b=$('btn-who');if(S.profile){const k=kidsIdx();b.hidden=false;b.textContent=`Playing as ${S.profile.name||'child'} (age ${S.profile.age}) · Change child or age`;b.onclick=()=>{FX.tap();openGate(()=>{go('parent');setTimeout(()=>{const p=$('kids-panel');if(p&&p.scrollIntoView)p.scrollIntoView({behavior:'smooth'})},80)})}}}
 let setupAge=4;
 function renderSetup(){const ac=$('agechips');ac.innerHTML='';[3,4,5,6,7].forEach(a=>{const b=document.createElement('button');b.textContent=a;b.setAttribute('aria-pressed',a===setupAge);b.onclick=()=>{setupAge=a;FX.tap();renderSetup()};ac.appendChild(b)})}
 $('btn-setup-done').onclick=()=>{unlockAudio();S.profile={name:$('in-name').value.trim()||'friend',age:setupAge,limit:+$('in-limit').value,created:today()};S.settings.consent=$('in-consent').checked;
@@ -1243,7 +1262,7 @@ async function aiPlan(){const z=$('ai-zone');let sample=null;try{sample=window.c
     const letters=S.intro.map(l=>`${l}: ${status(l)}, ${Math.round(accuracy(l)*100)}%`).join('; ');
     const prompt=`You are an early-years teacher in India. A child aged ${S.profile.age} uses a phonics, maths and writing app. Current data:\n${lines.join('\n')}\nLetters met: ${letters||'none'}.\nWrite a 7-day home plan for the parent: one short off-screen activity per day (5 to 10 minutes) using everyday Indian household items, aimed at the weakest skills, and one line per day on what to say. Plain text, numbered Day 1 to Day 7, under 220 words, no emoji, no em dashes, no diagnosis.`;
     try{const r=await sample(prompt,{onText:({text})=>{out.textContent=text}});out.textContent=r.text}catch(e){out.textContent=e&&e.code==='not_granted'?'Permission was not given, so no plan was made.':"Couldn't get a plan right now. Try again later."}}}
-function renderParent(){
+function renderParent(){renderKids();
   let wk=0;for(let i=0;i<7;i++){const dt=new Date();dt.setDate(dt.getDate()-i);wk+=S.minutes[dkey(dt)]||0}
   const stars=S.chapters.reduce((a,c)=>a+c.nodes.reduce((b,n)=>b+(n.stars||0),0),0),mast=ORDER.filter(l=>['mast','due'].includes(status(l))).length;
   $('p-stats').innerHTML=[[Math.round(S.minutes[today()]||0),'min today'],[Math.round(wk),'min this week'],[S.chapters.filter(c=>c.done).length,'chapters done'],[stars,'stars'],[S.intro.length,'letters met'],[mast,'sounds mastered']].map(([v,k])=>`<div class="stat"><b>${v}</b><span>${k}</span></div>`).join('');
@@ -1262,6 +1281,7 @@ function renderParent(){
   $('p-map').innerHTML=ORDER.map(l=>{const st=S.intro.includes(l)||S.intro.includes(SAME[l])?status(l):'none',lab={none:S.intro.includes(l)?'met':'not yet',prac:'practising',mast:'mastered',due:'review'}[st];return `<div class="scell st-${st}"><div class="l">${l}</div><div class="s">${lab}</div></div>`}).join('');
   $('ps-name').value=S.profile.name;$('ps-age').value=S.profile.age;$('ps-limit').value=S.profile.limit;$('ps-sfx').checked=S.settings.sfx!==false;$('ps-unlock').checked=!!S.settings.unlock;$('ps-consent').checked=!!S.settings.consent;renderLikes();
   renderStudio();resetZone();renderFeedback()}
+$('ps-save').addEventListener('click',()=>setTimeout(()=>{kidsIdx();renderKids()},0));
 $('ps-save').onclick=()=>{S.profile.name=$('ps-name').value.trim()||S.profile.name;const oldAge=S.profile.age;S.profile.age=+$('ps-age').value;if(S.profile.age!==oldAge)placeByAge();S.profile.limit=+$('ps-limit').value;S.settings.sfx=$('ps-sfx').checked;S.settings.unlock=$('ps-unlock').checked;S.settings.consent=$('ps-consent').checked;save();$('ps-saved').hidden=false;setTimeout(()=>$('ps-saved').hidden=true,1600)};
 function resetZone(){const z=$('reset-zone');z.innerHTML='<button class="pill-btn danger" id="p-reset">Reset all progress</button>';
   $('p-reset').onclick=()=>{z.innerHTML='<p>This deletes chapters, stars and skill levels (recordings are kept). It cannot be undone.</p><div class="row" style="justify-content:flex-start"><button class="pill-btn" id="r-no">Keep progress</button><button class="pill-btn danger" id="r-yes">Delete progress</button></div>';

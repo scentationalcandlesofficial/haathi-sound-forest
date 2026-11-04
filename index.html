@@ -351,6 +351,7 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 .eqn>span{font-family:var(--f-letter);font-weight:700}
 .learncard{background:#fff;border-radius:26px;box-shadow:0 6px 0 var(--shadow);padding:16px 22px;display:flex;flex-direction:column;align-items:center;gap:8px;max-width:520px}
 .cdot{display:block;width:clamp(56px,15vw,80px);aspect-ratio:1;border-radius:50%;border:3px solid #c9d6cc}
+.kids{display:flex;flex-direction:column;gap:8px}.kidrow{display:flex;align-items:center;gap:10px;background:#f0f6f2;border-radius:14px;padding:8px 12px}.kidrow b{flex:1;font-family:var(--f-display);font-size:18px}.kidrow.on{outline:3px solid var(--peacock)}
 .agebadge{font-family:var(--f-display);font-weight:700;font-size:12px;color:var(--leaf);background:var(--moss);border-radius:999px;padding:1px 8px}
 .orderrow{display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center}
 .orderrow i{font-style:normal;color:var(--ink-soft);font-size:20px}
@@ -365,6 +366,7 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
   <button class="haathi" id="start-haathi" aria-label="Start"></button>
   <h1>Haathi's Sound Forest</h1>
   <button class="tap-hint" id="btn-start">Tap to play</button>
+  <button class="pill-btn small" id="btn-who" hidden></button>
   <div class="caption" id="cap-start">Turn the volume up.</div>
   <button class="pill-btn small primary" id="btn-install" hidden>📲 Install the app</button>
   <div class="note" id="install-help" hidden style="max-width:420px;text-align:left"></div>
@@ -416,6 +418,11 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 <section class="screen parent" id="s-parent" hidden>
   <div class="topbar"><button class="round" data-back aria-label="Back to map"></button><h2>Grown-ups</h2></div>
   <div class="p-grid">
+    <div class="panel" style="grid-column:1/-1" id="kids-panel"><h3>Children on this phone</h3>
+      <p class="note">Each child has their own age, level and progress. Tap "Play as" to switch, or add another child (for example an older sibling).</p>
+      <div id="kids-list" class="kids"></div>
+      <button class="pill-btn primary" id="kid-add" style="align-self:flex-start">+ Add another child</button>
+    </div>
     <div class="panel" style="grid-column:1/-1" id="likes-panel"><h3>What your child enjoys</h3><p id="p-likes"></p><p class="note" id="p-global" hidden></p></div>
     <div class="panel" style="grid-column:1/-1"><h3>Share this game</h3>
       <p>Send the game to other parents. It opens in any phone browser, no sign-up.</p>
