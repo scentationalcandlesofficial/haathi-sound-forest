@@ -64,9 +64,9 @@ const SK={
  more:{sub:'Maths',name:'Which has more',levels:[5,10,20,30],lab:v=>'to '+v,unlock:()=>lv('count')>=1,node:v=>({t:'more',max:v})},
  next:{sub:'Maths',name:'Before and after',levels:[10,20,30,50,100],lab:v=>'to '+v,unlock:()=>lv('count')>=1,node:v=>({t:'next',max:v})},
  bigger:{sub:'Maths',name:'Bigger number',levels:[10,20,30,50,100],lab:v=>'to '+v,unlock:()=>lv('numfind')>=1,node:v=>({t:'bigger',max:v})},
- missing:{sub:'Maths',name:'Missing number',levels:[10,20,30,50,100],lab:v=>'to '+v,unlock:()=>pr('next')>=.6&&n_('next')>=3,node:v=>({t:'missing',max:v})},
- add:{sub:'Maths',name:'Adding',levels:[5,10,20,30,50],lab:v=>'within '+v,unlock:()=>lv('count')>=1&&pr('more')>=.6&&n_('more')>=3,node:v=>({t:'add',max:v})},
- takeaway:{sub:'Maths',name:'Taking away',levels:[5,10,20,30,50],lab:v=>'within '+v,unlock:()=>pr('add')>=.6&&n_('add')>=3,node:v=>({t:'takeaway',max:v})},
+ missing:{sub:'Maths',name:'Missing number',levels:[10,20,30,50,100],lab:v=>'to '+v,unlock:()=>((S.profile&&S.profile.age)||4)>=5||(pr('next')>=.6&&n_('next')>=3),node:v=>({t:'missing',max:v})},
+ add:{sub:'Maths',name:'Adding',levels:[5,10,20,30,50],lab:v=>'within '+v,unlock:()=>((S.profile&&S.profile.age)||4)>=5||(lv('count')>=1&&pr('more')>=.6&&n_('more')>=3),node:v=>({t:'add',max:v})},
+ takeaway:{sub:'Maths',name:'Taking away',levels:[5,10,20,30,50],lab:v=>'within '+v,unlock:()=>((S.profile&&S.profile.age)||4)>=5||(pr('add')>=.6&&n_('add')>=3),node:v=>({t:'takeaway',max:v})},
  share:{sub:'Maths',name:'Sharing fairly',levels:[6,10,20],lab:v=>'up to '+v,unlock:()=>lv('count')>=1,node:v=>({t:'share',max:v})},
  shop:{sub:'Maths',name:'Mela shop (coins)',levels:[5,10,11],lab:v=>v===11?'₹1, ₹2, ₹5 coins':'₹1 coins to '+v,unlock:()=>lv('numfind')>=1,node:v=>({t:'shop',lvl:v})},
  wpre:{sub:'Writing',name:'Pre-writing patterns',levels:['line','circle','cross','zigzag','wave','loops','cups','bridges','mountains','stairs','rainbow','spiral'],lab:v=>v,unlock:()=>true,node:v=>({t:'wpre',k:v})},
@@ -74,34 +74,36 @@ const SK={
  wletter:{sub:'Writing',name:'Small letters',levels:[0],lab:()=>'letters met so far',unlock:()=>true,node:()=>({t:'wletter',l:weakestLetter(true)})},
  wnum:{sub:'Writing',name:'Writing numbers',levels:[5,10,20,30,50,99],lab:v=>'1 to '+v,unlock:()=>true,node:v=>({t:'wnum',n:ri(Math.max(1,v>10?11:1),v)})},
  wcap:{sub:'Writing',name:'Big letters',levels:[0],lab:()=>'capitals of letters met',unlock:()=>S.intro.length>=6,node:()=>({t:'wcap',l:rnd(S.intro)})},
- wname:{sub:'Writing',name:'Writing my name',levels:[0],lab:()=>'own name',unlock:()=>S.intro.length>=4&&n_('wletter')>=3,node:()=>({t:'wname'})},
- wword:{sub:'Writing',name:'Writing words',levels:[0],lab:()=>'3-letter words',unlock:()=>S.intro.length>=6&&pr('wletter')>=.6,node:()=>({t:'wword',w:pickWord()})},
+ wname:{sub:'Writing',name:'Writing my name',levels:[0],lab:()=>'own name',unlock:()=>((S.profile&&S.profile.age)||4)>=5||S.intro.length>=4&&n_('wletter')>=3,node:()=>({t:'wname'})},
+ wword:{sub:'Writing',name:'Writing words',levels:[0],lab:()=>'3-letter words',unlock:()=>((S.profile&&S.profile.age)||4)>=6||S.intro.length>=6&&pr('wletter')>=.6,node:()=>({t:'wword',w:pickWord()})},
  dots:{sub:'Writing',name:'Dot-to-dot',levels:[5,9,10],lab:v=>'up to '+v+' dots',unlock:()=>true,node:v=>({t:'dots',max:v})},
  tens:{sub:'Maths',name:'Tens and ones (place value)',levels:[20,50,99],lab:v=>'to '+v,unlock:()=>lv('count')>=3||((S.profile&&S.profile.age)||4)>=5,node:v=>({t:'tens',max:v})},
- fewer:{sub:'Maths',name:'Which has fewer',levels:[5,10,20,30],lab:v=>'to '+v,unlock:()=>true,node:v=>({t:'fewer',max:v})},
+ clock:{sub:'Maths',name:'Telling time',levels:[0,1],lab:v=>['o\'clock','o\'clock and half past'][v],unlock:()=>((S.profile&&S.profile.age)||4)>=6||lv('count')>=4,node:v=>({t:'clock',lvl:v})},
+ tenmore:{sub:'Maths',name:'10 more, 10 less',levels:[50,99],lab:v=>'to '+v,unlock:()=>((S.profile&&S.profile.age)||4)>=6||lv('tens')>=1,node:v=>({t:'tenmore',max:v})},
+ fewer:{sub:'Maths',name:'Which has fewer',levels:[5,10,20,30],lab:v=>'to '+v,unlock:()=>((S.profile&&S.profile.age)||4)>=4||n_('more')>=3,node:v=>({t:'fewer',max:v})},
  smaller:{sub:'Maths',name:'Smaller number',levels:[10,20,30,50,100],lab:v=>'0 to '+v,unlock:()=>lv('numfind')>=1,node:v=>({t:'smaller',max:v})},
  matchgroup:{sub:'Maths',name:'Match number to group',levels:[5,10,15],lab:v=>'to '+v,unlock:()=>true,node:v=>({t:'matchgroup',max:v})},
- maketen:{sub:'Maths',name:'Make 5 and make 10',levels:[5,10],lab:v=>'make '+v,unlock:()=>lv('count')>=1,node:v=>({t:'maketen',max:v})},
+ maketen:{sub:'Maths',name:'Make 5 and make 10',levels:[5,10],lab:v=>'make '+v,unlock:()=>((S.profile&&S.profile.age)||4)>=5||n_('add')>=3,node:v=>({t:'maketen',max:v})},
  beats:{sub:'Maths',name:'Counting drum beats',levels:[4,6,8],lab:v=>'up to '+v,unlock:()=>true,node:v=>({t:'beats',max:v})},
- rocket:{sub:'Maths',name:'Counting down',levels:[5,10],lab:v=>'from '+v,unlock:()=>true,node:v=>({t:'rocket',max:v})},
+ rocket:{sub:'Maths',name:'Counting down',levels:[5,10],lab:v=>'from '+v,unlock:()=>((S.profile&&S.profile.age)||4)>=4||lv('count')>=1,node:v=>({t:'rocket',max:v})},
  order:{sub:'Maths',name:'Numbers in order',levels:[5,10,15],lab:v=>'1 to '+v,unlock:()=>true,node:v=>({t:'order',max:v})},
- frog:{sub:'Maths',name:'Number line hops',levels:[10,20],lab:v=>'0 to '+v,unlock:()=>lv('count')>=1,node:v=>({t:'frog',max:v})},
- skip:{sub:'Maths',name:'Skip counting',levels:[10,5,2],lab:v=>'in '+v+'s',unlock:()=>lv('count')>=2,node:v=>({t:'skip',max:v})},
- hiding:{sub:'Maths',name:'Hiding ladoos (number bonds)',levels:[5,10],lab:v=>'within '+v,unlock:()=>lv('count')>=1,node:v=>({t:'hiding',max:v})},
+ frog:{sub:'Maths',name:'Number line hops',levels:[10,20],lab:v=>'0 to '+v,unlock:()=>((S.profile&&S.profile.age)||4)>=5||n_('add')>=3,node:v=>({t:'frog',max:v})},
+ skip:{sub:'Maths',name:'Skip counting',levels:[10,5,2],lab:v=>'in '+v+'s',unlock:()=>((S.profile&&S.profile.age)||4)>=5||lv('count')>=2,node:v=>({t:'skip',max:v})},
+ hiding:{sub:'Maths',name:'Hiding ladoos (number bonds)',levels:[5,10],lab:v=>'within '+v,unlock:()=>((S.profile&&S.profile.age)||4)>=5||n_('add')>=3,node:v=>({t:'hiding',max:v})},
  oddshape:{sub:'Maths',name:'Odd shape out',levels:[0],lab:()=>'shapes',unlock:()=>true,node:()=>({t:'oddshape'})},
  sortcolour:{sub:'Maths',name:'Sorting by colour',levels:[0],lab:()=>'2 colours',unlock:()=>true,node:()=>({t:'sortcolour'})},
  size:{sub:'Maths',name:'Bigger and smaller',levels:[0],lab:()=>'size',unlock:()=>true,node:()=>({t:'size'})},
  heavy:{sub:'Maths',name:'Heavy and light',levels:[0],lab:()=>'weight',unlock:()=>true,node:()=>({t:'heavy'})},
  queue:{sub:'Maths',name:'First and last',levels:[0],lab:()=>'position',unlock:()=>true,node:()=>({t:'queue'})},
  money:{sub:'Maths',name:'Which purse has more',levels:[5,11],lab:v=>v===11?'₹1, ₹2, ₹5':'₹1 coins',unlock:()=>lv('numfind')>=1,node:v=>({t:'money',max:v})},
- double:{sub:'Maths',name:'Doubles',levels:[3,5],lab:v=>'up to '+v+'+'+v,unlock:()=>n_('add')>=3,node:v=>({t:'double',max:v})},
+ double:{sub:'Maths',name:'Doubles',levels:[3,5],lab:v=>'up to '+v+'+'+v,unlock:()=>((S.profile&&S.profile.age)||4)>=5||n_('add')>=3,node:v=>({t:'double',max:v})},
  countshapes:{sub:'Maths',name:'Counting shapes',levels:[5,8],lab:v=>'up to '+v,unlock:()=>true,node:v=>({t:'countshapes',max:v})},
  maze:{sub:'Writing',name:'Road maze',levels:[0],lab:()=>'pencil control',unlock:()=>true,node:()=>({t:'maze'})},
  tracepic:{sub:'Writing',name:'Tracing pictures',levels:[0],lab:()=>'outlines',unlock:()=>true,node:()=>({t:'tracepic'})},
  drawshapes:{sub:'Writing',name:'Drawing with shapes',levels:[0],lab:()=>'pictures',unlock:()=>lv('wpre')>=1,node:()=>({t:'drawshapes'})},
  finishpic:{sub:'Writing',name:'Finish the picture',levels:[0],lab:()=>'mirror half',unlock:()=>lv('wpre')>=1,node:()=>({t:'finishpic'})},
- wrainbow:{sub:'Writing',name:'Rainbow writing',levels:[0],lab:()=>'letters met',unlock:()=>S.intro.length>=2,node:()=>({t:'wrainbow'})},
- wheard:{sub:'Writing',name:'Write what you hear',levels:[0],lab:()=>'letters met',unlock:()=>S.intro.length>=4,node:()=>({t:'wheard'})},
+ wrainbow:{sub:'Writing',name:'Rainbow writing',levels:[0],lab:()=>'letters met',unlock:()=>((S.profile&&S.profile.age)||4)>=4||n_('wletter')>=4,node:()=>({t:'wrainbow'})},
+ wheard:{sub:'Writing',name:'Write what you hear',levels:[0],lab:()=>'letters met',unlock:()=>((S.profile&&S.profile.age)||4)>=5||(n_('wletter')>=6&&pr('wletter')>=.7),node:()=>({t:'wheard'})},
  countwrite:{sub:'Writing',name:'Count and write',levels:[5,9],lab:v=>'1 to '+v,unlock:()=>true,node:v=>({t:'countwrite',max:v})},
  wcopy:{sub:'Writing',name:'Copying letters and numbers',levels:[0],lab:()=>'copy',unlock:()=>n_('wletter')>=2,node:()=>({t:'wcopy'})},
  wlines:{sub:'Writing',name:'Straight lines',levels:[0],lab:()=>'dot to dot',unlock:()=>true,node:()=>({t:'wlines'})},
@@ -122,14 +124,21 @@ function learn(id,ok){if(!SK[id])return;const s=st(id);s.n++;s.ln++;s.p=s.p+.25*
   else if(s.lvl>0&&((s.ln>=3&&s.p<.35)||s.miss>=3)){s.lvl--;s.ln=0;s.p=.5;s.miss=0}
   save()}
 /* ---- starting point by age, so a 4-year-old starts at 1-10, not 1-3 ---- */
-const PLACE={3:{count:0,numfind:0,matchgroup:0},4:{count:1,numfind:1,dice:1,more:1,matchgroup:1,wnum:1},
- 5:{count:3,numfind:2,dice:2,more:2,next:1,bigger:1,smaller:1,add:1,takeaway:0,matchgroup:2,wnum:2,beats:1,order:1,rocket:1},
- 6:{count:4,numfind:3,dice:2,more:3,next:2,bigger:2,smaller:2,missing:1,add:2,takeaway:1,matchgroup:2,wnum:3,tens:1,skip:1,maketen:1,frog:1,money:1,double:1,beats:2,order:2,rocket:1,countwrite:1},
- 7:{count:4,numfind:5,dice:2,more:3,next:4,bigger:4,smaller:4,missing:3,add:4,takeaway:3,matchgroup:2,wnum:5,tens:2,skip:2,maketen:1,frog:1,money:1,double:1,beats:2,order:2,rocket:1,countwrite:1}};
-const LETTERS_BY_AGE={3:3,4:6,5:10,6:14,7:18};
+/* Starting levels by age. Maths follows Head Start ELOF (3-5), US Kindergarten (5-6) and Grade 1 (6-7) standards;
+   writing follows typical pre-writing milestones (cross ~4y1m, square ~4y6m, triangle ~5y3m). Levels then adapt to the child. */
+const PLACE={
+ 3:{count:0,numfind:0,dice:0,matchgroup:0,order:0,beats:0,wpre:0,dots:0},
+ 4:{count:1,numfind:1,dice:1,more:0,fewer:0,next:0,bigger:0,smaller:0,matchgroup:1,order:0,rocket:0,beats:0,shape:1,pattern:1,wnum:1,wpre:3,dots:0,countshapes:0},
+ 5:{count:3,numfind:2,dice:2,more:1,fewer:1,next:1,bigger:1,smaller:1,missing:1,add:1,takeaway:1,matchgroup:2,order:1,rocket:1,beats:1,hiding:1,maketen:1,shop:1,
+    tens:0,skip:0,shape:2,pattern:2,length:1,countshapes:1,wnum:2,wpre:6,dots:1,countwrite:1},
+ 6:{count:4,numfind:4,dice:2,more:3,fewer:3,next:3,bigger:3,smaller:3,missing:3,add:2,takeaway:2,matchgroup:2,order:2,rocket:1,beats:2,hiding:1,maketen:1,shop:2,share:1,
+    tens:1,skip:1,frog:1,money:1,double:1,clock:0,tenmore:0,shape:3,pattern:2,length:1,countshapes:1,wnum:3,wpre:11,dots:2,countwrite:1},
+ 7:{count:4,numfind:5,dice:2,more:3,fewer:3,next:4,bigger:4,smaller:4,missing:4,add:4,takeaway:4,matchgroup:2,order:2,rocket:1,beats:2,hiding:1,maketen:1,shop:2,share:2,
+    tens:2,skip:2,frog:1,money:1,double:1,clock:1,tenmore:1,shape:3,pattern:2,length:1,countshapes:1,wnum:5,wpre:11,dots:2,countwrite:1}};
+const LETTERS_BY_AGE={3:3,4:6,5:10,6:18,7:18};
 function placeByAge(){const age=Math.min(7,Math.max(3,(S.profile&&S.profile.age)||4));const P=PLACE[age];
   Object.keys(P).forEach(id=>{if(!SK[id])return;const s=st(id);const tgt=Math.min(P[id],SK[id].levels.length-1);if(s.lvl<tgt){s.lvl=tgt;s.ln=0;s.p=Math.max(s.p,.55)}});
-  const want=LETTERS_BY_AGE[age];while(S.intro.length<want){const l=LET.find(x=>!S.intro.includes(x));if(!l)break;S.intro.push(l)}S.placed=2;save()}
+  const want=LETTERS_BY_AGE[age];while(S.intro.length<want){const l=LET.find(x=>!S.intro.includes(x));if(!l)break;S.intro.push(l)}S.placed=3;save()}
 /* shuffled deck: every value comes up once before any repeats */
 const DECKS={};
 function deck(key,pool){let d=DECKS[key];const sig=pool.length+':'+pool[0]+':'+pool[pool.length-1];if(!d||d.sig!==sig||!d.left.length){const last=d&&d.lastV;d={sig,left:shuffle(pool),lastV:last};if(d.left.length>1&&d.left[0]===last)d.left.push(d.left.shift());DECKS[key]=d}const v=d.left.shift();d.lastV=v;return v}
@@ -381,13 +390,13 @@ function setRounds(){const r=$('rounds');r.innerHTML='';for(let i=0;i<RUN.rounds
 function actions(list){const a=$('actions');a.innerHTML='';list.forEach(([cls,label,fn,icon,id])=>{const b=document.createElement('button');b.className='big-btn '+cls;if(id)b.id=id;b.innerHTML=(icon||'')+label;b.onclick=()=>{unlockAudio();FX.tap();fn()};a.appendChild(b)})}
 $('play-hear').onclick=()=>{unlockAudio();FX.tap();RUN&&RUN.prompt&&RUN.prompt()};
 $('play-back').onclick=()=>{FX.tap();const f=RUN&&RUN.from;RUN=null;f&&f.corner?openCorner(f.corner,f.sec):go('map')};
-const TITLES={tens:'Tens and ones',bigsmall:'Big and small letters',sameletter:'Same letter',oddsound:'Odd one out',samesound:'Same first sound?',picletter:'Picture to letter',letterpic:'Letter to picture',fishing:'Letter fishing',nextletter:'Next letter',missingletter:'Missing letter',sortsound:'Sound baskets',memory:'Memory pairs',rhyme:'Rhyme time',buildword:'Build a word',firstmissing:'First letter',hunt:'Letter hunt',mole:'Letter moles',hidden:'Hidden letter',stones:'River stones',shadow:'Letter shadows',
+const TITLES={tens:'Tens and ones',clock:'Telling time',tenmore:'10 more, 10 less',bigsmall:'Big and small letters',sameletter:'Same letter',oddsound:'Odd one out',samesound:'Same first sound?',picletter:'Picture to letter',letterpic:'Letter to picture',fishing:'Letter fishing',nextletter:'Next letter',missingletter:'Missing letter',sortsound:'Sound baskets',memory:'Memory pairs',rhyme:'Rhyme time',buildword:'Build a word',firstmissing:'First letter',hunt:'Letter hunt',mole:'Letter moles',hidden:'Hidden letter',stones:'River stones',shadow:'Letter shadows',
  fewer:'Which has fewer?',smaller:'Smaller number',matchgroup:'Match the number',maketen:'Make ten',beats:'Drum beats',rocket:'Rocket countdown',order:'Numbers in order',frog:'Frog hops',skip:'Skip counting',hiding:'Hiding ladoos',oddshape:'Odd shape out',sortcolour:'Colour baskets',size:'Big and small',heavy:'Heavy and light',queue:'First and last',money:'More money?',double:'Butterfly doubles',countshapes:'Count the shapes',
  maze:'Road maze',tracepic:'Trace a picture',drawshapes:'Draw with shapes',finishpic:'Finish the picture',wrainbow:'Rainbow writing',wheard:'Write what you hear',countwrite:'Count and write',wcopy:'Copy it',wlines:'Straight lines',joinmatch:'Join the pairs',colour:'Colouring',surprise:'Surprise!',
  meet:'Meet a letter',bubbles:'Sound Bubbles',snack:"Haathi's Snack",count:'Count with me',numfind:'Number Balloons',more:'Which has more?',add:'Put them together',takeaway:'Monkey takes away',shape:'Shape Hunt',pattern:'What comes next?',dice:'Quick look',next:'Before and after',bigger:'Bigger number',missing:'Missing number',share:'Share fairly',shop:'Mela shop',length:'Long and short',
   wpre:'Draw patterns',wshape:'Draw shapes',wletter:'Write a letter',wcap:'Big letter',wnum:'Write a number',wname:'Write my name',wword:'Write a word',dots:'Dot-to-dot',slate:'Magic slate',friend:'A new friend!'};
 function startRun(n,from){
-  let rounds=n.rounds||ROUNDS[n.t]||DEFAULT_ROUNDS;if(SUBJ(n)==='write'&&rounds>2&&((S.fbPrefs.write||3)<=2||likeScore(n.t)<-.4))rounds=Math.max(2,rounds-1);if(n.t==='wname')rounds=Math.min(8,nameChars().length);
+  let rounds=n.rounds||ROUNDS[n.t]||(((S.profile&&S.profile.age)||4)<=3?5:DEFAULT_ROUNDS);if(SUBJ(n)==='write'&&rounds>2&&((S.fbPrefs.write||3)<=2||likeScore(n.t)<-.4))rounds=Math.max(2,rounds-1);if(n.t==='wname')rounds=Math.min(8,nameChars().length);
   RUN={node:n,from,round:0,rounds,ok:[],prompt:null};
   go('play');$('play-title').textContent=n.title||TITLES[n.t];$('actions').innerHTML='';$('cap').textContent='';$('play-body').innerHTML='';
   let delay=250;if(from.first){const ch=S.chapters.find(c=>c.id===from.chapter);say(ch&&ch.id%3===0?[REGIONS[ch.region].clip,200,'P_chapter']:['P_chapter'],null);delay=1700}
@@ -635,14 +644,14 @@ const PREP_TXT={line:'Draw a line. Down, down, down!',circle:'Round and round!',
 /* compose several glyphs side by side in one writing box */
 function joinGlyphs(glyphs,scale,step){const out=[];glyphs.forEach((g,i)=>g.forEach(st=>out.push(st.map(([x,y])=>[x*scale+i*step,y]))));return out}
 function numStrokes(v){const ds=String(v).split('');if(ds.length===1)return {s:DIG[v],w:100};return {s:joinGlyphs(ds.map(d=>DIG[d]),.62,52),w:110}}
-const MODES=['full','faint','own'];
+const MODES=['full','faint','own'];const modeFor=r=>(((S.profile&&S.profile.age)||4)<=3?['full','full','faint']:MODES)[r];
 const MODE_CAP={full:'Watch the dot, then follow it with your finger.',faint:'Again, with fewer helper lines.',own:'Now on your own! Start at the green dot.'};
 const MODE_CLIP={full:'P_watch_dot',faint:'P_fewer_helpers',own:'P_your_own'};
 ACT.wpre=(n,round)=>{const k=round<2?n.k:(n._k2||(n._k2=fresh('wp2',PRE_ALL.filter(x=>x!==n.k))));const mode=round%2===0?'full':'faint';if(round===3)n._k2=null;writeGlyph(PREP[k],{w:100,mode,intro:[mode==='full'?PREP_CLIP[k]:'P_fewer_helpers'],cap:mode==='full'?PREP_TXT[k]:MODE_CAP.faint,lines:false,done:ok=>{learnN(n,ok);roundDone(ok)}})};
 ACT.wshape=(n,round)=>{const k=round<2?n.k:fresh('ws2',['square','triangle','rectangle','star'].filter(x=>x!==n.k));const mode=round===1?'faint':'full';writeGlyph(PREP[k],{w:100,mode,intro:mode==='full'?['P_draw_shape',W(k)]:['P_fewer_helpers'],cap:`Draw a ${k}!`,lines:false,done:ok=>{learnN(n,ok);roundDone(ok)}})};
-ACT.wletter=(n,round)=>{const l=n.l,mode=MODES[round];writeGlyph(LS[l],{w:100,mode,intro:[MODE_CLIP[mode]],cap:`Write ${l}. `+MODE_CAP[mode],lines:true,done:ok=>{learnN(Object.assign({},n,{skill:'wletter'}),ok);if(round===2)airStep(l,sndOf(l),ok);else roundDone(ok)}})};
-ACT.wcap=(n,round)=>{const L=n.l.toUpperCase(),mode=MODES[round];writeGlyph(CS[L],{w:100,mode,intro:round===0?['P_capital',L_(n.l)]:[MODE_CLIP[mode]],cap:`Big ${L}. `+MODE_CAP[mode],lines:true,done:ok=>{learnN(n,ok);if(round===2)airStep(L,[L_(n.l)],ok);else roundDone(ok)}})};
-ACT.wnum=(n,round)=>{const v=n.n,mode=MODES[round],g=numStrokes(v);writeGlyph(g.s,{w:g.w,mode,intro:round===0?['P_draw_number',N(v)]:[MODE_CLIP[mode]],cap:`Write ${v}. `+MODE_CAP[mode],lines:false,done:ok=>{learnN(n,ok);if(round===2)airStep(String(v),[N(v)],ok);else roundDone(ok)}})};
+ACT.wletter=(n,round)=>{const l=n.l,mode=modeFor(round);writeGlyph(LS[l],{w:100,mode,intro:[MODE_CLIP[mode]],cap:`Write ${l}. `+MODE_CAP[mode],lines:true,done:ok=>{learnN(Object.assign({},n,{skill:'wletter'}),ok);if(round===2)airStep(l,sndOf(l),ok);else roundDone(ok)}})};
+ACT.wcap=(n,round)=>{const L=n.l.toUpperCase(),mode=modeFor(round);writeGlyph(CS[L],{w:100,mode,intro:round===0?['P_capital',L_(n.l)]:[MODE_CLIP[mode]],cap:`Big ${L}. `+MODE_CAP[mode],lines:true,done:ok=>{learnN(n,ok);if(round===2)airStep(L,[L_(n.l)],ok);else roundDone(ok)}})};
+ACT.wnum=(n,round)=>{const v=n.n,mode=modeFor(round),g=numStrokes(v);writeGlyph(g.s,{w:g.w,mode,intro:round===0?['P_draw_number',N(v)]:[MODE_CLIP[mode]],cap:`Write ${v}. `+MODE_CAP[mode],lines:false,done:ok=>{learnN(n,ok);if(round===2)airStep(String(v),[N(v)],ok);else roundDone(ok)}})};
 function nameChars(){return ((S.profile&&S.profile.name)||'').replace(/[^A-Za-z]/g,'').slice(0,8).split('')}
 ACT.wname=(n,round)=>{const cs=nameChars();if(!cs.length){roundDone(true);return}const c=cs[round];const g=round===0?CS[c.toUpperCase()]:LS[c.toLowerCase()];
   const shown=cs.map((x,i)=>`<span style="color:${i<round?'var(--leaf-2)':i===round?'var(--c-write)':'#c9d6cc'}">${i===0?x.toUpperCase():x.toLowerCase()}</span>`).join('');
@@ -907,6 +916,15 @@ ACT.countshapes=(n)=>{const ks=['circle','square','triangle','star','heart'];con
   RUN.prompt=()=>say(['P_hm_'+t],`How many ${t}s? Tap them to count.`);RUN.prompt();let wrong=false;const L=once(ok=>learnN(n,ok));
   numChoices(c,n.max+2,$('nc'),(b,x)=>{const ok=x===c;L(ok);if(ok){b.classList.add('right');FX.chime();say([N(c),250,rnd(PRAISE)],`${c} ${t}s!`).then(()=>roundDone(!wrong))}else{wrong=true;FX.boing();anim(b,'wiggle',500);say(['P_count_again'],'Tap each one and count.')}})};
 
+function clockSVG(h,m){const ha=((h%12)+m/60)*30,ma=m*6;const num=Array.from({length:12},(_,i)=>{const a=(i+1)*30*Math.PI/180;return `<text x="${50+38*Math.sin(a)}" y="${53.5-38*Math.cos(a)}" text-anchor="middle" font-size="9" font-family="Baloo 2,sans-serif" font-weight="700" fill="#173326">${i+1}</text>`}).join('');
+  return `<svg viewBox="0 0 100 100" style="width:min(220px,56vw)"><circle cx="50" cy="50" r="47" fill="#fff" stroke="#1f6b4a" stroke-width="4"/>${num}<line x1="50" y1="50" x2="${50+22*Math.sin(ha*Math.PI/180)}" y2="${50-22*Math.cos(ha*Math.PI/180)}" stroke="#c8364b" stroke-width="5" stroke-linecap="round"/><line x1="50" y1="50" x2="${50+34*Math.sin(ma*Math.PI/180)}" y2="${50-34*Math.cos(ma*Math.PI/180)}" stroke="#147a8a" stroke-width="3" stroke-linecap="round"/><circle cx="50" cy="50" r="3" fill="#173326"/></svg>`}
+ACT.clock=(n)=>{const half=n.lvl>=1&&Math.random()<.5;const h=deck('clk',range(1,12));const m=half?30:0;const lab=(hh,mm)=>`${hh}:${mm?'30':'00'}`;
+  const opts=[[h,m],[h%12+1,m],[h,half?0:30]].concat([[((h+5)%12)+1,m]]);const uniq=[];opts.forEach(o=>{if(!uniq.some(u=>u[0]===o[0]&&u[1]===o[1]))uniq.push(o)});
+  pickRound({top:clockSVG(h,m)+'<div class="card-note">Short red hand: hour. Long blue hand: minutes.</div>',items:shuffle(uniq.slice(0,nopt())).map(([hh,mm])=>({h:`<span style="font-family:var(--f-display);font-weight:800;font-size:clamp(26px,7vw,36px);color:var(--c-number)">${lab(hh,mm)}</span>`,v:hh*100+mm,label:lab(hh,mm)})),
+    ans:h*100+m,say:['P_what_time'],cap:'What time is it?',right:[`T_${h}_${m?'30':'00'}`,250,rnd(PRAISE)],rightCap:half?`Half past ${h}`:`${h} o'clock`,wrong:()=>['P_short_hand']})};
+ACT.tenmore=(n)=>{const more=Math.random()<.5;const v=deck('tm'+n.max,more?range(1,n.max-10):range(11,n.max));const ans=more?v+10:v-10;
+  pickNum({top:`${blocksHTML(v)}<div class="eqn"><span>${v}</span><span>${more?'+':'−'}</span><span>10</span><span>=</span><span>?</span></div>`,ans,max:n.max,lo:1,say:[more?'P_ten_more':'P_ten_less',N(v)],cap:`What is ten ${more?'more':'less'} than ${v}?`,right:[N(ans),250,rnd(PRAISE)],rightCap:`${v} ${more?'+':'−'} 10 = ${ans}. Only the tens changed!`,node:n})};
+
 /* ---------- WRITING ---------- */
 Object.assign(PREP,{
  spiral:[Array.from({length:120},(_,i)=>{const t=i/119*5*Math.PI;const r=3+t*2.3;return [50+r*Math.cos(t),58+r*Math.sin(t)]})],
@@ -978,7 +996,8 @@ const GICON={learn:'📖',find:'🔍',odd:'🙃',colour:'🎨',memory:'🃏',sou
 DSC.sections.forEach(s=>{SK['d_'+s.id]={sub:'Discover',name:s.name,levels:[0,1,2],lab:v=>['starter set','more items','all items'][v],unlock:()=>ageNow()>=s.age,node:()=>dNode(s.id)}});
 function dPool(id){const s=DSEC[id];const sz=[6,10,99][Math.min(2,lv('d_'+id))]+(ageNow()>=5?4:0);return s.items.slice(0,Math.max(4,sz)).map(i=>i.k)}
 function gLabel(g){const [t,a]=g.split(':');if(t==='sort')return DSC.sort[a].name;if(t==='match')return DSC.match[a].name;if(t==='order')return DSC.order[a].name;return GLABEL[t]}
-function dNode(id,g){const s=DSEC[id];if(!g){const tried=S.sk['d_'+id]&&S.sk['d_'+id].n;const gs=s.games.filter(x=>x!=='learn');g=!tried&&s.games.includes('learn')?'learn':fresh('dg'+id,gs.length?gs:s.games)}
+const GAME_AGE={'order:months':6};const dGames=s=>s.games.filter(g=>S.settings.unlock||ageNow()>=(GAME_AGE[g]||0));
+function dNode(id,g){const s=DSEC[id];if(!g){const tried=S.sk['d_'+id]&&S.sk['d_'+id].n;const gs=dGames(s).filter(x=>x!=='learn');g=!tried&&s.games.includes('learn')?'learn':fresh('dg'+id,gs.length?gs:s.games)}
   const [t,arg]=g.split(':');const n={t:'d_'+t,sec:id,arg,skill:'d_'+id,title:s.name+': '+gLabel(g)};
   if(t==='learn')n.rounds=Math.min(8,dPool(id).length);if(t==='memory'||t==='sort')n.rounds=1;if(t==='order')n.rounds=(DSC.order[arg].steps.length>4?3:2);if(t==='quiz')n.rounds=Math.min(8,(DSC.quiz[id]||[]).length);
   return n}
@@ -1044,7 +1063,7 @@ function openDiscover(secId){const b=$('corner-body');b.innerHTML='';
   const hero=document.createElement('div');hero.className='learncard';hero.style.cssText='flex-direction:row;gap:10px;flex-wrap:wrap;justify-content:center;max-width:640px';
   hero.innerHTML=s.items.slice(0,12).map(i=>`<span style="font-size:34px">${i.e}</span>`).join('');b.appendChild(hero);
   const g=document.createElement('div');g.className='tiles';b.appendChild(g);
-  s.games.forEach(gm=>{const t0=gm.split(':')[0];const t=document.createElement('button');t.className='tile';t.innerHTML=`<div class="ico">${GICON[t0]}</div><span>${gLabel(gm)}</span>`;
+  dGames(s).forEach(gm=>{const t0=gm.split(':')[0];const t=document.createElement('button');t.className='tile';t.innerHTML=`<div class="ico">${GICON[t0]}</div><span>${gLabel(gm)}</span>`;
     t.onclick=()=>{unlockAudio();FX.tap();startRun(dNode(secId,gm),{corner:'discover',sec:secId})};g.appendChild(t)});
 }
 
@@ -1054,7 +1073,7 @@ const CORNER={
   ['oddsound','Odd one out','🙃'],['fishing','Letter fishing','🐟'],['stones','River stones','🪨'],['mole','Letter moles','🐹'],['hunt','Letter hunt','🔍'],['sortsound','Sound baskets','🧺'],['memory','Memory pairs','🃏'],
   ['bigsmall','Big and small','Aa'],['sameletter','Same letter','b d'],['shadow','Letter shadows','🌑'],['hidden','Hidden letter','🍃'],['nextletter','Next letter','abc?'],['missingletter','Missing letter','a_c'],
   ['rhyme','Rhyme time','🎵'],['firstmissing','First letter','_at'],['buildword','Build a word','c-a-t']],
- numbers:[['count','Count with me','123'],['tens','Tens and ones','▮▮▪'],['numfind','Number balloons','🎈'],['dice','Quick look','⚂'],['matchgroup','Match the number','3=•••'],['order','Numbers in order','1→9'],['rocket','Rocket countdown','🚀'],
+ numbers:[['count','Count with me','123'],['tens','Tens and ones','▮▮▪'],['tenmore','10 more, 10 less','±10'],['clock','Telling time','🕒'],['numfind','Number balloons','🎈'],['dice','Quick look','⚂'],['matchgroup','Match the number','3=•••'],['order','Numbers in order','1→9'],['rocket','Rocket countdown','🚀'],
   ['beats','Drum beats','🥁'],['more','Which has more?','>'],['fewer','Which has fewer?','<'],['bigger','Bigger number','9>4'],['smaller','Smaller number','2<7'],['next','Before and after','→'],['missing','Missing number','4_6'],
   ['skip','Skip counting','10,20'],['frog','Frog hops','🐸'],['add','Adding','+'],['takeaway','Taking away','−'],['double','Butterfly doubles','🦋'],['hiding','Hiding ladoos','🥣'],['maketen','Make 5 and 10','▦'],
   ['share','Share fairly','½'],['shop','Mela shop','₹'],['money','More money?','👛'],['shape','Shape hunt','▲'],['countshapes','Count the shapes','⭐'],['oddshape','Odd shape out','◆'],['pattern','Patterns','•◦•'],
@@ -1183,7 +1202,7 @@ $('btn-install').onclick=async()=>{FX.tap();
 refreshInstall();
 
 /* ======================= BOOT ======================= */
-if(S.profile&&S.placed!==2)placeByAge();
+if(S.profile&&S.placed!==3)placeByAge();
 document.addEventListener('visibilitychange',()=>{if(document.hidden){save();stopVoice();sync(false);document.querySelectorAll('canvas').forEach(c=>c.dispatchEvent(new PointerEvent('pointercancel')))}else{if(actx&&actx.state!=='running')try{actx.resume()}catch(e){}}});
 window.addEventListener('pageshow',()=>{if(actx&&actx.state!=='running')try{actx.resume()}catch(e){}});
 document.addEventListener('pointerdown',()=>{if(actx&&actx.state!=='running')actx.resume()},{passive:true});
