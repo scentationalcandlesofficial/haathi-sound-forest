@@ -486,7 +486,7 @@ ACT.snack=(n)=>{
 
 /* ---- MATHS ---- */
 function layout(k,count,small){let html='<div class="objs">';for(let t=0;t<count;t+=10){html+='<div class="tenrow">';for(let f=t;f<Math.min(t+10,count);f+=5){html+='<div class="five">';for(let i=f;i<Math.min(f+5,count);i++)html+=objHTML(k,i,small);html+='</div>'}html+='</div>'}return html+'</div>'}
-function numChoices(ans,max,el,onPick,lo){lo=lo==null?1:lo;let locked=false;const want=nopt();const hi=Math.max(max,ans+2);
+function numChoices(ans,max,el,onPick,lo,cap){lo=lo==null?1:lo;let locked=false;const want=nopt();const hi=cap?Math.min(cap,Math.max(max,ans+2)):Math.max(max,ans+2);
   const pv=[];if(ans>=10){pv.push(ans+10,ans-10);const r=+String(ans).split('').reverse().join('');if(String(ans).length===2&&ans%10&&r!==ans)pv.push(r)}
   const set=new Set([ans]);shuffle(pv.filter(v=>v>=lo&&v<=hi&&v!==ans)).slice(0,ans>=13?1:0).forEach(v=>set.add(v));
   shuffle([ans-1,ans+1,ans-2,ans+2,ans+3,ans-3]).forEach(v=>{if(set.size<want&&v>=lo&&v<=hi)set.add(v)});let g=0;while(set.size<want&&g++<60)set.add(ri(lo,hi));
@@ -739,6 +739,7 @@ const letH=l=>`<span style="font-family:var(--f-letter);font-weight:700;font-siz
 const numH=v=>`<span style="font-family:var(--f-letter);font-weight:700;font-size:clamp(46px,12vw,78px);color:var(--c-number);line-height:1">${v}</span>`;
 const bigShow=h=>`<div class="showcard">${h}</div>`;
 function pickRound(o){
+  if(window.__TRACE)window.__TRACE.push({g:RUN&&RUN.node&&RUN.node.t,cap:o.cap,top:(o.top||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim(),items:o.items.map(i=>i.label||String(i.v)),ans:String(o.ans),ansLabel:(o.items.find(i=>i.v===o.ans)||{}).label});
   body().innerHTML=(o.top||'')+`<div class="choices ${o.cls||''}" id="pk"></div>`;
   RUN.prompt=()=>say(o.say,o.cap);RUN.prompt();
   let wrong=false,busy=false;const L=once(ok=>{if(o.letter)recordLetter(o.letter,ok,o.items.length,RUN.node.t);learnN(RUN.node,ok)});
@@ -856,7 +857,7 @@ ACT.maketen=(n)=>{const tot=n.max;const have=fresh('mt'+tot,[...Array(tot-1).key
   body().innerHTML=`<div class="tf">${Array.from({length:tot},(_,i)=>`<b class="${i<have?'on':''}"></b>`).join('')}</div><div class="choices" id="nc"></div>`;
   RUN.prompt=()=>say([tot===10?'P_make_ten':'P_make_five'],`How many more to make ${tot}?`);RUN.prompt();let wrong=false;const L=once(ok=>learnN(n,ok));
   numChoices(ans,tot,$('nc'),(b,v)=>{const ok=v===ans;L(ok);if(ok){b.classList.add('right');body().querySelectorAll('.tf b:not(.on)').forEach(x=>x.classList.add('on'));FX.chime();
-      say([N(have),'P_and',N(ans),'P_makes',N(tot)],`${have} + ${ans} = ${tot}`).then(()=>roundDone(!wrong))}else{wrong=true;FX.boing();anim(b,'wiggle',500);say(['P_count_again'],'Count the empty spaces.')}},1)};
+      say([N(have),'P_and',N(ans),'P_makes',N(tot)],`${have} + ${ans} = ${tot}`).then(()=>roundDone(!wrong))}else{wrong=true;FX.boing();anim(b,'wiggle',500);say(['P_count_again'],'Count the empty spaces.')}},1,tot-1)};
 function drum(){if(!actx)return;const s0=S.settings.sfx;S.settings.sfx=true;tone(110,T(),.25,'sine',.5,60);noise(T(),.12,.25,300);S.settings.sfx=s0}
 ACT.beats=(n)=>{const v=fresh('beats',[...Array(n.max).keys()].map(i=>i+1));body().innerHTML=`<div class="pic" id="drum" style="font-size:110px">🥁</div><div class="choices" id="nc" hidden></div>`;
   let wrong=false;const L=once(ok=>learnN(n,ok));
@@ -886,7 +887,7 @@ ACT.hiding=(n)=>{const tot=n.max;const hid=fresh('hid'+tot,[...Array(tot-1).keys
   body().innerHTML=`<div class="card-note">There are <b>${tot}</b> ladoos altogether.</div><div class="tenrow" style="align-items:center">${pileH('ladoo',vis)}<div class="bowl" id="bw">🥣</div></div><div class="choices" id="nc"></div>`;
   RUN.prompt=()=>say(['P_hiding'],`${tot} ladoos altogether. How many are hiding under the bowl?`);RUN.prompt();let wrong=false;const L=once(ok=>learnN(n,ok));
   numChoices(hid,tot,$('nc'),(b,v)=>{const ok=v===hid;L(ok);if(ok){b.classList.add('right');$('bw').innerHTML=pileH('ladoo',hid,true);FX.chime();say([N(vis),'P_and',N(hid),'P_makes',N(tot)],`${vis} + ${hid} = ${tot}`).then(()=>roundDone(!wrong))}
-    else{wrong=true;FX.boing();anim(b,'wiggle',500);say(['P_close'],`Count on from ${vis} to ${tot} with your fingers.`)}})};
+    else{wrong=true;FX.boing();anim(b,'wiggle',500);say(['P_close'],`Count on from ${vis} to ${tot} with your fingers.`)}},1,tot-1)};
 ACT.oddshape=()=>{const ks=Object.keys(SHAPES);const a=rnd(ks),b=rnd(ks.filter(x=>x!==a));const cols=shuffle(SHAPE_COL);const col=Math.random()<.5;
   const items=shuffle([0,1,2,3].map(i=>({k:i===0?b:a,c:col?cols[0]:cols[i]})));
   pickRound({items:items.map(x=>({h:`<div style="width:72%;height:72%">${shapeSVG(x.k,x.c)}</div>`,v:x.k,label:x.k})),ans:b,say:['P_odd_shape'],cap:'Which one is different?',right:[W(b),250,rnd(PRAISE)],rightCap:`The ${b} is different!`})};
@@ -997,24 +998,34 @@ const GLABEL={learn:'Learn',find:'Find it',odd:'Odd one out',colour:'What colour
 const GICON={learn:'📖',find:'🔍',odd:'🙃',colour:'🎨',memory:'🃏',sound:'🔊',quiz:'👍',sort:'🧺',match:'🔗',order:'1️⃣',mcq:'❓'};
 const inAge=s=>ageNow()>=s.age&&ageNow()<=(s.maxAge||99);
 DSC.sections.forEach(s=>{SK['d_'+s.id]={sub:'Discover',name:s.name,levels:[0,1,2],lab:v=>['starter set','more items','all items'][v],unlock:()=>inAge(s),node:()=>dNode(s.id)}});
+/* ordered topics (life cycles, planets, science ideas) are taught in sequence; where some items carry the idea and others are examples, teach the ideas */
+function learnList(id){const it=DSEC[id].items;const f=it.filter(i=>i.f);return (f.length>=3&&f.length<it.length?f:it).map(i=>i.k)}
+/* odd-one-out only borrows plain, picturable things (no festivals, dates, ideas) */
+const ODD_SRC=['fruits','vegetables','farm','wild','birds','sea','bugs','vehicles','clothes','home','music'];
+const FAMILY={home:'home',clothes:'home',farm:'animal',wild:'animal',birds:'animal',sea:'animal',bugs:'animal',animalsci:'animal',cycles:'animal',fruits:'food',vegetables:'food',food:'food',foodgroups:'food',plants:'food',sky:'space',space:'space',world:'space',weather:'space'};
 function dPool(id){const s=DSEC[id];const sz=[6,10,99][Math.min(2,lv('d_'+id))]+(ageNow()>=5?4:0);return s.items.slice(0,Math.max(4,sz)).map(i=>i.k)}
 function gLabel(g){const [t,a]=g.split(':');if(t==='sort')return DSC.sort[a].name;if(t==='match')return DSC.match[a].name;if(t==='order')return DSC.order[a].name;return GLABEL[t]}
 const GAME_AGE={'order:months':6};const dGames=s=>s.games.filter(g=>S.settings.unlock||ageNow()>=(GAME_AGE[g]||0));
 function dNode(id,g){const s=DSEC[id];if(!g){const tried=S.sk['d_'+id]&&S.sk['d_'+id].n;const gs=dGames(s).filter(x=>x!=='learn');g=!tried&&s.games.includes('learn')?'learn':fresh('dg'+id,gs.length?gs:s.games)}
   const [t,arg]=g.split(':');const n={t:'d_'+t,sec:id,arg,skill:'d_'+id,title:s.name+': '+gLabel(g)};
-  if(t==='learn')n.rounds=Math.min(8,dPool(id).length);if(t==='memory'||t==='sort')n.rounds=1;if(t==='order')n.rounds=(DSC.order[arg].steps.length>4?3:2);if(t==='quiz')n.rounds=Math.min(8,(DSC.quiz[id]||[]).length);if(t==='mcq')n.rounds=Math.min(8,(DSC.mcq[id]||[]).length);
+  if(t==='learn')n.rounds=s.learnPairs?DSC.match[s.learnPairs].pairs.length:s.learnOrder?Math.min(10,learnList(id).length):Math.min(8,dPool(id).length);if(t==='memory'||t==='sort')n.rounds=1;if(t==='order')n.rounds=(DSC.order[arg].steps.length>4?3:2);if(t==='quiz')n.rounds=Math.min(8,(DSC.quiz[id]||[]).length);if(t==='mcq')n.rounds=Math.min(8,(DSC.mcq[id]||[]).length);
   return n}
 const dCard=(k,big)=>`<span style="font-size:${big?'clamp(70px,20vw,120px)':'clamp(44px,12vw,72px)'};line-height:1">${DI(k).e}</span>`;
 const dWithName=k=>`<div style="display:flex;flex-direction:column;align-items:center;gap:4px">${dCard(k)}<b style="font-family:var(--f-display);font-size:15px;color:var(--ink-soft)">${DI(k).n}</b></div>`;
 function dOpts(pool,t,n){return shuffle([t,...shuffle(pool.filter(x=>x!==t&&DI(x).e!==DI(t).e)).slice(0,n-1)])}
-ACT.d_learn=(n,round)=>{if(!n._ord)n._ord=shuffle(dPool(n.sec));const k=n._ord[round%n._ord.length];const it=DI(k);
+ACT.d_learn=(n,round)=>{const LP=DSEC[n.sec].learnPairs&&DSC.match[DSEC[n.sec].learnPairs];
+  if(LP){if(!n._ord)n._ord=shuffle(LP.pairs.map(p=>[p[0],p[3].split(':')[0]]));const [a,c]=n._ord[round%n._ord.length];
+    body().innerHTML=`<div class="learncard" style="flex-direction:row;gap:18px;flex-wrap:wrap;justify-content:center"><div style="display:flex;flex-direction:column;align-items:center">${dCard(a,true)}<div class="word" style="font-size:clamp(26px,7vw,38px)">${DI(a).n}</div></div><div style="font-size:44px;align-self:center;color:var(--peacock)">↔</div><div style="display:flex;flex-direction:column;align-items:center">${dCard(c,true)}<div class="word" style="font-size:clamp(26px,7vw,38px)">${DI(c).n}</div></div></div><div class="card-note">${DI(a).n} and ${DI(c).n.toLowerCase()} are opposites.</div>`;
+    RUN.prompt=()=>say([...(round===0?['P_d_learn','SEC_'+n.sec,300]:[]),DN(a),500,DN(c),400,'P_d_opp'],`${DI(a).n} and ${DI(c).n.toLowerCase()} are opposites.`);RUN.prompt();
+    actions([['soft','Hear again',()=>RUN.prompt()],['go','Next',()=>{learnN(n,true);roundDone(true)},ICON.next]]);return}
+  if(!n._ord)n._ord=DSEC[n.sec].learnOrder?learnList(n.sec):shuffle(dPool(n.sec));const k=n._ord[round%n._ord.length];const sf=(DSEC[n.sec].items.find(i=>i.k===k)||{}).f||'';const it=Object.assign({},DI(k),{f:sf});const DF=k=>sf&&sf===DI(k).f?['F_'+k]:[];
   body().innerHTML=`<div class="learncard">${dCard(k,true)}<div class="word" style="font-size:clamp(28px,7vw,40px)">${it.n}</div>${it.f?`<div class="card-note">${it.f}</div>`:''}</div>`;
   RUN.prompt=()=>say([...(round===0?['P_d_learn','SEC_'+n.sec,300]:[]),DN(k),300,...DF(k)],it.f||it.n);RUN.prompt();anim(body().querySelector('.learncard'),'dance');
   actions([['soft','Hear again',()=>RUN.prompt()],['go','Next',()=>{learnN(n,true);roundDone(true)},ICON.next]])};
-ACT.d_find=(n)=>{const pool=dPool(n.sec);const t=deck('df'+n.sec+pool.length,pool);
-  pickRound({items:dOpts(pool,t,nopt()).map(k=>({h:dCard(k),v:k,label:DI(k).n})),ans:t,say:['P_d_find',DN(t)],cap:`Can you find the ${DI(t).n.toLowerCase()}?`,right:[DN(t),300,...DF(t)],rightCap:DI(t).f||`Yes, the ${DI(t).n.toLowerCase()}!`,wrong:it=>['P_hmm_thats',DN(it.v)]})};
+ACT.d_find=(n)=>{const pool=dPool(n.sec);const t=deck('df'+n.sec+pool.length,pool);const fc=DSEC[n.sec].findClip;
+  pickRound({items:dOpts(pool,t,nopt()).map(k=>({h:dCard(k),v:k,label:DI(k).n})),ans:t,say:[fc||'P_d_find',DN(t)],cap:fc?`Who looks ${DI(t).n.toLowerCase()}?`:`Can you find the ${DI(t).n.toLowerCase()}?`,right:[DN(t),300,...DF(t)],rightCap:DI(t).f||`Yes, the ${DI(t).n.toLowerCase()}!`,wrong:it=>['P_hmm_thats',DN(it.v)]})};
 ACT.d_odd=(n)=>{const s=DSEC[n.sec];const pool=dPool(n.sec);const three=shuffle(pool).slice(0,Math.max(2,nopt()-1));
-  const others=DSC.sections.filter(x=>x.id!==n.sec&&x.age<=Math.max(ageNow(),s.age)&&ageNow()<=(x.maxAge||99)&&!['colours','days','routine','cycles','science','opposites','safety','india'].includes(x.id)).flatMap(x=>x.items.map(i=>i.k)).filter(k=>!s.items.some(i=>i.k===k));
+  const others=DSC.sections.filter(x=>x.id!==n.sec&&ODD_SRC.includes(x.id)&&(!FAMILY[n.sec]||FAMILY[x.id]!==FAMILY[n.sec])&&x.age<=Math.max(ageNow(),s.age)&&!['colours','days','routine','cycles','science','opposites','safety','india'].includes(x.id)).flatMap(x=>x.items.map(i=>i.k)).filter(k=>!s.items.some(i=>i.k===k));
   const odd=rnd(others);const items=shuffle([...three,odd]);
   pickRound({top:`<div class="card-note">These are ${s.name.toLowerCase()}. One is not!</div>`,items:items.map(k=>({h:dWithName(k),v:k,label:DI(k).n})),itemCls:'pcard grp',ans:odd,say:['P_d_odd'],cap:'Which one does not belong?',right:[DN(odd),250,rnd(PRAISE)],rightCap:`Yes! The ${DI(odd).n.toLowerCase()} does not belong.`,wrong:it=>[DN(it.v),300,'P_d_odd']})};
 const COLS={red:'#e2563f',blue:'#2f6fd0',yellow:'#f6c821',green:'#2f8a5f',orange:'#f08a24',purple:'#8a5cc2',brown:'#8a5a33',white:'#ffffff',black:'#222222',pink:'#ff9ac1'};
@@ -1040,7 +1051,7 @@ ACT.d_sort=(n)=>{const sp=DSC.sort[n.arg];const per=ageNow()<=3?2:3;const items=
     if(ok){FX.chime();bk.querySelector('i').textContent+=DI(it).e;k++;if(k>=items.length){burst(bk,14);say([rnd(PRAISE)],'All sorted!').then(()=>roundDone(!wrong))}else setTimeout(show,300)}
     else{wrong=true;FX.boing();anim(bk,'wiggle',500);say([DN(it),300,'P_listen_again'],'Try the other basket!')}})};
 ACT.d_match=(n)=>{const m=DSC.match[n.arg];const pairs=m.pairs.map(p=>[p[0],p[3].split(':')[0]]);const [l,r]=deck('dm'+n.arg,pairs.map(p=>p.join('|'))).split('|');
-  const rights=[...new Set(pairs.map(p=>p[1]))];const opts=shuffle([r,...shuffle(rights.filter(x=>x!==r&&x!==l)).slice(0,nopt()-1)]);
+  const rights=m.pool?DSEC[m.pool].items.map(i=>i.k):[...new Set(pairs.map(p=>p[1]))];const av=(m.avoid&&m.avoid[l])||[];const opts=shuffle([r,...shuffle(rights.filter(x=>x!==r&&x!==l&&!av.includes(x))).slice(0,nopt()-1)]);
   pickRound({top:bigShow(dWithName(l)),items:opts.map(k=>({h:dWithName(k),v:k,label:DI(k).n})),itemCls:'pcard grp',ans:r,say:['MQ_'+n.arg,300,DN(l)],cap:`${m.q} ${DI(l).n}`,right:[DN(l),300,DN(r),250,rnd(PRAISE)],rightCap:`${DI(l).n}: ${DI(r).n}!`,wrong:it=>[DN(it.v),300,'P_listen_again']})};
 ACT.d_order=(n)=>{const o=DSC.order[n.arg];let steps=o.steps;const win=ageNow()<=4?4:5;if(steps.length>win){const s0=ri(0,steps.length-win);steps=steps.slice(s0,s0+win)}
   const isText=['days','months'].includes(n.arg);let pos=0,wrong=false;
@@ -1102,7 +1113,7 @@ const wordH=(w,sz)=>`<span style="font-family:var(--f-letter);font-weight:700;fo
 function rPool(){const mx=param('read');const p=RWORDS.filter(w=>w.length<=mx&&w.length>=Math.max(3,mx-1));return p.length>=6?p:RWORDS.filter(w=>w.length<=mx)}
 const lookAlike=(t,pool,n)=>shuffle(pool.filter(w=>w!==t&&RB[w]!==RB[t])).sort((a,b)=>(Math.abs(a.length-t.length)-(a[0]===t[0]?1:0)-(a.slice(-1)===t.slice(-1)?.5:0))-(Math.abs(b.length-t.length)-(b[0]===t[0]?1:0)-(b.slice(-1)===t.slice(-1)?.5:0))).slice(0,n);
 ACT.readpic=()=>{const t=deck('rp'+param('read'),rPool());const opts=shuffle([t,...lookAlike(t,RWORDS,nopt()-1)]);
-  pickRound({top:bigShow(wordH(t,'clamp(44px,12vw,72px)')),items:opts.map(w=>({h:picH(RB[w]),v:w,label:'picture'})),ans:t,say:['P_r_readpic'],cap:'Read the word. Which picture is it?',
+  pickRound({top:bigShow(wordH(t,'clamp(44px,12vw,72px)')),items:opts.map(w=>({h:picH(RB[w]),v:w,label:w})),ans:t,say:['P_r_readpic'],cap:'Read the word. Which picture is it?',
     right:[W(t),250,rnd(PRAISE)],rightCap:`Yes! ${t}!`,wrong:it=>[W(it.v),300,'P_r_try']})};
 ACT.picword=()=>{const t=deck('pw'+param('read'),rPool());const opts=shuffle([t,...lookAlike(t,rPool(),nopt()-1)]);
   pickRound({top:bigShow(picH(RB[t])),items:opts.map(w=>({h:wordH(w),v:w,label:w})),ans:t,say:['P_r_picword'],cap:'Which word goes with the picture?',
