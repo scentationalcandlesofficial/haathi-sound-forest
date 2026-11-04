@@ -346,7 +346,7 @@ $('kid-add').onclick=()=>{FX.tap();addKid()};
 {const b=$('btn-who');if(S.profile){const k=kidsIdx();b.hidden=false;b.textContent=`Playing as ${S.profile.name||'child'} (age ${S.profile.age}) · Change child or age`;b.onclick=()=>{FX.tap();openGate(()=>{go('parent');setTimeout(()=>{const p=$('kids-panel');if(p&&p.scrollIntoView)p.scrollIntoView({behavior:'smooth'})},80)})}}}
 let setupAge=4;
 function renderSetup(){const ac=$('agechips');ac.innerHTML='';[3,4,5,6,7].forEach(a=>{const b=document.createElement('button');b.textContent=a;b.setAttribute('aria-pressed',a===setupAge);b.onclick=()=>{setupAge=a;FX.tap();renderSetup()};ac.appendChild(b)})}
-$('btn-setup-done').onclick=()=>{unlockAudio();S.profile={name:$('in-name').value.trim()||'friend',age:setupAge,limit:+$('in-limit').value,created:today()};S.settings.consent=$('in-consent').checked;
+$('btn-setup-done').onclick=()=>{unlockAudio();gc('/new-child/age-'+setupAge,'New child aged '+setupAge);S.profile={name:$('in-name').value.trim()||'friend',age:setupAge,limit:+$('in-limit').value,created:today()};S.settings.consent=$('in-consent').checked;
   placeByAge();
   save();go('map');setTimeout(()=>{FX.trumpet();say([300,'P_hello',300,'P_map_hi'],null)},400)};
 
@@ -1296,14 +1296,20 @@ function fbText(){const v=id=>$(id).value.trim();const st=FB_Q.map(([k,l])=>`${l
     const tot=Object.values(S.minutes).reduce((a,b)=>a+b,0);const sk=Object.keys(SK).filter(id=>S.sk[id]&&S.sk[id].n).map(id=>`${SK[id].name} ${Math.round(S.sk[id].p*100)}% (${SK[id].lab(param(id))})`).join('; ');
     t+=`\n\nProgress: ${Math.round(tot)} min total, ${Math.round(wk)} min this week, ${Object.keys(S.minutes).length} days played, ${S.chapters.filter(c=>c.done).length} chapters, ${S.intro.length} letters met, recorded sounds ${Object.keys(REC).length}.\nSkills: ${sk||'none yet'}`}
   return t}
-function fbUpdate(){const t=fbText();$('fb-wa').href='https://wa.me/?text='+encodeURIComponent(t);$('fb-preview').value=t}
+function fbUpdate(){const t=fbText();$('fb-wa').href='https://wa.me/'+FB_WA+'?text='+encodeURIComponent(t);$('fb-preview').value=t}
 function renderFeedback(){const box=$('fb-stars');box.innerHTML=FB_Q.map(([k,l])=>`<div class="field"><label>${l}</label><div class="row" style="justify-content:flex-start;gap:4px" data-q="${k}">${[1,2,3,4,5].map(i=>`<button class="star-b" data-v="${i}" aria-label="${i} of 5" style="width:40px;height:40px">${i<=(fb[k]||0)?STAR:STAR_OFF}</button>`).join('')}</div></div>`).join('');
   box.querySelectorAll('[data-q]').forEach(r=>r.querySelectorAll('button').forEach(b=>b.onclick=()=>{fb[r.dataset.q]=+b.dataset.v;S.fbPrefs[r.dataset.q]=+b.dataset.v;save();renderFeedback()}));
   ['fb-name','fb-age','fb-liked','fb-hard','fb-idea','fb-sum'].forEach(id=>{$(id).oninput=fbUpdate;$(id).onchange=fbUpdate});fbUpdate()}
-$('fb-wa').addEventListener('click',()=>{fbUpdate();sendFeedback();const n=$('fb-note');n.hidden=false;n.textContent='If WhatsApp did not open, tap "Copy text" and paste it into a message.'});
+$('fb-wa').addEventListener('click',()=>{gc('/feedback-sent','Feedback sent');fbUpdate();sendFeedback();const n=$('fb-note');n.hidden=false;n.textContent='If WhatsApp did not open, tap "Copy text" and paste it into a message.'});
 $('fb-copy').onclick=async()=>{fbUpdate();sendFeedback();const n=$('fb-note');n.hidden=false;try{await navigator.clipboard.writeText(fbText());n.textContent='Copied. Paste it into WhatsApp or email.'}catch(e){const p=$('fb-preview');p.hidden=false;p.focus();p.select();n.textContent='Select the text below and copy it.'}};
 
 /* ======================= ANONYMOUS SYNC (only with parent consent) ======================= */
+/* ---- anonymous usage counts (GoatCounter): no names, no cookies, no child data. Only: app opened, child's age group, shares, feedback sent. ---- */
+const GC='';        // GoatCounter site code, e.g. 'haathi' for haathi.goatcounter.com; empty = nothing is counted
+const FB_WA='';     // WhatsApp number for feedback with country code, digits only, e.g. '91XXXXXXXXXX'; empty = parent picks the chat
+function gc(path,title,daily){if(!GC||!navigator.onLine)return;try{if(daily){const k='gc-'+path+'-'+today();if(localStorage.getItem(k))return;localStorage.setItem(k,'1')}
+  new Image().src=`https://${GC}.goatcounter.com/count?p=${encodeURIComponent(path)}&t=${encodeURIComponent(title||path)}&e=true&r=${encodeURIComponent(document.referrer||'')}&rnd=${Date.now()}`}catch(e){}}
+setTimeout(()=>{gc('/open','App opened',true);if(S.profile)gc('/active/age-'+S.profile.age,'Child aged '+S.profile.age+' played today',true)},1500);
 const ENDPOINT='';  // Google Apps Script web-app URL; empty = nothing is ever sent
 function devId(){if(!S.device){S.device='d'+Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);save()}return S.device}
 function snapshot(){const tot=Object.values(S.minutes).reduce((a,b)=>a+b,0);const sk={};Object.keys(S.sk).forEach(id=>{const x=S.sk[id];if(x.n)sk[id]={lvl:x.lvl,p:Math.round(x.p*100),n:x.n}});
@@ -1325,7 +1331,7 @@ async function copyLink(){try{await navigator.clipboard.writeText(SHARE_URL);sha
 async function shareGame(){unlockAudio();FX.tap();
   if(navigator.share){try{await navigator.share({title:"Haathi's Sound Forest",text:SHARE_TEXT,url:SHARE_URL});return}catch(e){if(e&&e.name==='AbortError')return}}
   if(!(await copyLink()))window.open('https://wa.me/?text='+encodeURIComponent(SHARE_TEXT+' '+SHARE_URL),'_blank')}
-$('btn-share').onclick=shareGame;$('btn-share-start').onclick=shareGame;$('share-copy').onclick=()=>{FX.tap();copyLink()};
+$('btn-share').onclick=()=>{gc('/share','Shared the app');shareGame()};$('btn-share-start').onclick=()=>{gc('/share','Shared the app');shareGame()};$('share-copy').onclick=()=>{FX.tap();copyLink()};
 
 /* ======================= INSTALL HELP ======================= */
 let installEvt=null;
@@ -1336,7 +1342,7 @@ const isStandalone=()=>(window.matchMedia&&matchMedia('(display-mode: standalone
 function installHelp(html){const h=$('install-help');h.hidden=false;h.innerHTML=html}
 function refreshInstall(){const b=$('btn-install');if(!b)return;if(isStandalone()){b.hidden=true;$('install-help').hidden=true;return}b.hidden=false}
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;refreshInstall()});
-window.addEventListener('appinstalled',()=>{installEvt=null;refreshInstall();installHelp('Installed! Find <b>Haathi</b> on your home screen.')});
+window.addEventListener('appinstalled',()=>{gc('/installed','App installed');installEvt=null;refreshInstall();installHelp('Installed! Find <b>Haathi</b> on your home screen.')});
 $('btn-install').onclick=async()=>{FX.tap();
   if(installEvt){installEvt.prompt();try{await installEvt.userChoice}catch(e){}installEvt=null;return}
   if(inApp){installHelp(`You opened this inside another app (like WhatsApp), which can't install apps.<br><b>Tap ⋮ or ··· at the top, then "Open in Chrome"</b>${isIOS?' (or "Open in Safari")':''}. Then tap Install again.<br><span style="font-size:13px">Or copy the link: ${SHARE_URL}</span>`);return}
