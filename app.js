@@ -182,6 +182,7 @@ function compose(){
   const mN=maths.map(id=>Object.assign(SK[id].node(param(id)),{skill:id}));
   const wN=Object.assign(SK[wOther].node(param(wOther)),{skill:wOther});
   nodes.push(L1,mN[0],W1,L2,mN[1],wN);if(mN[2])nodes.push(mN[2]);
+  {const ds=DSC.sections.filter(x=>unlocked('d_'+x.id)).map(x=>'d_'+x.id).sort((a,b)=>score(b)-score(a));if(ds.length){const dn=dNode(ds[0].slice(2));nodes.splice(3,0,dn);reasons.push(S.sk[ds[0]]&&S.sk[ds[0]].n?why(ds[0]):`New topic: ${DSEC[ds[0].slice(2)].name}`)}}
   const region=Math.floor(idx/3)%REGIONS.length;
   if(idx%3===2)nodes.push({t:'friend',r:region});
   S.chapters.push({id:idx,region,nodes:nodes.map(n=>Object.assign(n,{stars:null})),reasons,done:false,date:today()});
@@ -208,7 +209,9 @@ let vTok=0,playing=[];
 function stopVoice(){vTok++;playing.forEach(s=>{try{s.stop()}catch(e){}});playing=[]}
 function playBuf(buf,rate){return new Promise(res=>{let done=false;const fin=()=>{if(done)return;done=true;playing=playing.filter(x=>x!==s);res()};const s=actx.createBufferSource();s.buffer=buf;s.playbackRate.value=rate||1;s.connect(master);s.onended=fin;playing.push(s);
   setTimeout(fin,Math.ceil(buf.duration/(rate||1)*1000)+600);try{s.start()}catch(e){fin()}})}
-async function say(seq,caption,opt){
+/* a voice line started inside one game never 'finishes' into a different game */
+function say(seq,caption,opt){const r=RUN;return new Promise(res=>{sayRaw(seq,caption,opt).then(v=>{if(RUN===r||!r)res(v)})})}
+async function sayRaw(seq,caption,opt){
   opt=opt||{};stopVoice();const tok=vTok;if(caption!=null&&$('cap'))$('cap').textContent=caption;
   for(const it of seq){if(tok!==vTok)return;
     if(typeof it==='number'){await sleep(it);continue}
@@ -318,11 +321,11 @@ $('btn-setup-done').onclick=()=>{unlockAudio();S.profile={name:$('in-name').valu
   save();go('map');setTimeout(()=>{FX.trumpet();say([300,'P_hello',300,'P_map_hi'],null)},400)};
 
 /* ======================= MAP ======================= */
-function nodeIcon(n){const t=n.t;return ({meet:n.l,bubbles:'○',snack:'🥭',count:'123',numfind:'?',more:'>',add:'+',takeaway:'−',shape:'▲',pattern:'•◦',dice:'⚂',next:'→',bigger:'9>',missing:'_',share:'½',shop:'₹',length:'↔',
+function nodeIcon(n){const t=n.t;if(t.startsWith('d_')&&DSEC[n.sec])return DSEC[n.sec].icon;return ({meet:n.l,bubbles:'○',snack:'🥭',count:'123',numfind:'?',more:'>',add:'+',takeaway:'−',shape:'▲',pattern:'•◦',dice:'⚂',next:'→',bigger:'9>',missing:'_',share:'½',shop:'₹',length:'↔',
   wpre:'〰',wshape:'✎□',wletter:'✎'+(n.l||''),wnum:'✎'+(n.n||''),wcap:'✎'+(n.l||'').toUpperCase(),wname:'✎Aa',wword:'✎ab',dots:'⋯',friend:REGIONS[n.r||0].friend[0]})[t]||'?'}
 const WRITE_T=new Set(['dots','slate','maze','tracepic','drawshapes','finishpic','countwrite','joinmatch','colour']);
-const SUBJ=n=>LGAMES[n.t]||n.t==='meet'?'letter':n.t==='friend'?'friend':(n.t[0]==='w'||WRITE_T.has(n.t))?'write':'number';
-function nodeColor(n){const s=SUBJ(n);return s==='letter'?'#147a8a':s==='number'?'#e07a12':s==='write'?'#8a5cc2':'#f6a821'}
+const SUBJ=n=>n.t.startsWith('d_')?'discover':LGAMES[n.t]||n.t==='meet'?'letter':n.t==='friend'?'friend':(n.t[0]==='w'||WRITE_T.has(n.t))?'write':'number';
+function nodeColor(n){const s=SUBJ(n);if(s==='discover')return '#2f8a5f';return s==='letter'?'#147a8a':s==='number'?'#e07a12':s==='write'?'#8a5cc2':'#f6a821'}
 function renderMap(){
   const cur=curChapter();const W=Math.min(560,$('map-scroll').clientWidth||360);
   const chs=S.chapters.slice(-4);let y=0,svg='';const pos=[],meta=[];
@@ -377,21 +380,21 @@ const DEFAULT_ROUNDS=8;
 function setRounds(){const r=$('rounds');r.innerHTML='';for(let i=0;i<RUN.rounds;i++){const e=document.createElement('i');if(i<RUN.round)e.className='ok';else if(i===RUN.round)e.className='on';r.appendChild(e)}}
 function actions(list){const a=$('actions');a.innerHTML='';list.forEach(([cls,label,fn,icon,id])=>{const b=document.createElement('button');b.className='big-btn '+cls;if(id)b.id=id;b.innerHTML=(icon||'')+label;b.onclick=()=>{unlockAudio();FX.tap();fn()};a.appendChild(b)})}
 $('play-hear').onclick=()=>{unlockAudio();FX.tap();RUN&&RUN.prompt&&RUN.prompt()};
-$('play-back').onclick=()=>{FX.tap();const f=RUN&&RUN.from;RUN=null;f&&f.corner?openCorner(f.corner):go('map')};
+$('play-back').onclick=()=>{FX.tap();const f=RUN&&RUN.from;RUN=null;f&&f.corner?openCorner(f.corner,f.sec):go('map')};
 const TITLES={tens:'Tens and ones',bigsmall:'Big and small letters',sameletter:'Same letter',oddsound:'Odd one out',samesound:'Same first sound?',picletter:'Picture to letter',letterpic:'Letter to picture',fishing:'Letter fishing',nextletter:'Next letter',missingletter:'Missing letter',sortsound:'Sound baskets',memory:'Memory pairs',rhyme:'Rhyme time',buildword:'Build a word',firstmissing:'First letter',hunt:'Letter hunt',mole:'Letter moles',hidden:'Hidden letter',stones:'River stones',shadow:'Letter shadows',
  fewer:'Which has fewer?',smaller:'Smaller number',matchgroup:'Match the number',maketen:'Make ten',beats:'Drum beats',rocket:'Rocket countdown',order:'Numbers in order',frog:'Frog hops',skip:'Skip counting',hiding:'Hiding ladoos',oddshape:'Odd shape out',sortcolour:'Colour baskets',size:'Big and small',heavy:'Heavy and light',queue:'First and last',money:'More money?',double:'Butterfly doubles',countshapes:'Count the shapes',
  maze:'Road maze',tracepic:'Trace a picture',drawshapes:'Draw with shapes',finishpic:'Finish the picture',wrainbow:'Rainbow writing',wheard:'Write what you hear',countwrite:'Count and write',wcopy:'Copy it',wlines:'Straight lines',joinmatch:'Join the pairs',colour:'Colouring',surprise:'Surprise!',
  meet:'Meet a letter',bubbles:'Sound Bubbles',snack:"Haathi's Snack",count:'Count with me',numfind:'Number Balloons',more:'Which has more?',add:'Put them together',takeaway:'Monkey takes away',shape:'Shape Hunt',pattern:'What comes next?',dice:'Quick look',next:'Before and after',bigger:'Bigger number',missing:'Missing number',share:'Share fairly',shop:'Mela shop',length:'Long and short',
   wpre:'Draw patterns',wshape:'Draw shapes',wletter:'Write a letter',wcap:'Big letter',wnum:'Write a number',wname:'Write my name',wword:'Write a word',dots:'Dot-to-dot',slate:'Magic slate',friend:'A new friend!'};
 function startRun(n,from){
-  let rounds=ROUNDS[n.t]||DEFAULT_ROUNDS;if(SUBJ(n)==='write'&&rounds>2&&((S.fbPrefs.write||3)<=2||likeScore(n.t)<-.4))rounds=Math.max(2,rounds-1);if(n.t==='wname')rounds=Math.min(8,nameChars().length);
+  let rounds=n.rounds||ROUNDS[n.t]||DEFAULT_ROUNDS;if(SUBJ(n)==='write'&&rounds>2&&((S.fbPrefs.write||3)<=2||likeScore(n.t)<-.4))rounds=Math.max(2,rounds-1);if(n.t==='wname')rounds=Math.min(8,nameChars().length);
   RUN={node:n,from,round:0,rounds,ok:[],prompt:null};
-  go('play');$('play-title').textContent=TITLES[n.t];$('actions').innerHTML='';$('cap').textContent='';$('play-body').innerHTML='';
+  go('play');$('play-title').textContent=n.title||TITLES[n.t];$('actions').innerHTML='';$('cap').textContent='';$('play-body').innerHTML='';
   let delay=250;if(from.first){const ch=S.chapters.find(c=>c.id===from.chapter);say(ch&&ch.id%3===0?[REGIONS[ch.region].clip,200,'P_chapter']:['P_chapter'],null);delay=1700}
   setTimeout(()=>{if(RUN&&RUN.node===n)nextRound()},delay);
 }
 function nextRound(){if(!RUN)return;setRounds();$('actions').innerHTML='';{const id=RUN.node.skill||RUN.node.t;if(SK[id]&&RUN.node.max!=null&&typeof param(id)==='number'&&RUN.node.max!==param(id)){const up=param(id)>RUN.node.max;RUN.node.max=param(id);if(up){FX.sparkle();$('cap').textContent='Level up! Numbers up to '+RUN.node.max}}}ACT[RUN.node.t](RUN.node,RUN.round)}
-function roundDone(ok){if(!RUN||RUN._lock===RUN.round)return;RUN._lock=RUN.round;RUN.ok.push(!!ok);RUN.round++;setRounds();if(RUN.round>=RUN.rounds)finishRun();else setTimeout(nextRound,600)}
+function roundDone(ok){if(!RUN||RUN._lock===RUN.round)return;RUN._lock=RUN.round;RUN.ok.push(!!ok);RUN.round++;setRounds();if(RUN.round>=RUN.rounds)finishRun();else{const r=RUN;setTimeout(()=>{if(RUN===r)nextRound()},600)}}
 const learnN=(n,ok)=>{if(n.skill||SK[n.t])learn(n.skill||n.t,ok)};
 function finishRun(){
   const run=RUN,n=run.node;const stars=Math.max(1,Math.round(run.ok.filter(Boolean).length/run.ok.length*3));
@@ -403,7 +406,7 @@ function finishRun(){
   box.innerHTML=isFriend?`<div class="big">${REGIONS[n.r].friend[0]}</div><h3>New friend!</h3><p>The ${REGIONS[n.r].friend[1]} joins your journey.</p>`:`<div class="stars3">${[0,1,2].map(k=>k<stars?STAR:STAR_OFF).join('')}</div><h3>${stars===3?'Superstar!':stars===2?'Great job!':'Well tried!'}</h3>`;
   const nb=document.createElement('button');nb.className='big-btn go';nb.innerHTML=ICON.next.replace('currentColor','#fff')+(nextFn?'Next stop':'Again');
   nb.onclick=()=>{FX.tap();$('reward').hidden=true;nextFn?nextFn():startRun(n,run.from)};
-  const hb=document.createElement('button');hb.className='big-btn soft';hb.textContent=run.from.corner?'Back':'Map';hb.onclick=()=>{FX.tap();$('reward').hidden=true;run.from.corner?openCorner(run.from.corner):go('map')};
+  const hb=document.createElement('button');hb.className='big-btn soft';hb.textContent=run.from.corner?'Back':'Map';hb.onclick=()=>{FX.tap();$('reward').hidden=true;run.from.corner?openCorner(run.from.corner,run.from.sec):go('map')};
   if(!isFriend){const fq=document.createElement('div');fq.innerHTML='<p class="faces-q">Did you like this game?</p><div class="faces"><button data-f="up" aria-label="Loved it">😀</button><button data-f="mid" aria-label="Okay">😐</button><button data-f="down" aria-label="Did not like">🙁</button></div>';
     fq.querySelectorAll('button').forEach(b=>b.onclick=()=>{fq.querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');FX.tap();const L=S.likes[n.t]||(S.likes[n.t]={up:0,mid:0,down:0});if(fq.dataset.v)L[fq.dataset.v]--;L[b.dataset.f]++;fq.dataset.v=b.dataset.f;save()});box.appendChild(fq)}
   const row=document.createElement('div');row.className='row';row.append(hb,nb);box.appendChild(row);
@@ -770,7 +773,7 @@ ACT.missingletter=()=>{const i=fresh('ml',[...Array(23).keys()]);const seq=ALPHA
 ACT.sortsound=()=>{let pool=LP().filter(l=>WORDS[l].length>=2);if(pool.length<2)pool=['s','m','t','p'];const a=fresh('sort',pool);const b=rnd(pool.filter(x=>x!==a&&SAME[a]!==x));
   const pics=shuffle([...shuffle(WORDS[a]).slice(0,2).map(w=>[w,a]),...shuffle(WORDS[b]).slice(0,2).map(w=>[w,b])]);let k=0,wrong=false,tried=false;
   body().innerHTML=`<div class="pic" id="sp"></div><div class="baskets">${[a,b].map(l=>`<button class="basket" data-l="${l}"><b>${l}</b><span>🧺</span><i></i></button>`).join('')}</div>`;
-  const show=()=>{tried=false;$('sp').textContent=pics[k][0][1];say([W(pics[k][0][0])],pics[k][0][0])};
+  const show=()=>{if(!$('sp'))return;tried=false;$('sp').textContent=pics[k][0][1];say([W(pics[k][0][0])],pics[k][0][0])};
   RUN.prompt=()=>say(['P_sort_sound'],'Put each picture in the basket that starts the same way!').then(()=>{if(alive('sortsound')&&k<pics.length)show()});RUN.prompt();
   body().querySelectorAll('.basket').forEach(bk=>bk.onclick=()=>{if(k>=pics.length)return;const [w,l]=pics[k];const ok=bk.dataset.l===l;if(!tried){tried=true;recordLetter(l,ok,2,'sortsound')}
     if(ok){FX.chime();bk.querySelector('i').textContent+=w[1];k++;if(k>=pics.length){burst(bk,14);learnN(RUN.node,!wrong);say([rnd(PRAISE)],'All sorted!').then(()=>roundDone(!wrong))}else show()}
@@ -879,7 +882,7 @@ ACT.oddshape=()=>{const ks=Object.keys(SHAPES);const a=rnd(ks),b=rnd(ks.filter(x
 ACT.sortcolour=(n)=>{const CL=[['red','#e2563f'],['blue','#147a8a'],['yellow','#f6a821'],['green','#2f8a5f'],['purple','#8a5cc2']];const two=shuffle(CL).slice(0,2);const ks=Object.keys(SHAPES);
   const items=shuffle([0,1,2,3,4,5].map(i=>({c:two[i%2],k:rnd(ks)})));let k=0,wrong=false;
   body().innerHTML=`<div class="shape" id="cur" style="width:120px"></div><div class="baskets">${two.map(c=>`<button class="basket" data-c="${c[0]}" style="border-color:${c[1]}"><b style="background:${c[1]};color:#fff">${c[0]}</b><span>🧺</span><i></i></button>`).join('')}</div>`;
-  const show=()=>{$('cur').innerHTML=shapeSVG(items[k].k,items[k].c[1])};show();
+  const show=()=>{if($('cur'))$('cur').innerHTML=shapeSVG(items[k].k,items[k].c[1])};show();
   RUN.prompt=()=>say(['P_sort_colour'],'Put each one in the basket with the same colour!');RUN.prompt();
   body().querySelectorAll('.basket').forEach(bk=>bk.onclick=()=>{if(k>=items.length)return;if(bk.dataset.c===items[k].c[0]){FX.chime();bk.querySelector('i').innerHTML+=`<span style="display:inline-block;width:22px;height:22px">${shapeSVG(items[k].k,items[k].c[1])}</span>`;k++;
       if(k>=items.length){learnN(n,!wrong);burst(bk,14);say([rnd(PRAISE)],'All sorted!').then(()=>roundDone(!wrong))}else show()}else{wrong=true;FX.boing();anim(bk,'wiggle',500)}})};
@@ -964,6 +967,87 @@ ACT.colour=(n)=>{const k=fresh('col',Object.keys(COLOURPICS));const PAL=['#e2563
   RUN.prompt=()=>say(['P_colour'],'Pick a colour, then tap a part of the picture.');RUN.prompt();
   actions([['go',"I'm done",()=>{if(filled.size<3){say(['P_keep_going'],'Colour a few more parts!');return}learnN(n,true);FX.sparkle();say([rnd(PRAISE)],'Beautiful colours!').then(()=>roundDone(true))},ICON.check]])};
 
+/* ======================= DISCOVER: 26 topics about the world ======================= */
+const DSC=window.DISCOVER||{sections:[],reg:{},match:{},sort:{},order:{},sounds:{},quiz:{}};
+const DSEC={};DSC.sections.forEach(s=>DSEC[s.id]=s);
+const DI=k=>DSC.reg[k]||{e:'❓',n:k,f:'',c:''};
+const DN=k=>'D_'+k, DF=k=>DI(k).f?['F_'+k]:[];
+const ageNow=()=>(S.profile&&S.profile.age)||4;
+const GLABEL={learn:'Learn',find:'Find it',odd:'Odd one out',colour:'What colour?',memory:'Memory',sound:'Animal sounds',quiz:'True or false?',sort:'Sorting',match:'Matching',order:'In order'};
+const GICON={learn:'📖',find:'🔍',odd:'🙃',colour:'🎨',memory:'🃏',sound:'🔊',quiz:'👍',sort:'🧺',match:'🔗',order:'1️⃣'};
+DSC.sections.forEach(s=>{SK['d_'+s.id]={sub:'Discover',name:s.name,levels:[0,1,2],lab:v=>['starter set','more items','all items'][v],unlock:()=>ageNow()>=s.age,node:()=>dNode(s.id)}});
+function dPool(id){const s=DSEC[id];const sz=[6,10,99][Math.min(2,lv('d_'+id))]+(ageNow()>=5?4:0);return s.items.slice(0,Math.max(4,sz)).map(i=>i.k)}
+function gLabel(g){const [t,a]=g.split(':');if(t==='sort')return DSC.sort[a].name;if(t==='match')return DSC.match[a].name;if(t==='order')return DSC.order[a].name;return GLABEL[t]}
+function dNode(id,g){const s=DSEC[id];if(!g){const tried=S.sk['d_'+id]&&S.sk['d_'+id].n;const gs=s.games.filter(x=>x!=='learn');g=!tried&&s.games.includes('learn')?'learn':fresh('dg'+id,gs.length?gs:s.games)}
+  const [t,arg]=g.split(':');const n={t:'d_'+t,sec:id,arg,skill:'d_'+id,title:s.name+': '+gLabel(g)};
+  if(t==='learn')n.rounds=Math.min(8,dPool(id).length);if(t==='memory'||t==='sort')n.rounds=1;if(t==='order')n.rounds=(DSC.order[arg].steps.length>4?3:2);if(t==='quiz')n.rounds=Math.min(8,(DSC.quiz[id]||[]).length);
+  return n}
+const dCard=(k,big)=>`<span style="font-size:${big?'clamp(70px,20vw,120px)':'clamp(44px,12vw,72px)'};line-height:1">${DI(k).e}</span>`;
+const dWithName=k=>`<div style="display:flex;flex-direction:column;align-items:center;gap:4px">${dCard(k)}<b style="font-family:var(--f-display);font-size:15px;color:var(--ink-soft)">${DI(k).n}</b></div>`;
+function dOpts(pool,t,n){return shuffle([t,...shuffle(pool.filter(x=>x!==t&&DI(x).e!==DI(t).e)).slice(0,n-1)])}
+ACT.d_learn=(n,round)=>{if(!n._ord)n._ord=shuffle(dPool(n.sec));const k=n._ord[round%n._ord.length];const it=DI(k);
+  body().innerHTML=`<div class="learncard">${dCard(k,true)}<div class="word" style="font-size:clamp(28px,7vw,40px)">${it.n}</div>${it.f?`<div class="card-note">${it.f}</div>`:''}</div>`;
+  RUN.prompt=()=>say([...(round===0?['P_d_learn','SEC_'+n.sec,300]:[]),DN(k),300,...DF(k)],it.f||it.n);RUN.prompt();anim(body().querySelector('.learncard'),'dance');
+  actions([['soft','Hear again',()=>RUN.prompt()],['go','Next',()=>{learnN(n,true);roundDone(true)},ICON.next]])};
+ACT.d_find=(n)=>{const pool=dPool(n.sec);const t=deck('df'+n.sec+pool.length,pool);
+  pickRound({items:dOpts(pool,t,nopt()).map(k=>({h:dCard(k),v:k,label:DI(k).n})),ans:t,say:['P_d_find',DN(t)],cap:`Can you find the ${DI(t).n.toLowerCase()}?`,right:[DN(t),300,...DF(t)],rightCap:DI(t).f||`Yes, the ${DI(t).n.toLowerCase()}!`,wrong:it=>['P_hmm_thats',DN(it.v)]})};
+ACT.d_odd=(n)=>{const s=DSEC[n.sec];const pool=dPool(n.sec);const three=shuffle(pool).slice(0,Math.max(2,nopt()-1));
+  const others=DSC.sections.filter(x=>x.id!==n.sec&&x.age<=Math.max(ageNow(),s.age)&&!['colours','days','routine','cycles','science','opposites','safety','india'].includes(x.id)).flatMap(x=>x.items.map(i=>i.k)).filter(k=>!s.items.some(i=>i.k===k));
+  const odd=rnd(others);const items=shuffle([...three,odd]);
+  pickRound({top:`<div class="card-note">These are ${s.name.toLowerCase()}. One is not!</div>`,items:items.map(k=>({h:dWithName(k),v:k,label:DI(k).n})),itemCls:'pcard grp',ans:odd,say:['P_d_odd'],cap:'Which one does not belong?',right:[DN(odd),250,rnd(PRAISE)],rightCap:`Yes! The ${DI(odd).n.toLowerCase()} does not belong.`,wrong:it=>[DN(it.v),300,'P_d_odd']})};
+const COLS={red:'#e2563f',blue:'#2f6fd0',yellow:'#f6c821',green:'#2f8a5f',orange:'#f08a24',purple:'#8a5cc2',brown:'#8a5a33',white:'#ffffff',black:'#222222',pink:'#ff9ac1'};
+ACT.d_colour=(n)=>{const pool=DSEC[n.sec].items.filter(i=>i.c).map(i=>i.k);const t=deck('dc'+n.sec,pool);const c=DI(t).c;const opts=shuffle([c,...shuffle(Object.keys(COLS).filter(x=>x!==c)).slice(0,nopt()-1)]);
+  pickRound({top:bigShow(dCard(t,true)),items:opts.map(x=>({h:`<span class="cdot" style="background:${COLS[x]}"></span>`,v:x,label:x})),ans:c,say:['P_d_colour',DN(t)],cap:`What colour is the ${DI(t).n.toLowerCase()}?`,right:[DN(c),250,rnd(PRAISE)],rightCap:`${DI(t).n} is ${c}!`,wrong:it=>[DN(it.v),300,'P_listen_again']})};
+ACT.d_memory=(n)=>{const pairs=ageNow()<=3?3:ageNow()===4?4:6;const ks=shuffle(dPool(n.sec)).slice(0,pairs);const cards=shuffle([...ks,...ks]);let open=[],done=0,lock=false,tries=0;
+  body().innerHTML=`<div class="memgrid" id="mg" style="grid-template-columns:repeat(${pairs>4?4:pairs===4?4:3},1fr)"></div>`;
+  cards.forEach(k=>{const b=document.createElement('button');b.className='mem';b.innerHTML=`<div class="front">${dCard(k)}</div><div class="back">${DSEC[n.sec].icon}</div>`;
+    b.onclick=()=>{if(lock||b.classList.contains('open'))return;b.classList.add('open');FX.tap();say([DN(k)],DI(k).n);open.push([b,k]);
+      if(open.length===2){lock=true;tries++;const [[b1,k1],[b2,k2]]=open;setTimeout(()=>{if(k1===k2){b1.classList.add('matched');b2.classList.add('matched');FX.chime();done++;
+        if(done===pairs){const ok=tries<=pairs+3;learnN(n,ok);say([rnd(PRAISE)],'All pairs found!').then(()=>roundDone(ok))}}else{b1.classList.remove('open');b2.classList.remove('open');FX.boing()}open=[];lock=false},900)}};$('mg').appendChild(b)});
+  RUN.prompt=()=>say(['P_d_memory'],'Find the matching pairs!');RUN.prompt()};
+ACT.d_sound=(n)=>{const pool=dPool(n.sec).filter(k=>DSC.sounds[k]);const all=DSEC[n.sec].items.map(i=>i.k).filter(k=>DSC.sounds[k]);const t=deck('ds'+n.sec,pool.length>=3?pool:all);
+  pickRound({items:dOpts(pool.length>=3?pool:all,t,nopt()).map(k=>({h:dCard(k),v:k,label:DI(k).n})),ans:t,say:['P_d_says',300,'SND_'+t],cap:`Who says "${DSC.sounds[t]}"`,right:[DN(t),300,'SND_'+t],rightCap:`The ${DI(t).n.toLowerCase()} says ${DSC.sounds[t]}`,wrong:it=>[DN(it.v),300,'P_listen_again','SND_'+t]})};
+ACT.d_quiz=(n,round)=>{const qs=DSC.quiz[n.sec]||[];const q=deck('dq'+n.sec,qs.map(x=>x[0]));const [id,v,text]=qs.find(x=>x[0]===q);
+  pickRound({top:`<div class="card-note" style="font-size:clamp(18px,4.6vw,24px)">${text}</div>`,items:[{h:'<span style="font-size:56px">👍</span>',v:1,label:'true'},{h:'<span style="font-size:56px">👎</span>',v:0,label:'not true'}],ans:v,
+    say:['Q_'+id,...(round===0?[300,'P_d_quiz']:[])],cap:text,right:[v?'P_d_true':'P_d_false'],rightCap:v?"Yes! That's true!":"Right! That's not true!",wrong:()=>['P_d_wrong_t','Q_'+id]})};
+ACT.d_sort=(n)=>{const sp=DSC.sort[n.arg];const per=ageNow()<=3?2:3;const items=shuffle(sp.bins.flatMap(b=>shuffle(b.items).slice(0,sp.bins.length>2?2:per).map(k=>[k,b.k])));let k=0,wrong=false,tried=false;
+  body().innerHTML=`<div class="learncard" id="cur" style="padding:6px 20px"></div><div class="baskets">${sp.bins.map(b=>`<button class="basket" data-b="${b.k}"><span>${b.e}</span><b style="font-size:18px;font-family:var(--f-display)">${b.n}</b><i></i></button>`).join('')}</div>`;
+  const show=()=>{if(!$('cur'))return;tried=false;$('cur').innerHTML=dWithName(items[k][0]);say([DN(items[k][0])],DI(items[k][0]).n)};
+  RUN.prompt=()=>say(['SQ_'+n.arg,300,'P_d_sort'],sp.name+' Put each one in the right basket.').then(()=>{if(alive('d_sort')&&k<items.length)show()});RUN.prompt();
+  body().querySelectorAll('.basket').forEach(bk=>bk.onclick=()=>{if(k>=items.length)return;const [it,b]=items[k];const ok=bk.dataset.b===b;if(!tried){tried=true;learnN(n,ok)}
+    if(ok){FX.chime();bk.querySelector('i').textContent+=DI(it).e;k++;if(k>=items.length){burst(bk,14);say([rnd(PRAISE)],'All sorted!').then(()=>roundDone(!wrong))}else setTimeout(show,300)}
+    else{wrong=true;FX.boing();anim(bk,'wiggle',500);say([DN(it),300,'P_listen_again'],'Try the other basket!')}})};
+ACT.d_match=(n)=>{const m=DSC.match[n.arg];const pairs=m.pairs.map(p=>[p[0],p[3].split(':')[0]]);const [l,r]=deck('dm'+n.arg,pairs.map(p=>p.join('|'))).split('|');
+  const rights=[...new Set(pairs.map(p=>p[1]))];const opts=shuffle([r,...shuffle(rights.filter(x=>x!==r&&x!==l)).slice(0,nopt()-1)]);
+  pickRound({top:bigShow(dWithName(l)),items:opts.map(k=>({h:dWithName(k),v:k,label:DI(k).n})),itemCls:'pcard grp',ans:r,say:['MQ_'+n.arg,300,DN(l)],cap:`${m.q} ${DI(l).n}`,right:[DN(l),300,DN(r),250,rnd(PRAISE)],rightCap:`${DI(l).n}: ${DI(r).n}!`,wrong:it=>[DN(it.v),300,'P_listen_again']})};
+ACT.d_order=(n)=>{const o=DSC.order[n.arg];let steps=o.steps;const win=ageNow()<=4?4:5;if(steps.length>win){const s0=ri(0,steps.length-win);steps=steps.slice(s0,s0+win)}
+  const isText=['days','months'].includes(n.arg);let pos=0,wrong=false;
+  const tile=k=>isText?`<b style="font-family:var(--f-display);font-size:clamp(16px,4.2vw,22px)">${DI(k).n}</b>`:dWithName(k);
+  body().innerHTML=`<div class="orderrow" id="or">${steps.map(()=>'<span class="oslot"></span>').join('<i>→</i>')}</div><div class="choices" id="oc"></div>`;
+  shuffle(steps).forEach(k=>{const b=document.createElement('button');b.className='pcard grp';b.innerHTML=tile(k);b.onclick=()=>{if(b.disabled)return;
+    if(k===steps[pos]){b.disabled=true;b.style.visibility='hidden';$('or').querySelectorAll('.oslot')[pos].innerHTML=tile(k);pos++;FX.tick(pos);say([DN(k)],DI(k).n);
+      if(pos===steps.length){learnN(n,!wrong);FX.chime();burst($('or'),16);say([400,...steps.flatMap(x=>[DN(x),150]),rnd(PRAISE)],steps.map(x=>DI(x).n).join(' → ')).then(()=>roundDone(!wrong))}}
+    else{wrong=true;FX.boing();anim(b,'wiggle',500);say([pos===0?'P_d_order':'P_d_next'],pos===0?'What comes first?':'What comes next?')}};$('oc').appendChild(b)});
+  RUN.prompt=()=>say(['OQ_'+n.arg,300,'P_d_order'],o.name+'. What comes first?');RUN.prompt()};
+function openDiscover(secId){const b=$('corner-body');b.innerHTML='';
+  if(!secId){$('corner-title').textContent='Discover';
+    const sur=document.createElement('button');sur.className='go-btn';sur.style.cssText='width:100%;max-width:640px;animation:none';const open=DSC.sections.filter(s=>S.settings.unlock||ageNow()>=s.age);
+    sur.innerHTML=`🎲 Surprise me <span style="font-size:15px;font-weight:600">(${open.length} topics open)</span>`;sur.onclick=()=>{unlockAudio();FX.sparkle();const s=fresh('dsur',open.map(x=>x.id));say(['P_surprise'],null);setTimeout(()=>startRun(dNode(s),{corner:'discover',sec:s}),700)};b.appendChild(sur);
+    const g=document.createElement('div');g.className='tiles';b.appendChild(g);
+    DSC.sections.forEach(s=>{const lk=!S.settings.unlock&&ageNow()<s.age;const t=document.createElement('button');t.className='tile';if(lk)t.style.opacity='.42';
+      t.innerHTML=`<div class="ico">${s.icon}</div><span>${s.name}</span><small class="agebadge">${s.age}+</small>`;
+      t.onclick=()=>{unlockAudio();if(lk){FX.boing();anim(t,'wiggle',500);return}FX.tap();say(['SEC_'+s.id],null);openDiscover(s.id)};g.appendChild(t)});
+    const p=document.createElement('p');p.className='card-note';p.textContent=`${DSC.sections.length} topics. Faded ones are for older children (age shown on each); grown-ups can unlock them in settings.`;b.appendChild(p);
+    say(['P_d_pick'],null);return}
+  const s=DSEC[secId];$('corner-title').textContent=s.name;
+  const back=document.createElement('button');back.className='pill-btn small';back.textContent='← All topics';back.onclick=()=>{FX.tap();openDiscover()};b.appendChild(back);
+  const hero=document.createElement('div');hero.className='learncard';hero.style.cssText='flex-direction:row;gap:10px;flex-wrap:wrap;justify-content:center;max-width:640px';
+  hero.innerHTML=s.items.slice(0,12).map(i=>`<span style="font-size:34px">${i.e}</span>`).join('');b.appendChild(hero);
+  const g=document.createElement('div');g.className='tiles';b.appendChild(g);
+  s.games.forEach(gm=>{const t0=gm.split(':')[0];const t=document.createElement('button');t.className='tile';t.innerHTML=`<div class="ico">${GICON[t0]}</div><span>${gLabel(gm)}</span>`;
+    t.onclick=()=>{unlockAudio();FX.tap();startRun(dNode(secId,gm),{corner:'discover',sec:secId})};g.appendChild(t)});
+}
+
 /* ======================= PRACTICE CORNERS ======================= */
 const CORNER={
  letters:[['meet','Meet a letter','abc'],['bubbles','Sound Bubbles','○'],['snack',"Haathi's Snack",'🥭'],['picletter','Picture to letter','🐍s'],['letterpic','Letter to picture','s🐍'],['samesound','Same first sound?','👍'],
@@ -994,7 +1078,7 @@ function cornerNode(id,kind){const pool=S.intro.length?S.intro:['s','a'];
   if(SK[id])return Object.assign(SK[id].node(param(id)),{skill:id});
   return {t:id}}
 function cornerLocked(id){if(S.settings.unlock)return false;if(id==='wname')return !nameChars().length;if(LGAMES[id])return !LGAMES[id]();if(SK[id])return !unlocked(id);return false}
-function openCorner(kind){go('corner');const b=$('corner-body');const from={corner:kind};b.innerHTML='';
+function openCorner(kind,sec){go('corner');if(kind==='discover'){openDiscover(sec);return}const b=$('corner-body');const from={corner:kind};b.innerHTML='';
   $('corner-title').textContent={letters:'Letters',numbers:'Numbers',writing:'Writing'}[kind];
   const list=CORNER[kind];const open=list.filter(([id])=>!cornerLocked(id));
   const sur=document.createElement('button');sur.className='go-btn';sur.style.cssText='width:100%;max-width:640px;animation:none';sur.innerHTML=`🎲 Surprise me <span style="font-size:15px;font-weight:600">(${open.length} games open)</span>`;

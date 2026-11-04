@@ -100,7 +100,7 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 .node.cur .ring{animation:ring 1.4s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
 @keyframes ring{50%{transform:scale(1.18);opacity:.4}}
 .node.locked{opacity:.5}
-.corners{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.corners{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .corner{background:#fff;border-radius:20px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;box-shadow:0 5px 0 var(--shadow);min-height:74px;justify-content:center;transition:transform .12s}
 .corner:active{transform:translateY(3px)}
 .corner b{font-family:var(--f-letter);font-size:26px;line-height:1}
@@ -341,6 +341,12 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 .blocks .ones{display:flex;flex-wrap:wrap-reverse;gap:3px;width:clamp(44px,12vw,64px);align-content:flex-start}
 .blocks .ones i{background:var(--mango)}
 .eqn>span{font-family:var(--f-letter);font-weight:700}
+.learncard{background:#fff;border-radius:26px;box-shadow:0 6px 0 var(--shadow);padding:16px 22px;display:flex;flex-direction:column;align-items:center;gap:8px;max-width:520px}
+.cdot{display:block;width:clamp(56px,15vw,80px);aspect-ratio:1;border-radius:50%;border:3px solid #c9d6cc}
+.agebadge{font-family:var(--f-display);font-weight:700;font-size:12px;color:var(--leaf);background:var(--moss);border-radius:999px;padding:1px 8px}
+.orderrow{display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center}
+.orderrow i{font-style:normal;color:var(--ink-soft);font-size:20px}
+.oslot{min-width:clamp(70px,18vw,104px);min-height:clamp(70px,18vw,96px);border-radius:16px;border:3px dashed var(--leaf-2);background:#fff;display:grid;place-items:center;padding:4px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 
@@ -381,6 +387,7 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
     <button class="corner" data-corner="letters"><b style="color:var(--c-letter)">abc</b><span>Letters</span></button>
     <button class="corner" data-corner="numbers"><b style="color:var(--c-number)">123</b><span>Numbers</span></button>
     <button class="corner" data-corner="writing"><b style="color:var(--c-write)">✎</b><span>Writing</span></button>
+    <button class="corner" data-corner="discover"><b>🌍</b><span>Discover</span></button>
   </div>
 </section>
 
@@ -469,6 +476,7 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 <canvas class="confetti" id="confetti"></canvas>
 
 <script src="clips.js"></script>
+<script src="discover-data.js"></script>
 <script src="app.js"></script>
 <script>if("serviceWorker" in navigator){addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}</script>
 </body>
