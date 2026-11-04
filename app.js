@@ -56,30 +56,31 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
    Level up: 4+ tries at this level and p >= 0.8. Level down: 3+ tries and p < 0.35. */
 const SK={
  count:{sub:'Maths',name:'Counting objects',levels:[5,10,15,20,30],lab:v=>'to '+v,unlock:()=>true,node:v=>({t:'count',max:v})},
- numfind:{sub:'Maths',name:'Recognising numbers',levels:[3,5,10,20,30],lab:v=>'1 to '+v,unlock:()=>true,node:v=>({t:'numfind',max:v})},
+ numfind:{sub:'Maths',name:'Recognising numbers',levels:[5,10,20,30,50,100],lab:v=>'1 to '+v,unlock:()=>true,node:v=>({t:'numfind',max:v})},
  dice:{sub:'Maths',name:'Quick look (dots)',levels:[3,6,10],lab:v=>'up to '+v,unlock:()=>true,node:v=>({t:'dice',max:v})},
  shape:{sub:'Maths',name:'Shapes',levels:[0,1,2,3],lab:v=>SHAPESETS[v].length+' shapes',unlock:()=>true,node:v=>({t:'shape',set:SHAPESETS[v]})},
  pattern:{sub:'Maths',name:'Patterns',levels:[0,1,2],lab:v=>['AB','AB, ABC','mixed'][v],unlock:()=>true,node:v=>({t:'pattern',lvl:v})},
  length:{sub:'Maths',name:'Longer, shorter, taller',levels:[0,1],lab:v=>['longer','longer/shorter/taller'][v],unlock:()=>true,node:v=>({t:'length',lvl:v})},
  more:{sub:'Maths',name:'Which has more',levels:[5,10,20,30],lab:v=>'to '+v,unlock:()=>lv('count')>=1,node:v=>({t:'more',max:v})},
- next:{sub:'Maths',name:'Before and after',levels:[5,10,20,30],lab:v=>'to '+v,unlock:()=>lv('count')>=1,node:v=>({t:'next',max:v})},
- bigger:{sub:'Maths',name:'Bigger number',levels:[5,10,20,30],lab:v=>'to '+v,unlock:()=>lv('numfind')>=1,node:v=>({t:'bigger',max:v})},
- missing:{sub:'Maths',name:'Missing number',levels:[10,20,30],lab:v=>'to '+v,unlock:()=>pr('next')>=.6&&n_('next')>=3,node:v=>({t:'missing',max:v})},
- add:{sub:'Maths',name:'Adding',levels:[5,10,20,30],lab:v=>'within '+v,unlock:()=>lv('count')>=1&&pr('more')>=.6&&n_('more')>=3,node:v=>({t:'add',max:v})},
- takeaway:{sub:'Maths',name:'Taking away',levels:[5,10,20],lab:v=>'within '+v,unlock:()=>pr('add')>=.6&&n_('add')>=3,node:v=>({t:'takeaway',max:v})},
+ next:{sub:'Maths',name:'Before and after',levels:[10,20,30,50,100],lab:v=>'to '+v,unlock:()=>lv('count')>=1,node:v=>({t:'next',max:v})},
+ bigger:{sub:'Maths',name:'Bigger number',levels:[10,20,30,50,100],lab:v=>'to '+v,unlock:()=>lv('numfind')>=1,node:v=>({t:'bigger',max:v})},
+ missing:{sub:'Maths',name:'Missing number',levels:[10,20,30,50,100],lab:v=>'to '+v,unlock:()=>pr('next')>=.6&&n_('next')>=3,node:v=>({t:'missing',max:v})},
+ add:{sub:'Maths',name:'Adding',levels:[5,10,20,30,50],lab:v=>'within '+v,unlock:()=>lv('count')>=1&&pr('more')>=.6&&n_('more')>=3,node:v=>({t:'add',max:v})},
+ takeaway:{sub:'Maths',name:'Taking away',levels:[5,10,20,30,50],lab:v=>'within '+v,unlock:()=>pr('add')>=.6&&n_('add')>=3,node:v=>({t:'takeaway',max:v})},
  share:{sub:'Maths',name:'Sharing fairly',levels:[6,10,20],lab:v=>'up to '+v,unlock:()=>lv('count')>=1,node:v=>({t:'share',max:v})},
  shop:{sub:'Maths',name:'Mela shop (coins)',levels:[5,10,11],lab:v=>v===11?'₹1, ₹2, ₹5 coins':'₹1 coins to '+v,unlock:()=>lv('numfind')>=1,node:v=>({t:'shop',lvl:v})},
  wpre:{sub:'Writing',name:'Pre-writing patterns',levels:['line','circle','cross','zigzag','wave','loops','cups','bridges','mountains','stairs','rainbow','spiral'],lab:v=>v,unlock:()=>true,node:v=>({t:'wpre',k:v})},
  wshape:{sub:'Writing',name:'Drawing shapes',levels:['square','triangle','rectangle','star'],lab:v=>v,unlock:()=>lv('wpre')>=2,node:v=>({t:'wshape',k:v})},
  wletter:{sub:'Writing',name:'Small letters',levels:[0],lab:()=>'letters met so far',unlock:()=>true,node:()=>({t:'wletter',l:weakestLetter(true)})},
- wnum:{sub:'Writing',name:'Writing numbers',levels:[3,5,10,20,30],lab:v=>'1 to '+v,unlock:()=>true,node:v=>({t:'wnum',n:ri(Math.max(1,v>10?11:1),v)})},
+ wnum:{sub:'Writing',name:'Writing numbers',levels:[5,10,20,30,50,99],lab:v=>'1 to '+v,unlock:()=>true,node:v=>({t:'wnum',n:ri(Math.max(1,v>10?11:1),v)})},
  wcap:{sub:'Writing',name:'Big letters',levels:[0],lab:()=>'capitals of letters met',unlock:()=>S.intro.length>=6,node:()=>({t:'wcap',l:rnd(S.intro)})},
  wname:{sub:'Writing',name:'Writing my name',levels:[0],lab:()=>'own name',unlock:()=>S.intro.length>=4&&n_('wletter')>=3,node:()=>({t:'wname'})},
  wword:{sub:'Writing',name:'Writing words',levels:[0],lab:()=>'3-letter words',unlock:()=>S.intro.length>=6&&pr('wletter')>=.6,node:()=>({t:'wword',w:pickWord()})},
  dots:{sub:'Writing',name:'Dot-to-dot',levels:[5,9,10],lab:v=>'up to '+v+' dots',unlock:()=>true,node:v=>({t:'dots',max:v})},
+ tens:{sub:'Maths',name:'Tens and ones (place value)',levels:[20,50,99],lab:v=>'to '+v,unlock:()=>lv('count')>=3||((S.profile&&S.profile.age)||4)>=5,node:v=>({t:'tens',max:v})},
  fewer:{sub:'Maths',name:'Which has fewer',levels:[5,10,20,30],lab:v=>'to '+v,unlock:()=>true,node:v=>({t:'fewer',max:v})},
- smaller:{sub:'Maths',name:'Smaller number',levels:[5,10,20,30],lab:v=>'0 to '+v,unlock:()=>lv('numfind')>=1,node:v=>({t:'smaller',max:v})},
- matchgroup:{sub:'Maths',name:'Match number to group',levels:[5,10],lab:v=>'to '+v,unlock:()=>true,node:v=>({t:'matchgroup',max:v})},
+ smaller:{sub:'Maths',name:'Smaller number',levels:[10,20,30,50,100],lab:v=>'0 to '+v,unlock:()=>lv('numfind')>=1,node:v=>({t:'smaller',max:v})},
+ matchgroup:{sub:'Maths',name:'Match number to group',levels:[5,10,15],lab:v=>'to '+v,unlock:()=>true,node:v=>({t:'matchgroup',max:v})},
  maketen:{sub:'Maths',name:'Make 5 and make 10',levels:[5,10],lab:v=>'make '+v,unlock:()=>lv('count')>=1,node:v=>({t:'maketen',max:v})},
  beats:{sub:'Maths',name:'Counting drum beats',levels:[4,6,8],lab:v=>'up to '+v,unlock:()=>true,node:v=>({t:'beats',max:v})},
  rocket:{sub:'Maths',name:'Counting down',levels:[5,10],lab:v=>'from '+v,unlock:()=>true,node:v=>({t:'rocket',max:v})},
@@ -115,11 +116,25 @@ function pickLetterGame(exclude){const c=Object.keys(LGAMES).filter(g=>g!==exclu
   let best=null,bs=-9;c.forEach(g=>{const sc=Math.random()*1.4+Math.max(-.5,Math.min(.5,prefBonus(g)))-recentPenalty(g);if(sc>bs){bs=sc;best=g}});return best||'bubbles'}
 function st(id){return S.sk[id]||(S.sk[id]={lvl:0,p:.5,n:0,ln:0,last:null,up:null})}
 const lv=id=>(S.sk[id]||{lvl:0}).lvl, pr=id=>(S.sk[id]||{p:0}).p, n_=id=>(S.sk[id]||{n:0}).n;
-function learn(id,ok){if(!SK[id])return;const s=st(id);s.n++;s.ln++;s.p=s.p+.25*((ok?1:0)-s.p);s.last=today();
+function learn(id,ok){if(!SK[id])return;const s=st(id);s.n++;s.ln++;s.p=s.p+.25*((ok?1:0)-s.p);s.last=today();s.streak=ok?(s.streak||0)+1:0;s.miss=ok?0:(s.miss||0)+1;
   const L=SK[id].levels.length;
-  if(s.ln>=4&&s.p>=.8&&s.lvl<L-1){s.lvl++;s.ln=0;s.p=.55;s.up=today()}
-  else if(s.ln>=3&&s.p<.35&&s.lvl>0){s.lvl--;s.ln=0;s.p=.5}
+  if(s.lvl<L-1&&((s.ln>=5&&s.p>=.8)||s.streak>=6)){s.lvl++;s.ln=0;s.p=.6;s.streak=0;s.up=today();s.justUp=1}
+  else if(s.lvl>0&&((s.ln>=3&&s.p<.35)||s.miss>=3)){s.lvl--;s.ln=0;s.p=.5;s.miss=0}
   save()}
+/* ---- starting point by age, so a 4-year-old starts at 1-10, not 1-3 ---- */
+const PLACE={3:{count:0,numfind:0,matchgroup:0},4:{count:1,numfind:1,dice:1,more:1,matchgroup:1,wnum:1},
+ 5:{count:3,numfind:2,dice:2,more:2,next:1,bigger:1,smaller:1,add:1,takeaway:0,matchgroup:2,wnum:2,beats:1,order:1,rocket:1},
+ 6:{count:4,numfind:3,dice:2,more:3,next:2,bigger:2,smaller:2,missing:1,add:2,takeaway:1,matchgroup:2,wnum:3,tens:1,skip:1,maketen:1,frog:1,money:1,double:1,beats:2,order:2,rocket:1,countwrite:1},
+ 7:{count:4,numfind:5,dice:2,more:3,next:4,bigger:4,smaller:4,missing:3,add:4,takeaway:3,matchgroup:2,wnum:5,tens:2,skip:2,maketen:1,frog:1,money:1,double:1,beats:2,order:2,rocket:1,countwrite:1}};
+const LETTERS_BY_AGE={3:3,4:6,5:10,6:14,7:18};
+function placeByAge(){const age=Math.min(7,Math.max(3,(S.profile&&S.profile.age)||4));const P=PLACE[age];
+  Object.keys(P).forEach(id=>{if(!SK[id])return;const s=st(id);const tgt=Math.min(P[id],SK[id].levels.length-1);if(s.lvl<tgt){s.lvl=tgt;s.ln=0;s.p=Math.max(s.p,.55)}});
+  const want=LETTERS_BY_AGE[age];while(S.intro.length<want){const l=LET.find(x=>!S.intro.includes(x));if(!l)break;S.intro.push(l)}S.placed=2;save()}
+/* shuffled deck: every value comes up once before any repeats */
+const DECKS={};
+function deck(key,pool){let d=DECKS[key];const sig=pool.length+':'+pool[0]+':'+pool[pool.length-1];if(!d||d.sig!==sig||!d.left.length){const last=d&&d.lastV;d={sig,left:shuffle(pool),lastV:last};if(d.left.length>1&&d.left[0]===last)d.left.push(d.left.shift());DECKS[key]=d}const v=d.left.shift();d.lastV=v;return v}
+const range=(a,b)=>Array.from({length:Math.max(0,b-a+1)},(_,i)=>a+i);
+function letterSkill(){const L=S.intro.filter(l=>rec(l).att.length>=3);if(!L.length)return 0;return L.reduce((t,l)=>t+accuracy(l),0)/L.length}
 const param=id=>SK[id].levels[Math.min(lv(id),SK[id].levels.length-1)];
 function unlocked(id){return S.settings.unlock||SK[id].unlock()}
 /* letters */
@@ -138,7 +153,7 @@ function weakestLetter(forWriting){const L=S.intro.length?S.intro:['s'];
   return L.slice().sort((a,b)=>(accuracy(a)+rec(a).att.length*.02)-(accuracy(b)+rec(b).att.length*.02))[0]}
 function pickWord(){const ok=CVC.filter(w=>[...w].every(c=>S.intro.includes(c)||(c==='c'&&S.intro.includes('k'))));return rnd(ok.length?ok:CVC.slice(0,6))}
 function readyForNewLetter(chIdx){if(S.intro.length>=LET.length)return false;if(S.intro.length<2)return true;
-  const settled=S.intro.every(l=>{const a=rec(l).att;return a.length>=3&&accuracy(l)>=.6});return settled||chIdx-S.lastIntroCh>=3}
+  const tried=S.intro.filter(l=>rec(l).att.length>=2);const settled=tried.length>=Math.min(4,S.intro.length)&&tried.every(l=>accuracy(l)>=.6);return settled||chIdx-S.lastIntroCh>=2}
 /* ---- preferences: child's faces + parent ratings + all-families config ---- */
 let CFG={weights:{},notes:[]};
 if(window.fetch)fetch('config.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(j=>{if(j)CFG=Object.assign(CFG,j)}).catch(()=>{});
@@ -297,9 +312,9 @@ function renderStart(){$('start-haathi').innerHTML=haathi('happy');if(S.profile)
 function begin(){unlockAudio();FX.trumpet();if(!S.profile){go('setup');return}go('map');setTimeout(()=>say(['P_welcome',200,'P_map_hi'],null),600)}
 $('btn-start').onclick=begin;$('start-haathi').onclick=begin;
 let setupAge=4;
-function renderSetup(){const ac=$('agechips');ac.innerHTML='';[3,4,5,6].forEach(a=>{const b=document.createElement('button');b.textContent=a;b.setAttribute('aria-pressed',a===setupAge);b.onclick=()=>{setupAge=a;FX.tap();renderSetup()};ac.appendChild(b)})}
+function renderSetup(){const ac=$('agechips');ac.innerHTML='';[3,4,5,6,7].forEach(a=>{const b=document.createElement('button');b.textContent=a;b.setAttribute('aria-pressed',a===setupAge);b.onclick=()=>{setupAge=a;FX.tap();renderSetup()};ac.appendChild(b)})}
 $('btn-setup-done').onclick=()=>{unlockAudio();S.profile={name:$('in-name').value.trim()||'friend',age:setupAge,limit:+$('in-limit').value,created:today()};S.settings.consent=$('in-consent').checked;
-  if(setupAge>=5){S.sk.count={lvl:1,p:.6,n:0,ln:0,last:null};S.sk.numfind={lvl:2,p:.6,n:0,ln:0,last:null}}
+  placeByAge();
   save();go('map');setTimeout(()=>{FX.trumpet();say([300,'P_hello',300,'P_map_hi'],null)},400)};
 
 /* ======================= MAP ======================= */
@@ -363,7 +378,7 @@ function setRounds(){const r=$('rounds');r.innerHTML='';for(let i=0;i<RUN.rounds
 function actions(list){const a=$('actions');a.innerHTML='';list.forEach(([cls,label,fn,icon,id])=>{const b=document.createElement('button');b.className='big-btn '+cls;if(id)b.id=id;b.innerHTML=(icon||'')+label;b.onclick=()=>{unlockAudio();FX.tap();fn()};a.appendChild(b)})}
 $('play-hear').onclick=()=>{unlockAudio();FX.tap();RUN&&RUN.prompt&&RUN.prompt()};
 $('play-back').onclick=()=>{FX.tap();const f=RUN&&RUN.from;RUN=null;f&&f.corner?openCorner(f.corner):go('map')};
-const TITLES={bigsmall:'Big and small letters',sameletter:'Same letter',oddsound:'Odd one out',samesound:'Same first sound?',picletter:'Picture to letter',letterpic:'Letter to picture',fishing:'Letter fishing',nextletter:'Next letter',missingletter:'Missing letter',sortsound:'Sound baskets',memory:'Memory pairs',rhyme:'Rhyme time',buildword:'Build a word',firstmissing:'First letter',hunt:'Letter hunt',mole:'Letter moles',hidden:'Hidden letter',stones:'River stones',shadow:'Letter shadows',
+const TITLES={tens:'Tens and ones',bigsmall:'Big and small letters',sameletter:'Same letter',oddsound:'Odd one out',samesound:'Same first sound?',picletter:'Picture to letter',letterpic:'Letter to picture',fishing:'Letter fishing',nextletter:'Next letter',missingletter:'Missing letter',sortsound:'Sound baskets',memory:'Memory pairs',rhyme:'Rhyme time',buildword:'Build a word',firstmissing:'First letter',hunt:'Letter hunt',mole:'Letter moles',hidden:'Hidden letter',stones:'River stones',shadow:'Letter shadows',
  fewer:'Which has fewer?',smaller:'Smaller number',matchgroup:'Match the number',maketen:'Make ten',beats:'Drum beats',rocket:'Rocket countdown',order:'Numbers in order',frog:'Frog hops',skip:'Skip counting',hiding:'Hiding ladoos',oddshape:'Odd shape out',sortcolour:'Colour baskets',size:'Big and small',heavy:'Heavy and light',queue:'First and last',money:'More money?',double:'Butterfly doubles',countshapes:'Count the shapes',
  maze:'Road maze',tracepic:'Trace a picture',drawshapes:'Draw with shapes',finishpic:'Finish the picture',wrainbow:'Rainbow writing',wheard:'Write what you hear',countwrite:'Count and write',wcopy:'Copy it',wlines:'Straight lines',joinmatch:'Join the pairs',colour:'Colouring',surprise:'Surprise!',
  meet:'Meet a letter',bubbles:'Sound Bubbles',snack:"Haathi's Snack",count:'Count with me',numfind:'Number Balloons',more:'Which has more?',add:'Put them together',takeaway:'Monkey takes away',shape:'Shape Hunt',pattern:'What comes next?',dice:'Quick look',next:'Before and after',bigger:'Bigger number',missing:'Missing number',share:'Share fairly',shop:'Mela shop',length:'Long and short',
@@ -375,7 +390,7 @@ function startRun(n,from){
   let delay=250;if(from.first){const ch=S.chapters.find(c=>c.id===from.chapter);say(ch&&ch.id%3===0?[REGIONS[ch.region].clip,200,'P_chapter']:['P_chapter'],null);delay=1700}
   setTimeout(()=>{if(RUN&&RUN.node===n)nextRound()},delay);
 }
-function nextRound(){if(!RUN)return;setRounds();$('actions').innerHTML='';ACT[RUN.node.t](RUN.node,RUN.round)}
+function nextRound(){if(!RUN)return;setRounds();$('actions').innerHTML='';{const id=RUN.node.skill||RUN.node.t;if(SK[id]&&RUN.node.max!=null&&typeof param(id)==='number'&&RUN.node.max!==param(id)){const up=param(id)>RUN.node.max;RUN.node.max=param(id);if(up){FX.sparkle();$('cap').textContent='Level up! Numbers up to '+RUN.node.max}}}ACT[RUN.node.t](RUN.node,RUN.round)}
 function roundDone(ok){if(!RUN||RUN._lock===RUN.round)return;RUN._lock=RUN.round;RUN.ok.push(!!ok);RUN.round++;setRounds();if(RUN.round>=RUN.rounds)finishRun();else setTimeout(nextRound,600)}
 const learnN=(n,ok)=>{if(n.skill||SK[n.t])learn(n.skill||n.t,ok)};
 function finishRun(){
@@ -414,14 +429,14 @@ function sayTurn(l,w){sayTurn.on=true;
   RUN.prompt=turn;turn();
   actions([['soft','Again',turn],['star','Said it!',()=>{S.said=(S.said||0)+1;save();burst($('actions'),16);FX.chime();say(['P_great_saying'],'Wonderful saying!').then(()=>roundDone(true))}],['soft','Skip',()=>roundDone(true)]]);
 }
-ACT.bubbles=(n)=>{
-  const t=n.focus&&Math.random()<.6?n.focus:rnd(n.pool&&n.pool.length?n.pool:['s']);
-  const others=shuffle(LET.filter(x=>x!==t&&SAME[t]!==x)).slice(0,2);const letters=shuffle([t,...others]);const st=body();
-  st.innerHTML=`<button class="pill-btn hearbtn" id="bh">${ICON.ear} Hear it</button>${hasRec(t)?'':`<div class="cue" style="position:absolute;top:64px;left:50%;transform:translateX(-50%);z-index:3"><span class="em">${KEYW(t)[1]}</span>${KEYW(t)[0]}</div>`}`;
+ACT.bubbles=(n)=>{const pool=S.intro.length?S.intro:(n.pool&&n.pool.length?n.pool:['s']);
+  const weak=n.focus&&pool.includes(n.focus)&&rec(n.focus).att.length>=2&&accuracy(n.focus)<.7;const t=weak&&Math.random()<.25?n.focus:deck('bub',pool);const cw=rnd(WORDS[t]);
+  const others=shuffle([...shuffle(pool.filter(x=>x!==t&&SAME[t]!==x)).slice(0,2),...shuffle(LET.filter(x=>x!==t&&SAME[t]!==x&&!pool.includes(x)))].filter((x,i,a)=>a.indexOf(x)===i)).slice(0,nopt()-1);const letters=shuffle([t,...others]);const st=body();
+  st.innerHTML=`<button class="pill-btn hearbtn" id="bh">${ICON.ear} Hear it</button>${hasRec(t)?'':`<div class="cue" style="position:absolute;top:64px;left:50%;transform:translateX(-50%);z-index:3"><span class="em">${cw[1]}</span>${cw[0]}</div>`}`;
   const H=$('stage').clientHeight||520;
   letters.forEach((l,i)=>{const b=document.createElement('button');b.className='bubble';b.innerHTML=`<span>${l}</span>`;b.style.left=`calc(${((i+.5)/letters.length*100).toFixed(1)}% - clamp(50px,13vw,70px))`;
     const dur=11+Math.random()*3;b.style.setProperty('--dur',dur+'s');b.style.setProperty('--h',H+'px');b.style.setProperty('--delay',(-dur*(.4+.25*i/letters.length))+'s');b.onclick=()=>pick(b,l);st.appendChild(b)});
-  const prompt=()=>say(hasRec(t)?['P_bub_ask',300,'R_'+t,400,'R_'+t]:['P_bub_ask_word',300,W(KEYW(t)[0])],hasRec(t)?`Pop the bubble that says ${SHOW[t]}`:`Pop the letter for the first sound in "${KEYW(t)[0]}"`);
+  const prompt=()=>say(hasRec(t)?['P_bub_ask',300,'R_'+t,400,'R_'+t]:['P_bub_ask_word',300,W(cw[0])],hasRec(t)?`Pop the bubble that says ${SHOW[t]}`:`Pop the letter for the first sound in "${cw[0]}"`);
   RUN.prompt=prompt;$('bh').onclick=()=>{FX.tap();prompt()};
   let busy=false,wrong=false;const rec1=once(ok=>recordLetter(t,ok,3,'bubbles'));
   function pick(b,l){if(busy)return;const ok=l===t;rec1(ok);
@@ -431,8 +446,8 @@ ACT.bubbles=(n)=>{
   setTimeout(prompt,300);
 };
 ACT.snack=(n)=>{
-  const t=n.focus&&Math.random()<.6?n.focus:rnd(n.pool&&n.pool.length?n.pool:['s']);const opts=WORDS[t].length>1?WORDS[t].slice(1):WORDS[t];const target=rnd(opts);
-  const others=shuffle(ORDER.filter(x=>x!==t&&SAME[t]!==x)).slice(0,2).map(l=>rnd(WORDS[l]));const items=shuffle([target,...others]);
+  const pool=S.intro.length?S.intro:(n.pool&&n.pool.length?n.pool:['s']);const weak=n.focus&&pool.includes(n.focus)&&rec(n.focus).att.length>=2&&accuracy(n.focus)<.7;const t=weak&&Math.random()<.25?n.focus:deck('snk',pool);const target=rnd(WORDS[t]);
+  const others=shuffle(ORDER.filter(x=>x!==t&&SAME[t]!==x)).slice(0,nopt()-1).map(l=>rnd(WORDS[l]));const items=shuffle([target,...others]);
   body().innerHTML=`<button class="haathi feed-h" id="fh" aria-label="Haathi">${haathi('open')}</button>${hasRec(t)?'':`<div class="cue"><span class="em">${KEYW(t)[1]}</span>starts like ${KEYW(t)[0]}</div>`}<div class="choices" id="cards"></div>`;
   const h=$('fh');let busy=false,wrong=false;const rec1=once(ok=>recordLetter(t,ok,3,'snack'));
   const prompt=()=>{anim(h,'dance');return say(hasRec(t)?['P_feed_ask',300,'R_'+t,400,'R_'+t]:['P_feed_ask_word',300,W(KEYW(t)[0])],hasRec(t)?`Something that starts with ${SHOW[t]}`:`Something that starts like "${KEYW(t)[0]}"`)};
@@ -457,11 +472,14 @@ ACT.snack=(n)=>{
 
 /* ---- MATHS ---- */
 function layout(k,count,small){let html='<div class="objs">';for(let t=0;t<count;t+=10){html+='<div class="tenrow">';for(let f=t;f<Math.min(t+10,count);f+=5){html+='<div class="five">';for(let i=f;i<Math.min(f+5,count);i++)html+=objHTML(k,i,small);html+='</div>'}html+='</div>'}return html+'</div>'}
-function numChoices(ans,max,el,onPick,lo){lo=lo==null?1:lo;let locked=false;const set=new Set([ans]);let guard=0;while(set.size<3&&guard++<50){const d=ans+rnd([-2,-1,1,2,3]);if(d>=lo&&d<=Math.max(max,ans+2))set.add(d)}
+function numChoices(ans,max,el,onPick,lo){lo=lo==null?1:lo;let locked=false;const want=nopt();const hi=Math.max(max,ans+2);
+  const pv=[];if(ans>=10){pv.push(ans+10,ans-10);const r=+String(ans).split('').reverse().join('');if(String(ans).length===2&&ans%10&&r!==ans)pv.push(r)}
+  const set=new Set([ans]);shuffle(pv.filter(v=>v>=lo&&v<=hi&&v!==ans)).slice(0,ans>=13?1:0).forEach(v=>set.add(v));
+  shuffle([ans-1,ans+1,ans-2,ans+2,ans+3,ans-3]).forEach(v=>{if(set.size<want&&v>=lo&&v<=hi)set.add(v)});let g=0;while(set.size<want&&g++<60)set.add(ri(lo,hi));
   shuffle([...set]).forEach(v=>{const b=document.createElement('button');b.className='pcard num';b.textContent=v;b.onclick=()=>{if(locked)return;if(v===ans)locked=true;onPick(b,v)};el.appendChild(b)})}
 async function countAlong(objs){for(let i=0;i<objs.length;i++){anim(objs[i],'dance',500);await say([N(i+1)],String(i+1))}}
 function tapCount(objs,start){let c=start||0;objs.forEach(o=>o.onclick=()=>{if(o.classList.contains('counted'))return;c++;o.classList.add('counted');o.dataset.n=c;FX.tick(c);say([N(c)],String(c))});return ()=>c}
-ACT.count=(n)=>{const max=n.max,count=ri(Math.max(2,Math.ceil(max*.45)),max),thing=rnd(COUNT_THINGS);
+ACT.count=(n)=>{const max=n.max,count=deck('count'+max,range(max>10?Math.ceil(max*.35):2,max)),thing=rnd(COUNT_THINGS);
   body().innerHTML=layout(thing.k,count,count>10)+`<div class="choices" id="nc" hidden></div>`;
   let c=0;const objs=[...body().querySelectorAll('.obj')];let wrong=false;const L=once(ok=>learnN(n,ok));
   const prompt=()=>say(c<count?['P_count_tap']:['P_how_many'],c<count?`Tap each one and count!`:'How many are there?');RUN.prompt=prompt;prompt();
@@ -472,7 +490,8 @@ ACT.count=(n)=>{const max=n.max,count=ri(Math.max(2,Math.ceil(max*.45)),max),thi
 function floatPick(vals,cls,onPick){const st=body();const H=$('stage').clientHeight||520;vals.forEach((v,i)=>{const b=document.createElement('button');b.className='bubble '+cls;b.innerHTML=`<span>${v}</span>`;b.style.left=`calc(${((i+.5)/vals.length*100).toFixed(1)}% - clamp(50px,13vw,70px))`;
   const dur=11+Math.random()*3;b.style.setProperty('--dur',dur+'s');b.style.setProperty('--h',H+'px');b.style.setProperty('--delay',(-dur*(.4+.25*i/vals.length))+'s');b.onclick=()=>onPick(b,v);st.appendChild(b)})}
 function popIt(b){const m=getComputedStyle(b).transform;b.style.transform=m;b.style.animation='none';void b.offsetWidth;b.classList.add('pop');FX.pop();burst(b,16)}
-ACT.numfind=(n)=>{const max=n.max,t=ri(1,max);const set=new Set([t]);while(set.size<3)set.add(ri(1,Math.max(max,4)));
+ACT.numfind=(n)=>{const max=n.max,t=deck('nf'+max,range(1,max));const set=new Set([t]);const near=[t+1,t-1,t+2,t-2];if(t>=10){near.unshift(t+10,t-10);const r=+String(t).split('').reverse().join('');if(String(t).length===2&&t%10&&r!==t)near.unshift(r)}
+  shuffle(near.slice(0,t>=10?3:4)).concat(shuffle(near.slice(t>=10?3:4))).forEach(v=>{if(set.size<nopt()&&v>=1&&v<=Math.max(max,5))set.add(v)});while(set.size<nopt())set.add(ri(1,Math.max(max,5)));
   body().innerHTML=`<button class="pill-btn hearbtn" id="bh">${ICON.ear} Hear it</button>`;
   const prompt=()=>say(['P_find_number',200,N(t)],`Find the number ${t}`);RUN.prompt=prompt;$('bh').onclick=()=>{FX.tap();prompt()};
   let busy=false,wrong=false;const L=once(ok=>learnN(n,ok));
@@ -486,14 +505,15 @@ ACT.more=(n)=>{const max=n.max;let a=ri(1,max),b=ri(1,max);while(Math.abs(a-b)<M
   body().querySelectorAll('.plate').forEach(p=>p.onclick=()=>{if(busy)return;const v=p.dataset.p==='0'?a:b,ok=v===Math.max(a,b);L(ok);
     if(ok){busy=true;p.classList.add('right');FX.chime();burst(p,16);say(['P_yes_more',200,N(Math.max(a,b)),'P_and',N(Math.min(a,b))],`Yes! ${Math.max(a,b)} is more than ${Math.min(a,b)}.`).then(()=>roundDone(!wrong))}
     else{wrong=true;FX.boing();anim(p,'wiggle',500);say(['P_count_again'],"Let's count them.").then(()=>countAlong([...p.querySelectorAll('.obj')]).then(()=>say(['P_which_more'],'Which plate has more?')))}})};
-ACT.add=(n)=>{const max=n.max;const total=ri(Math.max(2,Math.ceil(max*.4)),max),a=ri(1,total-1),b=total-a;const thing=rnd(COUNT_THINGS.slice(0,4));const small=total>10;
-  body().innerHTML=`<div class="eqn"><div class="grp">${Array.from({length:a},(_,k)=>objHTML(thing.k,k,small)).join('')}</div>+<div class="grp">${Array.from({length:b},(_,k)=>objHTML(thing.k,a+k,small)).join('')}</div></div><div class="eqn"><span>${a}</span>+<span>${b}</span>=<span>?</span></div><div class="choices" id="nc"></div>`;
+ACT.add=(n)=>{const max=n.max;const total=deck('add'+max,range(max<=5?2:Math.ceil(max*.3),max)),a=ri(1,total-1),b=total-a;const thing=rnd(COUNT_THINGS.slice(0,4));const small=total>10;
+  body().innerHTML=total>20?`<div class="eqn">${blocksHTML(a)}<span>+</span>${blocksHTML(b)}</div>`:`<div class="eqn"><div class="grp">${Array.from({length:a},(_,k)=>objHTML(thing.k,k,small)).join('')}</div>+<div class="grp">${Array.from({length:b},(_,k)=>objHTML(thing.k,a+k,small)).join('')}</div></div><div class="eqn"><span>${a}</span>+<span>${b}</span>=<span>?</span></div><div class="choices" id="nc"></div>`;
   const prompt=()=>say([N(a),'P_and',N(b),'P_more_word',300,'P_altogether'],`${a} and ${b} more. How many altogether? Tap them to count.`);RUN.prompt=prompt;prompt();
   const objs=[...body().querySelectorAll('.obj')];tapCount(objs);let wrong=false;const L=once(ok=>learnN(n,ok));
   numChoices(total,max,$('nc'),(btn,v)=>{const ok=v===total;L(ok);
     if(ok){btn.classList.add('right');body().querySelectorAll('.eqn span')[2].textContent=total;FX.chime();burst(btn,16);say([N(a),'P_and',N(b),'P_makes',N(total),250,rnd(PRAISE)],`${a} + ${b} = ${total}!`).then(()=>roundDone(!wrong))}
     else{wrong=true;FX.boing();anim(btn,'wiggle',500);say(['P_count_again'],"Let's count them all.").then(()=>countAlong(objs))}})};
-ACT.takeaway=(n)=>{const max=n.max;const total=ri(Math.max(3,Math.ceil(max*.4)),max),k=ri(1,Math.min(total-1,max<=5?2:Math.ceil(total/2))),left=total-k;
+ACT.takeaway=(n)=>{const max=n.max;const total=deck('ta'+max,range(Math.max(3,Math.ceil(max*.3)),max)),k=ri(1,Math.min(total-1,max<=5?2:Math.ceil(total/2))),left=total-k;
+  if(total>20){return pickNum({top:`<div class="eqn">${blocksHTML(total)}</div><div class="eqn"><span>${total}</span>−<span>${k}</span>=<span>?</span></div>`,ans:left,max,lo:0,say:['P_monkey_took',N(k),300,'P_how_many_left'],cap:`${total} take away ${k}. How many are left?`,right:[N(total),'P_and',N(left)],rightCap:`${total} − ${k} = ${left}`,node:n})}
   body().innerHTML=`<div class="pic" style="font-size:64px">🐒</div>${layout('🥭',total,total>10)}<div class="eqn"><span>${total}</span>−<span>${k}</span>=<span>?</span></div><div class="choices" id="nc" hidden></div>`;
   const objs=[...body().querySelectorAll('.obj')];
   const prompt=()=>say(['P_monkey_took',N(k),300,'P_how_many_left'],`The monkey took ${k}. How many are left?`);RUN.prompt=prompt;
@@ -502,24 +522,25 @@ ACT.takeaway=(n)=>{const max=n.max;const total=ri(Math.max(3,Math.ceil(max*.4)),
     numChoices(left,max,$('nc'),(btn,v)=>{const ok=v===left;L(ok);
       if(ok){btn.classList.add('right');body().querySelectorAll('.eqn span')[2].textContent=left;FX.chime();burst(btn,16);say([N(left),250,rnd(PRAISE)],`${total} − ${k} = ${left}!`).then(()=>roundDone(!wrong))}
       else{wrong=true;FX.boing();anim(btn,'wiggle',500);say(['P_count_again'],"Let's count what's left.").then(()=>countAlong(objs.slice(0,left)))}},0)})};
-ACT.dice=(n)=>{const max=n.max,v=ri(1,max);let face;
+ACT.dice=(n)=>{const max=n.max,v=deck('dice'+max,range(1,max));let face;
   if(max<=6){const P={1:[[50,50]],2:[[28,28],[72,72]],3:[[25,25],[50,50],[75,75]],4:[[28,28],[72,28],[28,72],[72,72]],5:[[25,25],[75,25],[50,50],[25,75],[75,75]],6:[[28,22],[72,22],[28,50],[72,50],[28,78],[72,78]]};
     face=`<div class="dicebox">${P[v].map(([x,y])=>`<i style="left:${x}%;top:${y}%"></i>`).join('')}</div>`}
   else face=`<div class="tf">${Array.from({length:10},(_,i)=>`<b class="${i<v?'on':''}"></b>`).join('')}</div>`;
   body().innerHTML=face+`<div class="choices" id="nc"></div>`;
   const prompt=()=>say(['P_dice'],'How many dots? Try not to count one by one!');RUN.prompt=prompt;prompt();let wrong=false;const L=once(ok=>learnN(n,ok));
   numChoices(v,max,$('nc'),(btn,x)=>{const ok=x===v;L(ok);if(ok){btn.classList.add('right');FX.chime();burst(btn,14);say([N(v),250,rnd(PRAISE)],`${v}!`).then(()=>roundDone(!wrong))}else{wrong=true;FX.boing();anim(btn,'wiggle',500);say(['P_close'],'Look again!')}})};
-ACT.next=(n)=>{const max=n.max;const after=lv('next')===0||Math.random()<.6;const v=after?ri(1,max-1):ri(2,max);const ans=after?v+1:v-1;
+ACT.next=(n)=>{const max=n.max;const after=Math.random()<.6;const v=after?deck('na'+max,range(1,max-1)):deck('nb'+max,range(2,max));const ans=after?v+1:v-1;
   body().innerHTML=`<div class="numline">${after?`<div class="cell">${v}</div><div class="cell q">?</div>`:`<div class="cell q">?</div><div class="cell">${v}</div>`}</div><div class="choices" id="nc"></div>`;
   const prompt=()=>say([after?'P_what_after':'P_what_before',N(v)],`What comes ${after?'after':'before'} ${v}?`);RUN.prompt=prompt;prompt();let wrong=false;const L=once(ok=>learnN(n,ok));
   numChoices(ans,max+1,$('nc'),(btn,x)=>{const ok=x===ans;L(ok);if(ok){btn.classList.add('right');body().querySelector('.cell.q').textContent=ans;body().querySelector('.cell.q').classList.remove('q');FX.chime();burst(btn,14);
       say(after?[N(v),N(ans)]:[N(ans),N(v)],after?`${v}, ${ans}!`:`${ans}, ${v}!`).then(()=>roundDone(!wrong))}else{wrong=true;FX.boing();anim(btn,'wiggle',500);say(['P_count_again'],"Let's count up together.").then(async()=>{for(let k=Math.max(1,Math.min(v,ans)-2);k<=Math.max(v,ans);k++)await say([N(k)],String(k))})}},after?2:0)};
-ACT.missing=(n)=>{const max=n.max;const s0=ri(1,max-3),seq=[s0,s0+1,s0+2,s0+3];const hole=ri(1,3),ans=seq[hole];
+ACT.missing=(n)=>{const max=n.max;const s0=deck('mis'+max,range(1,max-3)),seq=[s0,s0+1,s0+2,s0+3];const hole=ri(1,3),ans=seq[hole];
   body().innerHTML=`<div class="numline">${seq.map((v,i)=>i===hole?'<div class="cell q">?</div>':`<div class="cell">${v}</div>`).join('')}</div><div class="choices" id="nc"></div>`;
   const prompt=()=>say(['P_missing'],'Which number is missing?');RUN.prompt=prompt;prompt();let wrong=false;const L=once(ok=>learnN(n,ok));
   numChoices(ans,max,$('nc'),(btn,x)=>{const ok=x===ans;L(ok);if(ok){btn.classList.add('right');const q=body().querySelector('.cell.q');q.textContent=ans;q.classList.remove('q');FX.chime();burst(btn,14);
       say(seq.map(N),seq.join(', ')).then(()=>roundDone(!wrong))}else{wrong=true;FX.boing();anim(btn,'wiggle',500);say(seq.slice(0,hole).map(N),'Count along: '+seq.slice(0,hole).join(', ')+'…')}})};
-ACT.bigger=(n)=>{const max=n.max;let a=ri(1,max),b=ri(1,max);while(a===b)b=ri(1,max);
+ACT.bigger=(n)=>{const max=n.max;let a=deck('big'+max,range(1,max)),b;const close=Math.random()<Math.min(.7,.2+lv('bigger')*.15);
+  if(close&&a>=12&&a%10&&String(a).length===2&&Math.random()<.4){const r=+String(a).split('').reverse().join('');b=r<=max&&r!==a?r:a+1}else b=close?a+rnd([-3,-2,-1,1,2,3]):ri(1,max);if(b<1||b>max||b===a)b=a===max?a-1:a+1;
   body().innerHTML=`<div class="choices">${[a,b].map(v=>`<button class="pcard num" data-v="${v}" style="font-size:clamp(56px,15vw,90px)">${v}</button>`).join('')}</div><div id="hint" class="objs" hidden></div>`;
   const prompt=()=>say(['P_bigger_num'],'Which number is bigger?');RUN.prompt=prompt;prompt();let wrong=false,busy=false;const L=once(ok=>learnN(n,ok));
   body().querySelectorAll('.pcard').forEach(c=>c.onclick=()=>{if(busy)return;const v=+c.dataset.v,ok=v===Math.max(a,b);L(ok);
@@ -694,8 +715,9 @@ ACT.friend=(n)=>{const R=REGIONS[n.r];body().innerHTML=`<div class="haathi dance
 const RECENT={};
 /* random pick that avoids repeating the last few picks of the same game */
 function fresh(key,pool){const r=RECENT[key]||(RECENT[key]=[]);const ks=pool.map(x=>JSON.stringify(x));let c=pool.filter((x,i)=>!r.includes(ks[i]));if(!c.length)c=pool;const v=rnd(c);r.push(JSON.stringify(v));while(r.length>Math.max(0,Math.min(6,pool.length-1)))r.shift();return v}
-const LP=()=>S.intro.length>=3?S.intro.slice():LET.slice(0,Math.max(4,S.intro.length));
-const nopt=()=>{const id=RUN&&RUN.node&&(RUN.node.skill||RUN.node.t);return (S.profile&&S.profile.age>=5)||(id&&SK[id]&&lv(id)>=1)?4:3};
+const LP=()=>S.intro.length>=4?S.intro.slice():LET.slice(0,Math.max(6,S.intro.length));
+const nopt=()=>{const age=(S.profile&&S.profile.age)||4;const id=RUN&&RUN.node&&(RUN.node.skill||RUN.node.t);if(age>=5)return 4;
+  if(id&&SK[id])return lv(id)>=(age<=3?2:1)?4:3;return letterSkill()>=(age<=3?.8:.65)?4:3};
 function others(pool,t,n,bad){return shuffle(pool.filter(x=>x!==t&&!(bad&&bad(x)))).slice(0,n)}
 const notSame=t=>x=>SAME[t]===x;
 const picH=e=>`<span style="font-size:clamp(46px,12vw,78px);line-height:1">${e}</span>`;
@@ -800,11 +822,18 @@ ACT.shadow=()=>{const t=fresh('sh',ALPHA);const opts=shuffle([t,...others(ALPHA,
   pickRound({top:`<div class="showcard shadowl">${t}</div>`,items:opts.map(v=>({h:letH(v),v})),ans:t,say:['P_shadow'],cap:'Which letter made this shadow?',right:[L_(t),250,rnd(PRAISE)],rightCap:`${t}!`})};
 
 /* ---------- MATHS ---------- */
+function blocksHTML(v){const t=Math.floor(v/10),o=v%10;return `<div class="blocks">${Array(t).fill('<span class="rod">'+'<i></i>'.repeat(10)+'</span>').join('')}<span class="ones">${'<i></i>'.repeat(o)}</span></div>`}
+function pickNum(o){body().innerHTML=o.top+'<div class="choices" id="nc"></div>';RUN.prompt=()=>say(o.say,o.cap);RUN.prompt();let wrong=false;const L=once(ok=>learnN(o.node,ok));
+  numChoices(o.ans,o.max,$('nc'),(b,v)=>{const ok=v===o.ans;L(ok);if(ok){b.classList.add('right');const q=[...body().querySelectorAll('.eqn span')].pop();if(q&&q.textContent==='?')q.textContent=o.ans;FX.chime();burst(b,14);say(o.right||[N(o.ans),250,rnd(PRAISE)],o.rightCap||'Yes!').then(()=>roundDone(!wrong))}
+    else{wrong=true;FX.boing();anim(b,'wiggle',500);say(['P_find_bigger_place'],'Look at the tens first, then the ones.')}},o.lo)}
+ACT.tens=(n)=>{const v=deck('tens'+n.max,range(11,n.max));const t=Math.floor(v/10),o=v%10;
+  pickNum({top:blocksHTML(v)+`<div class="card-note" id="tn">Each long bar is <b>10</b>. Each small cube is <b>1</b>.</div>`,ans:v,max:n.max,say:['P_tens_ones'],cap:'How many? Count the tens, then the ones.',
+    right:[N(t),'P_tens','P_and',N(o),'P_ones',300,N(v)],rightCap:`${t} tens and ${o} ones make ${v}`,node:n})};
 const pileH=(k,v,small)=>`<div class="pile">${Array.from({length:v},(_,i)=>objHTML(k,i,small)).join('')}</div>`;
 ACT.fewer=(n)=>{const max=n.max;let a=ri(1,max),b=ri(1,max);while(Math.abs(a-b)<Math.max(1,Math.round(max/5)))b=ri(1,max);const th=rnd(COUNT_THINGS);
   pickRound({items:[a,b].map(v=>({h:pileH(th.k,v,v>10),v,label:v+' '+th.label})),itemCls:'plate',cls:'plates',ans:Math.min(a,b),say:['P_which_less'],cap:'Which plate has fewer?',
     right:[N(Math.min(a,b)),'P_less_than',N(Math.max(a,b))],rightCap:`${Math.min(a,b)} is fewer than ${Math.max(a,b)}.`,wrong:()=>['P_count_again']})};
-ACT.smaller=(n)=>{const max=n.max;let a=ri(0,max),b=ri(0,max);while(a===b)b=ri(0,max);
+ACT.smaller=(n)=>{const max=n.max;let a=deck('sm'+max,range(0,max)),b=Math.random()<.5?a+rnd([-3,-2,-1,1,2,3]):ri(0,max);if(b<0||b>max||b===a)b=a===max?a-1:a+1;
   pickRound({items:[a,b].map(v=>({h:numH(v),v})),ans:Math.min(a,b),say:['P_smaller_num'],cap:'Which number is smaller?',right:[N(Math.min(a,b)),250,rnd(PRAISE)],rightCap:`${Math.min(a,b)} is smaller.`})};
 ACT.matchgroup=(n)=>{const max=n.max;const t=fresh('mg'+max,[...Array(max).keys()].map(i=>i+1));const set=new Set([t]);while(set.size<3)set.add(ri(1,max));const th=rnd(COUNT_THINGS);
   pickRound({top:bigShow(numH(t)),items:shuffle([...set]).map(v=>({h:pileH(th.k,v,true),v,label:String(v)})),itemCls:'pcard grp',ans:t,say:['P_match_group',N(t)],cap:`Which group has ${t}?`,
@@ -941,7 +970,7 @@ const CORNER={
   ['oddsound','Odd one out','🙃'],['fishing','Letter fishing','🐟'],['stones','River stones','🪨'],['mole','Letter moles','🐹'],['hunt','Letter hunt','🔍'],['sortsound','Sound baskets','🧺'],['memory','Memory pairs','🃏'],
   ['bigsmall','Big and small','Aa'],['sameletter','Same letter','b d'],['shadow','Letter shadows','🌑'],['hidden','Hidden letter','🍃'],['nextletter','Next letter','abc?'],['missingletter','Missing letter','a_c'],
   ['rhyme','Rhyme time','🎵'],['firstmissing','First letter','_at'],['buildword','Build a word','c-a-t']],
- numbers:[['count','Count with me','123'],['numfind','Number balloons','🎈'],['dice','Quick look','⚂'],['matchgroup','Match the number','3=•••'],['order','Numbers in order','1→9'],['rocket','Rocket countdown','🚀'],
+ numbers:[['count','Count with me','123'],['tens','Tens and ones','▮▮▪'],['numfind','Number balloons','🎈'],['dice','Quick look','⚂'],['matchgroup','Match the number','3=•••'],['order','Numbers in order','1→9'],['rocket','Rocket countdown','🚀'],
   ['beats','Drum beats','🥁'],['more','Which has more?','>'],['fewer','Which has fewer?','<'],['bigger','Bigger number','9>4'],['smaller','Smaller number','2<7'],['next','Before and after','→'],['missing','Missing number','4_6'],
   ['skip','Skip counting','10,20'],['frog','Frog hops','🐸'],['add','Adding','+'],['takeaway','Taking away','−'],['double','Butterfly doubles','🦋'],['hiding','Hiding ladoos','🥣'],['maketen','Make 5 and 10','▦'],
   ['share','Share fairly','½'],['shop','Mela shop','₹'],['money','More money?','👛'],['shape','Shape hunt','▲'],['countshapes','Count the shapes','⭐'],['oddshape','Odd shape out','◆'],['pattern','Patterns','•◦•'],
@@ -1007,7 +1036,7 @@ function renderParent(){
   $('p-map').innerHTML=ORDER.map(l=>{const st=S.intro.includes(l)||S.intro.includes(SAME[l])?status(l):'none',lab={none:S.intro.includes(l)?'met':'not yet',prac:'practising',mast:'mastered',due:'review'}[st];return `<div class="scell st-${st}"><div class="l">${l}</div><div class="s">${lab}</div></div>`}).join('');
   $('ps-name').value=S.profile.name;$('ps-age').value=S.profile.age;$('ps-limit').value=S.profile.limit;$('ps-sfx').checked=S.settings.sfx!==false;$('ps-unlock').checked=!!S.settings.unlock;$('ps-consent').checked=!!S.settings.consent;renderLikes();
   renderStudio();resetZone();renderFeedback()}
-$('ps-save').onclick=()=>{S.profile.name=$('ps-name').value.trim()||S.profile.name;S.profile.age=+$('ps-age').value;S.profile.limit=+$('ps-limit').value;S.settings.sfx=$('ps-sfx').checked;S.settings.unlock=$('ps-unlock').checked;S.settings.consent=$('ps-consent').checked;save();$('ps-saved').hidden=false;setTimeout(()=>$('ps-saved').hidden=true,1600)};
+$('ps-save').onclick=()=>{S.profile.name=$('ps-name').value.trim()||S.profile.name;const oldAge=S.profile.age;S.profile.age=+$('ps-age').value;if(S.profile.age!==oldAge)placeByAge();S.profile.limit=+$('ps-limit').value;S.settings.sfx=$('ps-sfx').checked;S.settings.unlock=$('ps-unlock').checked;S.settings.consent=$('ps-consent').checked;save();$('ps-saved').hidden=false;setTimeout(()=>$('ps-saved').hidden=true,1600)};
 function resetZone(){const z=$('reset-zone');z.innerHTML='<button class="pill-btn danger" id="p-reset">Reset all progress</button>';
   $('p-reset').onclick=()=>{z.innerHTML='<p>This deletes chapters, stars and skill levels (recordings are kept). It cannot be undone.</p><div class="row" style="justify-content:flex-start"><button class="pill-btn" id="r-no">Keep progress</button><button class="pill-btn danger" id="r-yes">Delete progress</button></div>';
     $('r-no').onclick=resetZone;$('r-yes').onclick=()=>{S=blank();save();sessSec=0;go('setup')}}}
@@ -1053,9 +1082,10 @@ async function shareGame(){unlockAudio();FX.tap();
 $('btn-share').onclick=shareGame;$('btn-share-start').onclick=shareGame;$('share-copy').onclick=()=>{FX.tap();copyLink()};
 
 /* ======================= BOOT ======================= */
+if(S.profile&&S.placed!==2)placeByAge();
 document.addEventListener('visibilitychange',()=>{if(document.hidden){save();stopVoice();sync(false);document.querySelectorAll('canvas').forEach(c=>c.dispatchEvent(new PointerEvent('pointercancel')))}else{if(actx&&actx.state!=='running')try{actx.resume()}catch(e){}}});
 window.addEventListener('pageshow',()=>{if(actx&&actx.state!=='running')try{actx.resume()}catch(e){}});
 document.addEventListener('pointerdown',()=>{if(actx&&actx.state!=='running')actx.resume()},{passive:true});
-window.__haathi={SK,LS,CS,DIG,PREP,DOTPICS,S:()=>S,compose,learn,startRun};
+window.__haathi={placeByAge:()=>placeByAge(),SK,LS,CS,DIG,PREP,DOTPICS,S:()=>S,compose,learn,startRun};
 go('start');
 })();
