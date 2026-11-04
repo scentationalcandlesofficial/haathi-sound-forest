@@ -186,12 +186,13 @@ function unlockAudio(){try{
   if(!decoding){decoding=decodeAll();loadRecordings()}
 }catch(e){}}
 function b64ToBuf(b){const bin=atob(b),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u.buffer}
-function decodeAB(ab){return new Promise(res=>{try{const p=actx.decodeAudioData(ab,res,()=>res(null));if(p&&p.catch)p.catch(()=>res(null))}catch(e){res(null)}})}
+function decodeAB(ab){return new Promise(res=>{let done=false;const f=v=>{if(!done){done=true;res(v)}};setTimeout(()=>f(null),4000);try{const p=actx.decodeAudioData(ab,f,()=>f(null));if(p&&p.catch)p.catch(()=>f(null))}catch(e){f(null)}})}
 async function decodeOne(k){if(BUF[k])return BUF[k];if(!VOICE[k]||!actx)return null;const d=await decodeAB(b64ToBuf(VOICE[k]));if(d)BUF[k]=d;return d}
 async function decodeAll(){for(const k of Object.keys(VOICE).sort((a,b)=>(a[0]==='P'?-1:1)-(b[0]==='P'?-1:1)))await decodeOne(k)}
 let vTok=0,playing=[];
 function stopVoice(){vTok++;playing.forEach(s=>{try{s.stop()}catch(e){}});playing=[]}
-function playBuf(buf,rate){return new Promise(res=>{const s=actx.createBufferSource();s.buffer=buf;s.playbackRate.value=rate||1;s.connect(master);s.onended=()=>{playing=playing.filter(x=>x!==s);res()};playing.push(s);s.start()})}
+function playBuf(buf,rate){return new Promise(res=>{let done=false;const fin=()=>{if(done)return;done=true;playing=playing.filter(x=>x!==s);res()};const s=actx.createBufferSource();s.buffer=buf;s.playbackRate.value=rate||1;s.connect(master);s.onended=fin;playing.push(s);
+  setTimeout(fin,Math.ceil(buf.duration/(rate||1)*1000)+600);try{s.start()}catch(e){fin()}})}
 async function say(seq,caption,opt){
   opt=opt||{};stopVoice();const tok=vTok;if(caption!=null&&$('cap'))$('cap').textContent=caption;
   for(const it of seq){if(tok!==vTok)return;
@@ -199,6 +200,7 @@ async function say(seq,caption,opt){
     if(typeof it==='function'){it();continue}
     let buf=null;if(it.startsWith('R_'))buf=recBuf(it.slice(2));else{buf=BUF[it];if(!buf&&actx)buf=await decodeOne(it)}
     if(tok!==vTok)return;
+    if(buf&&actx&&actx.state!=='running'){try{actx.resume()}catch(e){}await sleep(150)}
     if(buf&&actx&&actx.state==='running'){await playBuf(buf,opt.slow?.9:1);await sleep(70)}}
 }
 function recBuf(l){return REC[l]||REC[SAME[l]]||null}
@@ -644,8 +646,9 @@ function writeGlyph(strokes,o){
     strokes.forEach((st,i)=>{x.fillStyle='#2f8a5f';x.beginPath();x.arc(ox+st[0][0]*sc,oy+st[0][1]*sc,Math.max(9,sc*4),0,7);x.fill();x.fillStyle='#fff';x.font=`800 ${Math.max(11,sc*5)}px "Baloo 2",sans-serif`;x.textAlign='center';x.textBaseline='middle';x.fillText(i+1,ox+st[0][0]*sc,oy+st[0][1]*sc)})}
   const demo=()=>{if(!document.body.contains(c))return;if(k<path.length){x.fillStyle='rgba(138,92,194,.85)';x.beginPath();x.arc(path[k][0],path[k][1],sc*3,0,7);x.fill();k+=2;requestAnimationFrame(demo)}
     else setTimeout(()=>{if(!document.body.contains(c))return;guide();ready=true;say(['P_follow_dot',300,'P_tap_done'],"Your turn! Tap \"I'm done\" when you finish.")},400)};
-  const start=()=>{k=0;ready=false;drawn=false;hit=path.map(()=>false);ink=0;inkGood=0;guide();say(o.intro,o.cap);if(o.mode==='full')setTimeout(demo,900);else{ready=true;setTimeout(()=>say(['P_tap_done'],o.cap),2200)}};
+  const start=()=>{k=0;ready=false;drawn=false;hit=path.map(()=>false);ink=0;inkGood=0;guide();say(o.intro,o.cap);if(o.mode==='full'){setTimeout(demo,900);setTimeout(()=>{if(!ready&&document.body.contains(c)){k=path.length;guide();ready=true}},9000)}else{ready=true;setTimeout(()=>say(['P_tap_done'],o.cap),2200)}};
   RUN.prompt=start;start();
+  c.addEventListener('contextrestored',()=>{x.setTransform(dpr,0,0,dpr,0,0);guide();ready=true});
   const pos=e=>{const r=c.getBoundingClientRect();return[(e.clientX-r.left)*(Wd/r.width),(e.clientY-r.top)*(Hd/r.height)]};
   const paint=(px,py)=>{hue=(hue+5)%360;x.strokeStyle=o.color||`hsl(${hue},80%,52%)`;x.lineWidth=Math.max(8,sc*7.5);x.lineCap='round';x.beginPath();x.moveTo(...(last||[px,py]));x.lineTo(px+.1,py+.1);x.stroke();last=[px,py];
     ink++;let near=false;for(let i=0;i<path.length;i++){const d=Math.hypot(path[i][0]-px,path[i][1]-py);if(d<R)hit[i]=true;if(d<R*1.4)near=true}if(near)inkGood++;
@@ -1050,7 +1053,8 @@ async function shareGame(){unlockAudio();FX.tap();
 $('btn-share').onclick=shareGame;$('btn-share-start').onclick=shareGame;$('share-copy').onclick=()=>{FX.tap();copyLink()};
 
 /* ======================= BOOT ======================= */
-document.addEventListener('visibilitychange',()=>{if(document.hidden){save();stopVoice();sync(false)}else if(actx&&actx.state!=='running')actx.resume()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){save();stopVoice();sync(false);document.querySelectorAll('canvas').forEach(c=>c.dispatchEvent(new PointerEvent('pointercancel')))}else{if(actx&&actx.state!=='running')try{actx.resume()}catch(e){}}});
+window.addEventListener('pageshow',()=>{if(actx&&actx.state!=='running')try{actx.resume()}catch(e){}});
 document.addEventListener('pointerdown',()=>{if(actx&&actx.state!=='running')actx.resume()},{passive:true});
 window.__haathi={SK,LS,CS,DIG,PREP,DOTPICS,S:()=>S,compose,learn,startRun};
 go('start');
