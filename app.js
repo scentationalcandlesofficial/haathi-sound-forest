@@ -41,6 +41,7 @@ const KEY='haathi-journey-v3';
 let S=load();
 function blank(){return {profile:null,chapters:[],intro:[],lastIntroCh:-9,sounds:{},sk:{},minutes:{},settings:{sfx:true,unlock:false,consent:false},said:0,likes:{},fbPrefs:{},device:null,lastSync:0,sentFb:0}}
 function load(){try{const r=localStorage.getItem(KEY);if(r){const o=Object.assign(blank(),JSON.parse(r));o.settings=Object.assign(blank().settings,o.settings);o.likes=o.likes||{};o.fbPrefs=o.fbPrefs||{};return o}}catch(e){}return blank()}
+function loadHindi(){if(window.__hiLoaded||window.__hiLoading||!(S.settings&&S.settings.lang==='hi'))return;window.__hiLoading=1;const sc=document.createElement('script');sc.src='clips-hi.js';sc.onerror=()=>{window.__hiLoading=0};document.head.appendChild(sc)}
 function applyNums(){document.body.classList.toggle('nonum',S.settings&&S.settings.countNums===false)}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 /* ---- several children on one phone: the active child lives in KEY, the others are parked under KEY::id ---- */
@@ -252,9 +253,11 @@ function playBuf(buf,rate){return new Promise(res=>{let done=false;const fin=()=
 function say(seq,caption,opt){const r=RUN;return new Promise(res=>{sayRaw(seq,caption,opt).then(v=>{if(RUN===r||!r)res(v)})})}
 async function sayRaw(seq,caption,opt){
   opt=opt||{};stopVoice();const tok=vTok;if(caption!=null&&$('cap'))$('cap').textContent=caption;
-  for(const it of seq){if(tok!==vTok)return;
+  for(let it of seq){if(tok!==vTok)return;
     if(typeof it==='number'){await sleep(it);continue}
     if(typeof it==='function'){it();continue}
+    if(S.settings&&S.settings.lang==='hi'&&it.startsWith('P_')&&window.HAATHI_VOICES&&HAATHI_VOICES.A['H'+it])it='H'+it;
+    if(window.__SAY)window.__SAY.push(it);
     let buf=null;if(it.startsWith('R_'))buf=recBuf(it.slice(2));else{buf=BUF[it];if(!buf&&actx)buf=await decodeOne(it)}
     if(tok!==vTok)return;
     if(buf&&actx&&actx.state!=='running'){try{actx.resume()}catch(e){}await sleep(150)}
@@ -355,7 +358,7 @@ $('btn-parent').onclick=()=>{FX.tap();openGate(()=>go('parent'))};
 /* ======================= START & SETUP ======================= */
 function renderStart(){$('start-haathi').innerHTML=haathi('happy');if(S.profile)$('cap-start').textContent=`Hi ${S.profile.name}! Turn the volume up.`}
 function begin(){unlockAudio();FX.trumpet();if(!S.profile){go('setup');return}go('map');const nu=markDay();setTimeout(()=>say(['P_welcome',200,'P_map_hi'],null).then(()=>{if(nu)say(['P_dress'],`Haathi can now wear: ${nu.name}! Open the sticker book.`)}),600)}
-applyNums();$('btn-start').onclick=begin;$('btn-book').onclick=()=>{unlockAudio();FX.tap();openBook()};$('start-haathi').onclick=begin;
+applyNums();loadHindi();$('btn-start').onclick=begin;$('btn-book').onclick=()=>{unlockAudio();FX.tap();openBook()};$('start-haathi').onclick=begin;
 $('kid-add').onclick=()=>{FX.tap();addKid()};
 {const b=$('btn-who');if(S.profile){const k=kidsIdx();b.hidden=false;b.textContent=`Playing as ${S.profile.name||'child'} (age ${S.profile.age}) · Change child or age`;b.onclick=()=>{FX.tap();openGate(()=>{go('parent');setTimeout(()=>{const p=$('kids-panel');if(p&&p.scrollIntoView)p.scrollIntoView({behavior:'smooth'})},80)})}}}
 let setupAge=4;
@@ -458,7 +461,8 @@ function finishRun(){
   const row=document.createElement('div');row.className='row';row.append(hb,nb);box.appendChild(row);
   $('reward').hidden=false;confetti();FX.fanfare();sync(false);
   say(isFriend?[600,'P_new_friend',W(REGIONS[n.r].friend[1])]:[500,'P_star',300,rnd(['P_pr1','P_pr2','P_pr5','P_pr6'])],null);RUN=null}
-const PRAISE=['P_pr1','P_pr2','P_pr3','P_pr4','P_pr5','P_pr6'],RETRY=['P_listen_again','P_little_sound','P_close','P_together'];
+const PRAISE_EN=['P_pr1','P_pr2','P_pr3','P_pr4','P_pr5','P_pr6','HX_pr1','HX_pr2','HX_pr3'];
+const PRAISE=PRAISE_EN.slice(),RETRY=['P_listen_again','P_little_sound','P_close','P_together','HX_try1','HX_try2'];
 const body=()=>$('play-body');
 function once(fn){let first=true;return ok=>{if(first){first=false;fn(ok)}}}
 const ACT={};
@@ -1401,10 +1405,10 @@ function renderParent(){renderKids();
     const chip=!un?'<span class="chip locked">locked</span>':!s||!s.n?'<span class="chip new">not tried</span>':s.p>=.75?'<span class="chip strong">strong</span>':s.p<.55?'<span class="chip weak">practising</span>':'';
     return `<tr><td>${SK[id].sub}: ${SK[id].name}${chip}</td><td>${SK[id].lab(param(id))}</td><td>${s&&s.n?`<div class="bar"><i style="width:${Math.round(s.p*100)}%"></i></div>${Math.round(s.p*100)}% · ${s.n} tries`:'–'}</td></tr>`}).join('');
   $('p-map').innerHTML=ORDER.map(l=>{const st=S.intro.includes(l)||S.intro.includes(SAME[l])?status(l):'none',lab={none:S.intro.includes(l)?'met':'not yet',prac:'practising',mast:'mastered',due:'review'}[st];return `<div class="scell st-${st}"><div class="l">${l}</div><div class="s">${lab}</div></div>`}).join('');
-  $('ps-name').value=S.profile.name;$('ps-age').value=S.profile.age;$('ps-limit').value=S.profile.limit;$('ps-sfx').checked=S.settings.sfx!==false;$('ps-countnums').checked=S.settings.countNums!==false;$('ps-moves').checked=S.settings.moves!==false;$('ps-unlock').checked=!!S.settings.unlock;$('ps-consent').checked=!!S.settings.consent;renderLikes();
+  $('ps-name').value=S.profile.name;$('ps-age').value=S.profile.age;$('ps-limit').value=S.profile.limit;$('ps-sfx').checked=S.settings.sfx!==false;$('ps-countnums').checked=S.settings.countNums!==false;$('ps-moves').checked=S.settings.moves!==false;$('ps-lang').value=S.settings.lang||'en';$('ps-unlock').checked=!!S.settings.unlock;$('ps-consent').checked=!!S.settings.consent;renderLikes();
   renderStudio();resetZone();renderFeedback()}
 $('ps-save').addEventListener('click',()=>setTimeout(()=>{kidsIdx();renderKids()},0));
-$('ps-save').onclick=()=>{S.profile.name=$('ps-name').value.trim()||S.profile.name;const oldAge=S.profile.age;S.profile.age=+$('ps-age').value;if(S.profile.age!==oldAge)placeByAge();S.profile.limit=+$('ps-limit').value;S.settings.sfx=$('ps-sfx').checked;S.settings.countNums=$('ps-countnums').checked;S.settings.moves=$('ps-moves').checked;applyNums();S.settings.unlock=$('ps-unlock').checked;S.settings.consent=$('ps-consent').checked;save();$('ps-saved').hidden=false;setTimeout(()=>$('ps-saved').hidden=true,1600)};
+$('ps-save').onclick=()=>{S.profile.name=$('ps-name').value.trim()||S.profile.name;const oldAge=S.profile.age;S.profile.age=+$('ps-age').value;if(S.profile.age!==oldAge)placeByAge();S.profile.limit=+$('ps-limit').value;S.settings.sfx=$('ps-sfx').checked;S.settings.countNums=$('ps-countnums').checked;S.settings.moves=$('ps-moves').checked;S.settings.lang=$('ps-lang').value;loadHindi();applyNums();S.settings.unlock=$('ps-unlock').checked;S.settings.consent=$('ps-consent').checked;save();$('ps-saved').hidden=false;setTimeout(()=>$('ps-saved').hidden=true,1600)};
 function resetZone(){const z=$('reset-zone');z.innerHTML='<button class="pill-btn danger" id="p-reset">Reset all progress</button>';
   $('p-reset').onclick=()=>{z.innerHTML='<p>This deletes chapters, stars and skill levels (recordings are kept). It cannot be undone.</p><div class="row" style="justify-content:flex-start"><button class="pill-btn" id="r-no">Keep progress</button><button class="pill-btn danger" id="r-yes">Delete progress</button></div>';
     $('r-no').onclick=resetZone;$('r-yes').onclick=()=>{S=blank();save();sessSec=0;go('setup')}}}
