@@ -138,6 +138,19 @@ const SK={
  groups:{sub:'Maths',name:'Equal groups (tables)',levels:[3,5,10],lab:v=>'up to '+v+' groups of 2, 5, 10',unlock:()=>ageR()>=7||(ageR()>=6&&lv('skip')>=1),node:v=>({t:'groups',max:v})},
  barchart:{sub:'Maths',name:'Picture graphs',levels:[5,9],lab:v=>'up to '+v+' each',unlock:()=>ageR()>=5,node:v=>({t:'barchart',max:v})},
  calendar:{sub:'Maths',name:'Days and months',levels:[0,1],lab:v=>v?'days and months':'days of the week',unlock:()=>ageR()>=6,node:v=>({t:'calendar'})},
+ wdict:{sub:'Writing',name:'Listen and write',levels:[0],lab:()=>'dictation',unlock:()=>true,node:()=>({t:'wdict'})},
+ wlabel:{sub:'Writing',name:'Label the picture',levels:[0],lab:()=>'picture names',unlock:()=>true,node:()=>({t:'wlabel'})},
+ wnumword:{sub:'Writing',name:'Number words',levels:[0],lab:()=>'one to ten',unlock:()=>true,node:()=>({t:'wnumword'})},
+ wcapname:{sub:'Writing',name:'Capital letters for names',levels:[0,1],lab:v=>v?'on your own':'with guides',unlock:()=>true,node:()=>({t:'wcapname'})},
+ wfill:{sub:'Writing',name:'Write the missing word',levels:[0],lab:()=>'sentences',unlock:()=>true,node:()=>({t:'wfill'})},
+ wplural:{sub:'Writing',name:'One and many (add s)',levels:[0,1],lab:v=>v?'on your own':'with guides',unlock:()=>true,node:()=>({t:'wplural'})},
+ add2:{sub:'Maths',name:'Adding tens and ones',levels:[50,99,100],lab:v=>v===100?'within 100, with carrying':'within '+v,unlock:()=>true,node:v=>({t:'add2',max:Math.min(99,v)})},
+ sub2:{sub:'Maths',name:'Taking away tens and ones',levels:[50,99,100],lab:v=>v===100?'within 100, with borrowing':'within '+v,unlock:()=>true,node:v=>({t:'sub2',max:Math.min(99,v)})},
+ missadd:{sub:'Maths',name:'Missing number sums',levels:[10,20],lab:v=>'within '+v,unlock:()=>true,node:v=>({t:'missadd',max:v})},
+ coins:{sub:'Maths',name:'Counting money',levels:[20,50],lab:v=>v>20?'₹1 to ₹10 coins, up to ₹50':'₹1, ₹2, ₹5 coins, up to ₹20',unlock:()=>true,node:v=>({t:'coins',max:v})},
+ measure:{sub:'Maths',name:'Measuring with a ruler',levels:[10,15],lab:v=>'up to '+v+' cm',unlock:()=>true,node:v=>({t:'measure',max:v})},
+ story:{sub:'Maths',name:'Story sums',levels:[0,1],lab:v=>v?'words only':'with pictures',unlock:()=>true,node:()=>({t:'story'})},
+ fraction:{sub:'Maths',name:'Halves and quarters',levels:[0,1],lab:v=>v?'halves and quarters':'halves',unlock:()=>true,node:()=>({t:'fraction'})},
  read:{sub:'Reading',name:'Reading words',levels:[3,4,5],lab:v=>'words up to '+v+' letters',unlock:()=>readUnlock(),node:()=>({t:'readpic'})}
 };
 /* letter games: picked by the chapter planner from what is unlocked */
@@ -423,7 +436,7 @@ function playChapterNode(ch,i){const n=ch.nodes[i];const first=i===0&&n.stars==n
 let RUN=null;
 const ROUNDS={meet:1,friend:1,slate:1,
  /* multi-step games: each round is already several taps */
- memory:3,sortsound:3,stones:3,mole:3,rocket:3,order:3,sortcolour:3,share:4,shop:5,hunt:5,fishing:5,buildword:5,beats:6,wfamily:4,wfirst:4,wcopyword:3,wsentence:4,wsurface:3,nlplace:6,groups:6,barchart:4,calendar:6,crossword:3,wordsearch:3,jumble:6,spell:6,
+ memory:3,sortsound:3,stones:3,mole:3,rocket:3,order:3,sortcolour:3,share:4,shop:5,hunt:5,fishing:5,buildword:5,beats:6,wfamily:4,wfirst:4,wcopyword:3,wsentence:4,wsurface:3,wdict:4,wlabel:4,wnumword:4,wcapname:4,wfill:4,wplural:4,add2:6,sub2:6,missadd:6,coins:6,measure:6,story:6,fraction:6,nlplace:6,groups:6,barchart:4,calendar:6,crossword:3,wordsearch:3,jumble:6,spell:6,
  /* writing */
  wletter:3,wcap:3,wnum:3,wrainbow:3,wpre:4,wshape:3,wword:2,dots:3,maze:4,tracepic:4,drawshapes:3,finishpic:3,wcopy:4,wheard:4,countwrite:5,wlines:3,joinmatch:3,colour:2,wname:8};
 const DEFAULT_ROUNDS=8;
@@ -563,7 +576,7 @@ ACT.more=(n)=>{const max=n.max;let a=ri(1,max),b=ri(1,max);while(Math.abs(a-b)<M
     if(ok){busy=true;p.classList.add('right');FX.chime();burst(p,16);say(['P_yes_more',200,N(Math.max(a,b)),'P_and',N(Math.min(a,b))],`Yes! ${Math.max(a,b)} is more than ${Math.min(a,b)}.`).then(()=>roundDone(!wrong))}
     else{wrong=true;FX.boing();anim(p,'wiggle',500);say(['P_count_again'],"Let's count them.").then(()=>countAlong([...p.querySelectorAll('.obj')]).then(()=>say(['P_which_more'],'Which plate has more?')))}})};
 ACT.add=(n)=>{const max=n.max;const total=deck('add'+max,range(max<=5?2:Math.ceil(max*.3),max)),a=ri(1,total-1),b=total-a;const thing=rnd(COUNT_THINGS.slice(0,4));const small=total>10;
-  body().innerHTML=total>20?`<div class="eqn">${blocksHTML(a)}<span>+</span>${blocksHTML(b)}</div>`:`<div class="eqn"><div class="grp">${Array.from({length:a},(_,k)=>objHTML(thing.k,k,0,objSz(Math.max(a,b),true))).join('')}</div>+<div class="grp">${Array.from({length:b},(_,k)=>objHTML(thing.k,a+k,0,objSz(Math.max(a,b),true))).join('')}</div></div><div class="eqn"><span>${a}</span>+<span>${b}</span>=<span>?</span></div><div class="choices" id="nc"></div>`;
+  body().innerHTML=total>20?`<div class="eqn">${blocksHTML(a)}<span>+</span>${blocksHTML(b)}</div><div class="eqn"><span>${a}</span>+<span>${b}</span>=<span>?</span></div><div class="choices" id="nc"></div>`:`<div class="eqn"><div class="grp">${Array.from({length:a},(_,k)=>objHTML(thing.k,k,0,objSz(Math.max(a,b),true))).join('')}</div>+<div class="grp">${Array.from({length:b},(_,k)=>objHTML(thing.k,a+k,0,objSz(Math.max(a,b),true))).join('')}</div></div><div class="eqn"><span>${a}</span>+<span>${b}</span>=<span>?</span></div><div class="choices" id="nc"></div>`;
   const prompt=()=>say([N(a),'P_and',N(b),'P_more_word',300,'P_altogether'],`${a} and ${b} more. How many altogether? Tap them to count.`);RUN.prompt=prompt;prompt();
   const objs=[...body().querySelectorAll('.obj')];tapCount(objs);let wrong=false;const L=once(ok=>learnN(n,ok));
   numChoices(total,max,$('nc'),(btn,v)=>{const ok=v===total;L(ok);
@@ -1310,6 +1323,94 @@ ACT.calendar=(n,round)=>{const hard=lv('calendar')>=1;const kinds=['after','befo
   pickRound({top:page,items:opts.map(k=>({h:`<b style="font-family:var(--f-display);font-size:clamp(17px,4.6vw,22px)">${DI(k).n}</b>`,v:k,label:DI(k).n})),ans,
     say:[{after:'P_cal_after',before:'P_cal_before',two:'P_cal_two',month:'P_cal_month'}[q],DN(L[i])],cap,right:[DN(ans),250,rnd(PRAISE)],rightCap:`${DI(ans).n}!`,wrong:()=>['P_count_again']})};
 
+/* ======================= HARD WRITING (6-7) ======================= */
+const blanks=w=>`<div style="display:flex;gap:8px;justify-content:center">${[...w].map(()=>'<span style="width:clamp(22px,6vw,32px);border-bottom:4px solid var(--ink-soft);height:6px"></span>').join('')}</div>`;
+/* listen and write: the word is only heard, then the picture appears */
+ACT.wdict=(n)=>{const pool=RWORDS.filter(w=>w.length<=(lv('read')>=1?5:4));const w=deck('wd'+pool.length,pool);
+  writeGlyph(wordGlyph(w),{w:56*w.length+20,mode:'own',header:`<button class="cue" id="wdhear" style="font-size:22px">🔊 Hear it again</button>${blanks(w)}`,intro:['P_hw_dict',300,W(w)],cap:`Listen and write the word (${w.length} letters).`,lines:true,
+    done:ok=>{learnN(n,ok);say([W(w),250,rnd(PRAISE)],`${w} ${RB[w]}`).then(()=>roundDone(ok))}});const h=$('wdhear');if(h)h.onclick=()=>say([W(w)],null)};
+/* label the picture: picture and the number of letters, no word shown */
+ACT.wlabel=(n)=>{const pool=RWORDS.filter(w=>w.length<=(lv('read')>=1?5:4));const w=deck('wl'+pool.length,pool);
+  writeGlyph(wordGlyph(w),{w:56*w.length+20,mode:'own',header:`<div style="font-size:clamp(50px,14vw,76px);line-height:1">${RB[w]}</div>${blanks(w)}`,intro:['P_hw_label'],cap:`What is this? Write its name (${w.length} letters).`,lines:true,
+    done:ok=>{learnN(n,ok);say([W(w),250,rnd(PRAISE)],w+'!').then(()=>roundDone(ok))}})};
+/* number words */
+const NUMW=['zero','one','two','three','four','five','six','seven','eight','nine','ten'];
+ACT.wnumword=(n)=>{const v=deck('nw',range(1,10));const w=NUMW[v];
+  writeGlyph(wordGlyph(w),{w:56*w.length+20,mode:'faint',header:`<div style="display:flex;align-items:center;gap:14px;justify-content:center">${numH(v)}<span style="font-size:24px">=</span>${wordH(w,'clamp(32px,9vw,48px)')}</div>`,intro:['P_hw_numword',300,N(v)],cap:`Write ${v} in words: ${w}`,lines:true,
+    done:ok=>{learnN(n,ok);say([N(v),250,rnd(PRAISE)],`${v}: ${w}`).then(()=>roundDone(ok))}})};
+/* names of people and places start with a capital letter */
+const PROPER=[['Ravi','👦'],['Sita','👧'],['Asha','👩'],['Delhi','🏛️'],['India','🇮🇳'],['Goa','🏖️'],['Holi','🎨'],['Ganga','🌊'],['Agra','🕌'],['Diwali','🪔']];
+ACT.wcapname=(n)=>{const [w,e]=deck('pn',PROPER);
+  writeGlyph(wordGlyph(w),{w:56*w.length+20,mode:lv('wcapname')>=1?'own':'faint',header:`<div style="display:flex;align-items:center;gap:12px;justify-content:center"><span style="font-size:clamp(40px,11vw,60px)">${e}</span>${wordH(w,'clamp(34px,9vw,50px)')}</div><div class="card-note">Names of people and places start with a <b>capital letter</b>.</div>`,
+    intro:['P_hw_capital',300,W(w.toLowerCase())],cap:`Write ${w}. Start with a capital ${w[0]}!`,lines:true,done:ok=>{learnN(n,ok);say([W(w.toLowerCase()),250,rnd(PRAISE)],w+'!').then(()=>roundDone(ok))}})};
+/* write the missing word in a sentence (picture clue) */
+const FILLS=['I see a','I have a','Look at the','This is a','I like the'];
+ACT.wfill=(n)=>{const w=deck('wfl',RWORDS.filter(x=>x.length<=4&&!/^[aeiou]/.test(x)));const s0=rnd(FILLS);
+  writeGlyph(wordGlyph(w),{w:56*w.length+20,mode:'own',header:`<div style="font-family:var(--f-letter);font-weight:700;font-size:clamp(22px,6vw,32px)">${s0} <u style="color:var(--peacock)">&nbsp;${'?'.repeat(1)}&nbsp;</u>. <span style="font-size:1.4em">${RB[w]}</span></div>`,intro:['P_hw_fill'],cap:`${s0} ___. Write the missing word.`,lines:true,
+    done:ok=>{learnN(n,ok);say([W(w),250,rnd(PRAISE)],`${s0} ${w}.`).then(()=>roundDone(ok))}})};
+/* one cat, two cats: add s for more than one */
+const PLURAL=['cat','dog','hat','pen','cup','bed','bag','egg','nut','bug','kite','ball','bell','book','duck','frog','goat','sock','ring','star','tree','fish'].filter(w=>w!=='fish');
+ACT.wplural=(n)=>{const w=deck('pl',PLURAL);const p=w+'s';
+  writeGlyph(wordGlyph(p),{w:56*p.length+20,mode:lv('wplural')>=1?'own':'faint',header:`<div style="display:flex;gap:18px;align-items:center;justify-content:center;font-family:var(--f-letter);font-weight:700;font-size:clamp(20px,5.6vw,28px)"><div style="text-align:center"><div style="font-size:1.8em">${RB[w]}</div>one ${w}</div><div style="text-align:center"><div style="font-size:1.8em">${RB[w]}${RB[w]}</div>two ?</div></div>`,
+    intro:['P_hw_plural',300,W(w)],cap:`One ${w}, two ${p}. Write ${p}.`,lines:true,done:ok=>{learnN(n,ok);say(['W_'+p,250,rnd(PRAISE)],`two ${p}!`).then(()=>roundDone(ok))}})};
+
+/* ======================= HARD MATHS (6-7) ======================= */
+/* two-digit adding and taking away with tens and ones blocks; regrouping only at the top level */
+ACT.add2=(n)=>{const rg=lv('add2')>=2;let a,b;do{a=ri(11,n.max-10);b=ri(10,n.max-a)}while(!rg&&(a%10)+(b%10)>9);const ans=a+b;let wrong=false;const L=once(ok=>learnN(n,ok));
+  body().innerHTML=`<div class="eqn">${blocksHTML(a)}<span>+</span>${blocksHTML(b)}</div><div class="eqn"><span>${a}</span>+<span>${b}</span>=<span>?</span></div><div class="choices" id="nc"></div>`;
+  RUN.prompt=()=>say(['P_add2'],`${a} + ${b}. Add the tens, then the ones.`);RUN.prompt();
+  numChoices(ans,n.max,$('nc'),(bt,v)=>{const ok=v===ans;L(ok);if(ok){bt.classList.add('right');[...body().querySelectorAll('.eqn span')].pop().textContent=ans;FX.chime();say([N(a),'P_and',N(b),'P_makes',N(ans)],`${a} + ${b} = ${ans}`).then(()=>roundDone(!wrong))}
+    else{wrong=true;FX.boing();anim(bt,'wiggle',500);say(['P_add2'],`Tens: ${Math.floor(a/10)} + ${Math.floor(b/10)}. Ones: ${a%10} + ${b%10}.`)}},10)};
+ACT.sub2=(n)=>{const rg=lv('sub2')>=2;let a,b;do{a=ri(20,n.max);b=ri(10,a-5)}while(!rg&&(b%10)>(a%10));const ans=a-b;let wrong=false;const L=once(ok=>learnN(n,ok));
+  body().innerHTML=`<div class="eqn">${blocksHTML(a)}</div><div class="eqn"><span>${a}</span>−<span>${b}</span>=<span>?</span></div><div class="choices" id="nc"></div>`;
+  RUN.prompt=()=>say(['P_sub2'],`${a} − ${b}. Take away the ones, then the tens.`);RUN.prompt();
+  numChoices(ans,n.max,$('nc'),(bt,v)=>{const ok=v===ans;L(ok);if(ok){bt.classList.add('right');[...body().querySelectorAll('.eqn span')].pop().textContent=ans;FX.chime();say([N(a),'P_take_away',N(b),'P_leaves',N(ans)],`${a} − ${b} = ${ans}`).then(()=>roundDone(!wrong))}
+    else{wrong=true;FX.boing();anim(bt,'wiggle',500);say(['P_sub2'],`Ones: ${a%10} − ${b%10}. Tens: ${Math.floor(a/10)} − ${Math.floor(b/10)}.`)}},0)};
+/* missing number in a sum: 7 + ? = 10 */
+ACT.missadd=(n)=>{const mx=n.max;const sub=Math.random()<.4;let a,b,c,ans,eq;
+  if(!sub){c=ri(5,mx);a=ri(1,c-1);ans=c-a;eq=Math.random()<.5?[a,'+','?','=',c]:['?','+',a,'=',c]}else{a=ri(5,mx);ans=ri(1,a-1);c=a-ans;eq=[a,'−','?','=',c]}
+  let wrong=false;const L=once(ok=>learnN(n,ok));
+  body().innerHTML=`<div class="eqn" style="font-size:clamp(36px,10vw,56px)">${eq.map(x=>`<span${x==='?'?' class="q" style="color:var(--mango-deep)"':''}>${x}</span>`).join('')}</div><div class="choices" id="nc"></div>`;
+  RUN.prompt=()=>say(['P_missing'],'Which number is missing?');RUN.prompt();
+  numChoices(ans,mx,$('nc'),(bt,v)=>{const ok=v===ans;L(ok);if(ok){bt.classList.add('right');body().querySelector('.eqn .q').textContent=ans;FX.chime();say([N(ans),250,rnd(PRAISE)],eq.join(' ').replace('?',ans)).then(()=>roundDone(!wrong))}
+    else{wrong=true;FX.boing();anim(bt,'wiggle',500);say(['P_count_again'],'Try counting on with your fingers.')}},1)};
+/* count the money: ₹1, ₹2, ₹5, ₹10 coins */
+ACT.coins=(n)=>{const set=n.max>20?[10,5,2,1]:[5,2,1];let c;do{c=Array.from({length:ri(3,6)},()=>rnd(set)).sort((x,y)=>y-x)}while(c.reduce((s,v)=>s+v,0)>n.max);const ans=c.reduce((s,v)=>s+v,0);let wrong=false;const L=once(ok=>learnN(n,ok));
+  body().innerHTML=`<div class="purse" style="max-width:92vw">${c.map(v=>`<span class="coin c${v}">₹${v}</span>`).join('')}</div><div class="card-note" style="font-size:20px"><b>How much money?</b></div><div class="choices" id="nc"></div>`;
+  RUN.prompt=()=>say(['P_coins'],'How much money is there? Start with the biggest coin.');RUN.prompt();
+  numChoices(ans,n.max,$('nc'),(bt,v)=>{const ok=v===ans;L(ok);if(ok){bt.classList.add('right');FX.coin();say([N(ans),'P_rupees',250,rnd(PRAISE)],`₹${ans}`).then(()=>roundDone(!wrong))}
+    else{wrong=true;FX.boing();anim(bt,'wiggle',500);say(['P_coins'],'Add them one by one: '+c.map(v=>'₹'+v).join(' + '))}},1)};
+/* measure with a ruler in centimetres */
+const MEASURE=[['✏️','pencil'],['🖍️','crayon'],['🔑','key'],['🥄','spoon'],['🐛','caterpillar'],['🍌','banana'],['🪥','toothbrush']];
+ACT.measure=(n)=>{const len=ri(3,n.max);const [e,nm]=rnd(MEASURE);const start=lv('measure')>=1&&Math.random()<.5?ri(1,3):0;let wrong=false;const L=once(ok=>learnN(n,ok));const U=100/16;
+  body().innerHTML=`<div class="ruler-wrap"><div class="r-obj" style="left:${start*U}%;width:${len*U}%"><span>${e}</span></div><div class="ruler">${Array.from({length:17},(_,i)=>`<i style="left:${i*U}%"><b>${i}</b></i>`).join('')}</div></div><div class="card-note" style="font-size:20px"><b>How long is the ${nm}?</b>${start?' (It does not start at 0!)':''}</div><div class="choices" id="nc"></div>`;
+  RUN.prompt=()=>say(['P_measure'],`How long is the ${nm}? Count the centimetres.`);RUN.prompt();
+  numChoices(len,n.max+2,$('nc'),(bt,v)=>{const ok=v===len;L(ok);if(ok){bt.classList.add('right');FX.chime();say([N(len),'P_cm',250,rnd(PRAISE)],`${len} centimetres!`).then(()=>roundDone(!wrong))}
+    else{wrong=true;FX.boing();anim(bt,'wiggle',500);say(['P_measure_hint'],start?`It starts at ${start} and ends at ${start+len}. Count the jumps.`:'Look where it ends.')}},1)};
+/* story sums: read or listen, then answer (pictures help) */
+const STORIES=[['Ravi has 5 mangoes. He gets 3 more. How many mangoes now?','🥭',5,'+',3],['There are 9 birds on a tree. 4 fly away. How many are left?','🐦',9,'-',4],
+ ['Sita has 6 balloons. Her friend gives her 6 more. How many balloons now?','🎈',6,'+',6],['Mom makes 12 ladoos. We eat 5. How many are left?','ladoo',12,'-',5],
+ ['There are 7 ducks in the pond. 8 more come. How many ducks now?','🦆',7,'+',8],['Asha has 15 marbles. She gives 6 to her brother. How many does she have now?','🔵',15,'-',6],
+ ['A bus has 10 people. 7 more get on. How many people now?','🧑',10,'+',7],['There are 14 kites. 8 get stuck in a tree. How many are still flying?','🪁',14,'-',8],
+ ['Ravi reads 4 books on Monday and 5 books on Tuesday. How many books in all?','📕',4,'+',5],['There are 11 apples. Ravi eats 2. How many are left?','🍎',11,'-',2],
+ ['Two friends each have 5 sweets. How many sweets altogether?','🍬',5,'+',5],['There are 16 fish. 9 swim away. How many are left?','🐟',16,'-',9]];
+ACT.story=(n)=>{const i=deck('sty',STORIES.map((_,k)=>k));const [t,e,a,op,b]=STORIES[i];const ans=op==='+'?a+b:a-b;let wrong=false;const L=once(ok=>learnN(n,ok));
+  const pics=op==='+'?`<div class="eqn"><div class="grp">${Array.from({length:a},(_,k)=>objHTML(e,k,0,a+b>14?'s5':'s4')).join('')}</div>+<div class="grp">${Array.from({length:b},(_,k)=>objHTML(e,a+k,0,a+b>14?'s5':'s4')).join('')}</div></div>`:`<div class="eqn"><div class="grp">${Array.from({length:a},(_,k)=>k>=a-b?`<span style="opacity:.25">${objHTML(e,k,0,a+b>14?'s5':'s4')}</span>`:objHTML(e,k,0,a+b>14?'s5':'s4')).join('')}</div></div>`;
+  body().innerHTML=`<div class="card-note" style="font-size:clamp(18px,4.8vw,24px);max-width:560px"><b>${t}</b></div>${lv('story')>=1?'':pics}<div class="choices" id="nc"></div>`;
+  RUN.prompt=()=>say(['STY_'+i],t);RUN.prompt();
+  numChoices(ans,Math.max(a,ans)+3,$('nc'),(bt,v)=>{const ok=v===ans;L(ok);if(ok){bt.classList.add('right');FX.chime();say([N(ans),250,rnd(PRAISE)],`${a} ${op==='+'?'+':'−'} ${b} = ${ans}`).then(()=>roundDone(!wrong))}
+    else{wrong=true;FX.boing();anim(bt,'wiggle',500);say(['P_story_hint'],op==='+'?'More means add. Put them together.':'Away or left means take away.')}},0)};
+/* halves and quarters */
+const FRAC_SHAPES=['circle','square','rect'];
+function fracSVG(shape,parts,shaded,equal){const C='#f6a821',E='#fff',S='#4b6457';let g='';
+  if(shape==='circle'){const cut=equal?null:parts===2?[0,230,360]:[0,150,210,290,360];for(let i=0;i<parts;i++){const a0=(cut?cut[i]:i*360/parts)-90,a1=(cut?cut[i+1]:(i+1)*360/parts)-90;const p=a=>[50+40*Math.cos(a*Math.PI/180),50+40*Math.sin(a*Math.PI/180)];const [x0,y0]=p(a0),[x1,y1]=p(a1);g+=`<path d="M50 50L${x0} ${y0}A40 40 0 ${a1-a0>180?1:0} 1 ${x1} ${y1}Z" fill="${i<shaded?C:E}" stroke="${S}" stroke-width="2.5"/>`}}
+  else{const w=shape==='rect'?84:72,h=shape==='rect'?52:72,x0=50-w/2,y0=50-h/2;const ws=equal?Array(parts).fill(w/parts):[w*.7,...Array(parts-1).fill(w*.3/(parts-1))];let x=x0;ws.forEach((ww,i)=>{g+=`<rect x="${x}" y="${y0}" width="${ww}" height="${h}" fill="${i<shaded?C:E}" stroke="${S}" stroke-width="2.5"/>`;x+=ww})}
+  return `<svg viewBox="0 0 100 100" width="100%" height="100%">${g}</svg>`}
+ACT.fraction=(n)=>{const q=lv('fraction')>=1&&Math.random()<.5?'quarter':'half';const parts=q==='half'?2:4;const sh=rnd(FRAC_SHAPES);
+  const right={v:'r',h:fracSVG(sh,parts,1,true)};const wr=[{v:'u',h:fracSVG(rnd(FRAC_SHAPES),parts,1,false)},{v:'o',h:fracSVG(rnd(FRAC_SHAPES),q==='half'?4:2,1,true)},{v:'t',h:fracSVG(rnd(FRAC_SHAPES),parts,parts===2?2:2,true)}];
+  pickRound({items:shuffle([right,...wr.slice(0,nopt()-1)]).map((x,k)=>({h:`<div style="width:clamp(80px,22vw,120px);aspect-ratio:1">${x.h}</div>`,v:x.v,label:'shape '+(k+1)})),itemCls:'pcard grp',ans:'r',
+    say:[q==='half'?'P_half':'P_quarter'],cap:q==='half'?'Which one shows one half coloured? (2 equal parts, 1 coloured)':'Which one shows one quarter coloured? (4 equal parts, 1 coloured)',right:[q==='half'?'P_half_yes':'P_quarter_yes'],rightCap:q==='half'?'Yes! 2 equal parts, 1 is coloured. That is one half.':'Yes! 4 equal parts, 1 is coloured. That is one quarter.',wrong:()=>['P_equal_parts']})};
+
 /* ======================= STICKERS, DAYS PLAYED, HAATHI'S WARDROBE, MOVEMENT BREAKS ======================= */
 const STICKERS=['🦁','🐯','🐘','🦒','🦓','🐼','🐨','🐵','🦊','🐰','🐻','🐸','🐢','🐬','🐳','🦋','🐝','🐞','🦚','🦜','🦉','🐧','🦩','🐙','🦀','🪔','🪁','🎨','🌙','⭐','🌈','🚂','🚀','🛺','🥭','🍉','🍦','🎈','🎁','🏏'];
 const DRESS=[{id:'cap',e:'🧢',name:'Cap',slot:'head',days:2},{id:'flower',e:'🌺',name:'Flower',slot:'ear',days:3},{id:'shades',e:'🕶️',name:'Sunglasses',slot:'eyes',days:5},{id:'garland',e:'🌼',name:'Marigold garland',slot:'neck',days:7},
@@ -1348,10 +1449,10 @@ const TIER={
   jumble:2,misspos:2,spell:2,sentence:2,crossword:2,wordsearch:2,rhymeread:2},
  numbers:{count:0,numfind:0,dice:0,matchgroup:0,order:0,beats:0,more:0,fewer:0,shape:0,countshapes:0,oddshape:0,pattern:0,sortcolour:0,size:0,heavy:0,length:0,queue:0,
   rocket:1,bigger:1,smaller:1,next:1,missing:1,add:1,takeaway:1,hiding:1,maketen:1,share:1,shop:1,money:1,double:1,frog:1,skip:1,nlplace:1,barchart:1,
-  tens:2,tenmore:2,clock:2,evenodd:2,groups:2,calendar:2},
+  tens:2,tenmore:2,clock:2,evenodd:2,groups:2,calendar:2,add2:2,sub2:2,missadd:2,coins:2,measure:2,story:2,fraction:2},
  writing:{slate:0,colour:0,maze:0,wlines:0,wpre:0,tracepic:0,dots:0,wletter:0,wnum:0,joinmatch:0,wsurface:0,countwrite:0,wrainbow:0,
   wshape:1,drawshapes:1,finishpic:1,wcap:1,wfirst:1,wfamily:1,wname:1,wcopy:1,wheard:1,
-  wword:2,wcopyword:2,wsentence:2}};
+  wword:2,wcopyword:2,wsentence:2,wdict:2,wlabel:2,wnumword:2,wcapname:2,wfill:2,wplural:2}};
 const MODE_NOTE={letters:['Sounds and letters','First letters and simple words','Reading words and sentences'],numbers:['Counting, shapes and sizes','Comparing, adding and taking away','Tens, time, even and odd, tables'],
  writing:['Lines, tracing and small letters','Shapes, capitals and first letters','Writing words and sentences'],discover:['Picture topics: fruits, animals, colours','Helpers, weather, festivals, science fun','Science and knowledge quizzes']};
 function tierOf(kind,id){if(kind==='discover'){const s=DSEC[id];return !s?1:s.age<=3?0:s.age<=5?1:2}const t=TIER[kind]&&TIER[kind][id];return t==null?1:t}
@@ -1376,7 +1477,7 @@ const CORNER={
   ['oddsound','Odd one out','🙃'],['fishing','Letter fishing','🐟'],['stones','River stones','🪨'],['mole','Letter moles','🐹'],['hunt','Letter hunt','🔍'],['sortsound','Sound baskets','🧺'],['memory','Memory pairs','🃏'],
   ['bigsmall','Big and small','Aa'],['sameletter','Same letter','b d'],['shadow','Letter shadows','🌑'],['hidden','Hidden letter','🍃'],['nextletter','Next letter','abc?'],['missingletter','Missing letter','a_c'],
   ['rhyme','Rhyme time','🎵'],['firstmissing','First letter','_at'],['buildword','Build a word','c-a-t']],
- numbers:[['count','Count with me','123'],['tens','Tens and ones','▮▮▪'],['tenmore','10 more, 10 less','±10'],['clock','Telling time','🕒'],['nlplace','Number line','0—10'],['evenodd','Even or odd','2 4 6'],['groups','Equal groups','3×5'],['barchart','Picture graphs','📊'],['calendar','Days and months','📅'],['numfind','Number balloons','🎈'],['dice','Quick look','⚂'],['matchgroup','Match the number','3=•••'],['order','Numbers in order','1→9'],['rocket','Rocket countdown','🚀'],
+ numbers:[['count','Count with me','123'],['tens','Tens and ones','▮▮▪'],['tenmore','10 more, 10 less','±10'],['clock','Telling time','🕒'],['nlplace','Number line','0—10'],['evenodd','Even or odd','2 4 6'],['groups','Equal groups','3×5'],['barchart','Picture graphs','📊'],['calendar','Days and months','📅'],['add2','Adding tens','23+14'],['sub2','Taking away tens','45−12'],['missadd','Missing number sums','7+?=10'],['coins','Counting money','₹'],['measure','Ruler','📏'],['story','Story sums','📖+'],['fraction','Halves and quarters','◐'],['numfind','Number balloons','🎈'],['dice','Quick look','⚂'],['matchgroup','Match the number','3=•••'],['order','Numbers in order','1→9'],['rocket','Rocket countdown','🚀'],
   ['beats','Drum beats','🥁'],['more','Which has more?','>'],['fewer','Which has fewer?','<'],['bigger','Bigger number','9>4'],['smaller','Smaller number','2<7'],['next','Before and after','→'],['missing','Missing number','4_6'],
   ['skip','Skip counting','10,20'],['frog','Frog hops','🐸'],['add','Adding','+'],['takeaway','Taking away','−'],['double','Butterfly doubles','🦋'],['hiding','Hiding ladoos','🥣'],['maketen','Make 5 and 10','▦'],
   ['share','Share fairly','½'],['shop','Mela shop','₹'],['money','More money?','👛'],['shape','Shape hunt','▲'],['countshapes','Count the shapes','⭐'],['oddshape','Odd shape out','◆'],['pattern','Patterns','•◦•'],
@@ -1384,7 +1485,8 @@ const CORNER={
  writing:[['slate','Magic slate','✎'],['colour','Colouring','🖍️'],['maze','Road maze','🛣️'],['wlines','Straight lines','⁄'],['wpre','Patterns','〰'],['wshape','Draw shapes','□'],['drawshapes','Draw with shapes','🏠'],
   ['tracepic','Trace a picture','🪁'],['finishpic','Finish the picture','🦋'],['dots','Dot-to-dot','⋯'],['wletter','Small letters','✎a'],['wcap','Big letters','✎A'],['wrainbow','Rainbow writing','🌈'],['wcopy','Copy it','👀'],
   ['wheard','Write what you hear','👂'],['wnum','Write numbers','✎7'],['countwrite','Count and write','3✎'],['joinmatch','Join the pairs','🔗'],['wname','My name','Aa'],['wword','Write a word','ab'],
-  ['wfamily','Letter families','cadg'],['wfirst','Write the first letter','🐍✎'],['wsurface','Rangoli, sand, chalk','🎨'],['wcopyword','Copy a word','✎cat'],['wsentence','Copy a sentence','✎I can']]
+  ['wfamily','Letter families','cadg'],['wfirst','Write the first letter','🐍✎'],['wsurface','Rangoli, sand, chalk','🎨'],['wcopyword','Copy a word','✎cat'],['wsentence','Copy a sentence','✎I can'],
+  ['wdict','Listen and write','👂✎'],['wlabel','Label the picture','🐈✎'],['wnumword','Number words','3=three'],['wcapname','Capitals for names','Ravi'],['wfill','Write the missing word','I see a _'],['wplural','One and many','cats']]
 };
 const COL_OF={letters:'#147a8a',numbers:'#e07a12',writing:'#8a5cc2'};
 function cornerNode(id,kind){const pool=S.intro.length?S.intro:['s','a'];
