@@ -128,8 +128,8 @@ const SK={
  wlines:{sub:'Writing',name:'Straight lines',levels:[0],lab:()=>'dot to dot',unlock:()=>true,node:()=>({t:'wlines'})},
  joinmatch:{sub:'Writing',name:'Join the pairs',levels:[0],lab:()=>'lines',unlock:()=>S.intro.length>=3,node:()=>({t:'joinmatch'})},
  colour:{sub:'Writing',name:'Colouring',levels:[0],lab:()=>'fine motor',unlock:()=>true,node:()=>({t:'colour'})},
- wfamily:{sub:'Writing',name:'Letter families',levels:[0],lab:()=>'letters that start the same way',unlock:()=>ageR()>=4||n_('wletter')>=3,node:()=>({t:'wfamily'})},
- wfirst:{sub:'Writing',name:'Picture to first letter',levels:[0],lab:()=>'first letters',unlock:()=>ageR()>=4||n_('wletter')>=4,node:()=>({t:'wfirst'})},
+ wfamily:{sub:'Writing',name:'Letter families',levels:[0],lab:()=>'letters that start the same way',unlock:()=>ageR()>=5||(n_('wletter')>=8&&pr('wletter')>=.75),node:()=>({t:'wfamily'})},
+ wfirst:{sub:'Writing',name:'Write the first letter',levels:[0],lab:()=>'first letters',unlock:()=>ageR()>=4||n_('wletter')>=4,node:()=>({t:'wfirst'})},
  wcopyword:{sub:'Writing',name:'Copy a word',levels:[0],lab:()=>'words',unlock:()=>ageR()>=5,node:()=>({t:'wcopyword'})},
  wsentence:{sub:'Writing',name:'Copy a sentence',levels:[0],lab:()=>'short sentences',unlock:()=>ageR()>=6,node:()=>({t:'wsentence'})},
  wsurface:{sub:'Writing',name:'Rangoli, sand and chalk',levels:[0],lab:()=>'fun surfaces',unlock:()=>true,node:()=>({t:'wsurface'})},
@@ -142,8 +142,10 @@ const SK={
 };
 /* letter games: picked by the chapter planner from what is unlocked */
 const LGAMES={bubbles:()=>true,snack:()=>true,picletter:()=>true,letterpic:()=>true,samesound:()=>true,oddsound:()=>S.intro.length>=2,fishing:()=>true,stones:()=>true,mole:()=>true,hunt:()=>true,
- sortsound:()=>S.intro.length>=2,memory:()=>S.intro.length>=3,bigsmall:()=>true,sameletter:()=>true,shadow:()=>true,hidden:()=>true,nextletter:()=>S.intro.length>=6,missingletter:()=>S.intro.length>=6,
- rhyme:()=>true,buildword:()=>S.intro.length>=6,firstmissing:()=>S.intro.length>=4};
+ sortsound:()=>S.intro.length>=2,memory:()=>S.intro.length>=3,bigsmall:()=>true,sameletter:()=>true,shadow:()=>true,hidden:()=>true,nextletter:()=>strongL(),missingletter:()=>strongL(),
+ rhyme:()=>true,buildword:()=>strongL(),firstmissing:()=>ageR()>=4&&S.intro.length>=4};
+/* alphabet order and word building start at 5, or earlier only for a child who has clearly mastered 10+ letters */
+function strongL(){return ageR()>=5||(S.intro.length>=10&&letterSkill()>=.75)}
 function pickLetterGame(exclude){let c=Object.keys(LGAMES).filter(g=>g!==exclude&&(S.settings.unlock||LGAMES[g]()));
   if(ageR()>=6){const rc=c.filter(g=>READ_G[g]||g==='buildword'||g==='rhyme');if(rc.length)c=rc}
   let best=null,bs=-9;c.forEach(g=>{const sc=Math.random()*1.4+Math.max(-.5,Math.min(.5,prefBonus(g)))-recentPenalty(g);if(sc>bs){bs=sc;best=g}});return best||'bubbles'}
@@ -1242,8 +1244,9 @@ ACT.wfamily=(n,round)=>{if(!n.fam)n.fam=fresh('wfam',Object.keys(FAMS));const F=
   writeGlyph(LS[l],{w:100,mode:round===0?'full':'faint',header:`<div class="card-note" style="margin-bottom:2px"><b>${F.name}</b></div><div style="display:flex;flex-wrap:wrap;justify-content:center">${row}</div>`,
     intro:round===0?[F.clip,300,L_(l)]:['P_keep_going',L_(l)],cap:`${F.name}: write ${l}`,lines:true,done:ok=>{learnN(n,ok);roundDone(ok)}})};
 /* picture to first letter: the picture is the only clue (tap to hear its name) */
-function firstPool(){if(ageR()>=6)return RWORDS.filter(w=>LS[w[0]]).map(w=>[w,RB[w]]);return Object.values(WORDS).flat().filter(([w])=>LS[w[0]])}
-ACT.wfirst=(n)=>{const [w,e]=deck('wf'+(ageR()>=6?6:4),firstPool());const l=w[0];
+/* under 6: only words starting with letters the child has already met */
+function firstPool(){if(ageR()>=6)return RWORDS.filter(w=>LS[w[0]]).map(w=>[w,RB[w]]);const met=S.intro.length?S.intro:['s','a','t'];return met.flatMap(l=>WORDS[l]||[]).filter(([w])=>LS[w[0]])}
+ACT.wfirst=(n)=>{const fp=firstPool();const [w,e]=deck('wf'+(ageR()>=6?6:4)+fp.length,fp);const l=w[0];
   writeGlyph(LS[l],{w:100,mode:ageR()<=4?'faint':'own',header:`<button class="cue" id="wfpic" style="font-size:clamp(54px,15vw,84px);background:none;border:0">${e}</button>`,
     intro:['P_wfirst',300,W(w)],cap:`What is this? Write the first letter of its name.`,lines:true,done:ok=>{learnN(n,ok);say([W(w),250,L_(l)],`${w} starts with ${l}`).then(()=>roundDone(ok))}});
   const p=$('wfpic');if(p)p.onclick=()=>say([W(w)],w)};
@@ -1262,7 +1265,7 @@ ACT.wsentence=(n,round)=>{if(n.si==null){n.si=deck('csn',CSENT.map((_,i)=>i));n.
 /* fun surfaces: rangoli powder, sand tray, chalkboard */
 const SURF={rangoli:{name:'Rangoli writing',clip:'P_surf_rangoli'},sand:{name:'Sand tray writing',clip:'P_surf_sand'},chalk:{name:'Chalkboard writing',clip:'P_surf_chalk'}};
 ACT.wsurface=(n,round)=>{const sf=Object.keys(SURF)[round%3];const big=ageR()>=6;const ch=big?fresh('wsw',RWORDS.filter(w=>w.length===3)):fresh('wsl',S.intro.length?S.intro:['a','s','t','c']);
-  writeGlyph(big?wordGlyph(ch):LS[ch],{w:big?56*ch.length+20:100,mode:'faint',surface:sf,header:`<div class="card-note"><b>${SURF[sf].name}</b></div>`,intro:[SURF[sf].clip,300,big?W(ch):L_(ch)],cap:`${SURF[sf].name}: write ${ch}`,lines:false,done:ok=>{learnN(n,ok);roundDone(ok)}})};
+  writeGlyph(big?wordGlyph(ch):LS[ch],{w:big?56*ch.length+20:100,mode:ageR()<=4?'full':'faint',surface:sf,header:`<div class="card-note"><b>${SURF[sf].name}</b></div>`,intro:[SURF[sf].clip,300,big?W(ch):L_(ch)],cap:`${SURF[sf].name}: write ${ch}`,lines:false,done:ok=>{learnN(n,ok);roundDone(ok)}})};
 
 /* ======================= MORE MATHS ======================= */
 /* where does the number go on the number line? */
@@ -1347,7 +1350,7 @@ const CORNER={
  writing:[['slate','Magic slate','✎'],['colour','Colouring','🖍️'],['maze','Road maze','🛣️'],['wlines','Straight lines','⁄'],['wpre','Patterns','〰'],['wshape','Draw shapes','□'],['drawshapes','Draw with shapes','🏠'],
   ['tracepic','Trace a picture','🪁'],['finishpic','Finish the picture','🦋'],['dots','Dot-to-dot','⋯'],['wletter','Small letters','✎a'],['wcap','Big letters','✎A'],['wrainbow','Rainbow writing','🌈'],['wcopy','Copy it','👀'],
   ['wheard','Write what you hear','👂'],['wnum','Write numbers','✎7'],['countwrite','Count and write','3✎'],['joinmatch','Join the pairs','🔗'],['wname','My name','Aa'],['wword','Write a word','ab'],
-  ['wfamily','Letter families','cadg'],['wfirst','Picture to letter','🐍✎'],['wsurface','Rangoli, sand, chalk','🎨'],['wcopyword','Copy a word','✎cat'],['wsentence','Copy a sentence','✎I can']]
+  ['wfamily','Letter families','cadg'],['wfirst','Write the first letter','🐍✎'],['wsurface','Rangoli, sand, chalk','🎨'],['wcopyword','Copy a word','✎cat'],['wsentence','Copy a sentence','✎I can']]
 };
 const COL_OF={letters:'#147a8a',numbers:'#e07a12',writing:'#8a5cc2'};
 function cornerNode(id,kind){const pool=S.intro.length?S.intro:['s','a'];
