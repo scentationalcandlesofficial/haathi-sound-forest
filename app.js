@@ -146,8 +146,7 @@ const LGAMES={bubbles:()=>true,snack:()=>true,picletter:()=>true,letterpic:()=>t
  rhyme:()=>true,buildword:()=>strongL(),firstmissing:()=>ageR()>=4&&S.intro.length>=4};
 /* alphabet order and word building start at 5, or earlier only for a child who has clearly mastered 10+ letters */
 function strongL(){return ageR()>=5||(S.intro.length>=10&&letterSkill()>=.75)}
-function pickLetterGame(exclude){let c=Object.keys(LGAMES).filter(g=>g!==exclude&&(S.settings.unlock||LGAMES[g]()));
-  if(ageR()>=6){const rc=c.filter(g=>READ_G[g]||g==='buildword'||g==='rhyme');if(rc.length)c=rc}
+function pickLetterGame(exclude){let c=Object.keys(LGAMES).filter(g=>g!==exclude&&inPlay('letters',g));if(!c.length)c=Object.keys(LGAMES).filter(g=>tierOf('letters',g)===modeOf('letters'))
   let best=null,bs=-9;c.forEach(g=>{const sc=Math.random()*1.4+Math.max(-.5,Math.min(.5,prefBonus(g)))-recentPenalty(g);if(sc>bs){bs=sc;best=g}});return best||'bubbles'}
 function st(id){return S.sk[id]||(S.sk[id]={lvl:0,p:.5,n:0,ln:0,last:null,up:null})}
 const lv=id=>(S.sk[id]||{lvl:0}).lvl, pr=id=>(S.sk[id]||{p:0}).p, n_=id=>(S.sk[id]||{n:0}).n;
@@ -169,7 +168,7 @@ const PLACE={
  7:{count:4,numfind:5,dice:2,more:3,fewer:3,next:4,bigger:4,smaller:4,missing:4,add:4,takeaway:4,matchgroup:2,order:2,rocket:1,beats:2,hiding:1,maketen:1,shop:2,share:2,
     tens:2,skip:2,frog:1,money:1,double:1,clock:1,tenmore:1,read:1,nlplace:2,evenodd:1,groups:1,barchart:1,calendar:1,shape:3,pattern:2,length:1,countshapes:1,wnum:5,wpre:11,dots:2,countwrite:1}};
 const LETTERS_BY_AGE={3:3,4:6,5:10,6:18,7:18};
-function placeByAge(){const age=Math.min(7,Math.max(3,(S.profile&&S.profile.age)||4));const P=PLACE[age];
+function placeByAge(){S.modes={};const age=Math.min(7,Math.max(3,(S.profile&&S.profile.age)||4));const P=PLACE[age];
   Object.keys(P).forEach(id=>{if(!SK[id])return;const s=st(id);const tgt=Math.min(P[id],SK[id].levels.length-1);if(s.lvl<tgt){s.lvl=tgt;s.ln=0;s.p=Math.max(s.p,.55)}});
   const want=LETTERS_BY_AGE[age];while(S.intro.length<want){const l=LET.find(x=>!S.intro.includes(x));if(!l)break;S.intro.push(l)}S.placed=3;save()}
 /* shuffled deck: every value comes up once before any repeats */
@@ -210,21 +209,23 @@ function baseScore(id){const s=S.sk[id];if(!s||!s.n)return 1.7+Math.random()*.7;
 function why(id){const s=S.sk[id];const nm=SK[id].name;if(likeScore(id)>.4&&s&&s.n)return `Enjoyed: ${nm} (child gave it smiles)`;if(!s||!s.n)return `New game: ${nm}`;if(s.p<.6)return `Extra practice: ${nm} (${Math.round(s.p*100)}% right lately)`;if(s.up&&daysBetween(s.up,today())<=2)return `Levelled up: ${nm}, now ${SK[id].lab(param(id))}`;return `Keeping it fresh: ${nm}`}
 function compose(){
   const idx=S.chapters.length,reasons=[],nodes=[];
-  let newL=null;if(readyForNewLetter(idx)){newL=LET.find(l=>!S.intro.includes(l));if(newL){S.intro.push(newL);S.lastIntroCh=idx;if(newL==='c'&&!S.intro.includes('k')){} }}
+  let newL=null;if(modeOf('letters')<2&&readyForNewLetter(idx)){newL=LET.find(l=>!S.intro.includes(l));if(newL){S.intro.push(newL);S.lastIntroCh=idx;if(newL==='c'&&!S.intro.includes('k')){} }}
   const lg=likeScore('bubbles')+(CFG.weights.bubbles||1)-likeScore('snack')-(CFG.weights.snack||1);const lp=lg>.2?'bubbles':lg<-.2?'snack':rnd(['bubbles','snack']);
   const L1=newL?{t:'meet',l:newL}:{t:pickLetterGame(),focus:weakestLetter(),pool:S.intro.slice()};
   if(READ_G[L1.t])reasons.push(`Reading: ${READ_G[L1.t][0]} (${SK.read.lab(param('read'))})`);else if(newL)reasons.push(`New letter: ${newL} (${KEYW(newL)[0]})`);else reasons.push(`Letter practice: ${L1.focus} (${Math.round(accuracy(L1.focus)*100)}% right lately)`);
   const f2=weakestLetter();const L2={t:pickLetterGame(L1.t),focus:newL||f2,pool:S.intro.slice()};
   reasons.push(READ_G[L2.t]?`Reading: ${READ_G[L2.t][0]}`:newL?`Hear and find the new letter in a game`:`Letter practice: ${f2}`);
-  const maths=Object.keys(SK).filter(id=>SK[id].sub==='Maths'&&SK[id].unlock()).sort((a,b)=>score(b)-score(a)).slice(0,(S.profile&&S.profile.age>=5)?3:2);
+  const maths=Object.keys(SK).filter(id=>SK[id].sub==='Maths'&&inPlay('numbers',id)).sort((a,b)=>score(b)-score(a)).slice(0,(S.profile&&S.profile.age>=5)?3:2);
   maths.forEach(id=>reasons.push(why(id)));
-  const wOther=Object.keys(SK).filter(id=>SK[id].sub==='Writing'&&id!=='wletter'&&SK[id].unlock()).sort((a,b)=>score(b)-score(a))[0];
-  const W1={t:'wletter',l:newL||weakestLetter(true),skill:'wletter'};reasons.push(`Write the letter ${W1.l}`);
+  const wOther=Object.keys(SK).filter(id=>SK[id].sub==='Writing'&&id!=='wletter'&&inPlay('writing',id)).sort((a,b)=>score(b)-score(a))[0];
+  const W1=modeOf('writing')===2?{t:'wcopyword',skill:'wcopyword'}:{t:'wletter',l:newL||weakestLetter(true),skill:'wletter'};reasons.push(W1.l?`Write the letter ${W1.l}`:'Copy a word');
   reasons.push(why(wOther));
+  /* about one chapter in four swaps the last maths game for an easier review game */
+  if(maths.length>1&&modeOf('numbers')>0&&Math.random()<.25){const rv=Object.keys(SK).filter(id=>SK[id].sub==='Maths'&&tierOf('numbers',id)<modeOf('numbers')).sort((a,b)=>score(b)-score(a))[0];if(rv){maths[maths.length-1]=rv;reasons.push('Quick review: '+SK[rv].name)}}
   const mN=maths.map(id=>Object.assign(SK[id].node(param(id)),{skill:id}));
   const wN=Object.assign(SK[wOther].node(param(wOther)),{skill:wOther});
   nodes.push(L1,mN[0],W1,L2,mN[1],wN);if(mN[2])nodes.push(mN[2]);
-  {const ds=DSC.sections.filter(x=>unlocked('d_'+x.id)).map(x=>'d_'+x.id).sort((a,b)=>score(b)-score(a));if(ds.length){const dn=dNode(ds[0].slice(2));nodes.splice(3,0,dn);reasons.push(S.sk[ds[0]]&&S.sk[ds[0]].n?why(ds[0]):`New topic: ${DSEC[ds[0].slice(2)].name}`)}}
+  {const ds=DSC.sections.filter(x=>inPlay('discover',x.id)).map(x=>'d_'+x.id).sort((a,b)=>score(b)-score(a));if(ds.length){const dn=dNode(ds[0].slice(2));nodes.splice(3,0,dn);reasons.push(S.sk[ds[0]]&&S.sk[ds[0]].n?why(ds[0]):`New topic: ${DSEC[ds[0].slice(2)].name}`)}}
   const region=Math.floor(idx/3)%REGIONS.length;
   if(idx%3===2)nodes.push({t:'friend',r:region});
   S.chapters.push({id:idx,region,nodes:nodes.map(n=>Object.assign(n,{stars:null})),reasons,done:false,date:today()});
@@ -375,7 +376,7 @@ function nodeIcon(n){const t=n.t;if(t.startsWith('d_')&&DSEC[n.sec])return DSEC[
 const WRITE_T=new Set(['dots','slate','maze','tracepic','drawshapes','finishpic','countwrite','joinmatch','colour']);
 const SUBJ=n=>n.t.startsWith('d_')?'discover':LGAMES[n.t]||n.t==='meet'?'letter':n.t==='friend'?'friend':(n.t[0]==='w'||WRITE_T.has(n.t))?'write':'number';
 function nodeColor(n){const s=SUBJ(n);if(s==='discover')return '#2f8a5f';return s==='letter'?'#147a8a':s==='number'?'#e07a12':s==='write'?'#8a5cc2':'#f6a821'}
-function renderMap(){if(S.profile)markDay();{const lc=document.querySelector('[data-corner="letters"]');if(lc){lc.querySelector('span').textContent=ageR()>=6?'Reading':'Letters';lc.querySelector('b').textContent=ageR()>=6?'Read':'abc'}}
+function renderMap(){if(S.profile)markDay();{const lc=document.querySelector('[data-corner="letters"]');if(lc){lc.querySelector('span').textContent=modeOf('letters')===2?'Reading':'Letters';lc.querySelector('b').textContent=modeOf('letters')===2?'Read':'abc'}}
   const cur=curChapter();const W=Math.min(560,$('map-scroll').clientWidth||360);
   const chs=S.chapters.slice(-4);let y=0,svg='';const pos=[],meta=[];
   const GAP=100,HEAD=86;
@@ -454,6 +455,7 @@ function finishRun(){
   const isFriend=n.t==='friend';const box=$('reward-box');
   const stk=n.t!=='friend'?awardSticker():null;
   box.innerHTML=isFriend?`<div class="big">${REGIONS[n.r].friend[0]}</div><h3>New friend!</h3><p>The ${REGIONS[n.r].friend[1]} joins your journey.</p>`:`<div class="stars3">${[0,1,2].map(k=>k<stars?STAR:STAR_OFF).join('')}</div><h3>${stars===3?'Superstar!':stars===2?'Great job!':'Well tried!'}</h3>`;
+  if(n.t!=='friend')modeSuggest(n,stars,box);
   if(stk){box.insertAdjacentHTML('beforeend',`<div class="newstk"><span>${stk}</span><b>New sticker!</b></div>`);setTimeout(()=>say(['P_sticker'],null),900)}
   const nb=document.createElement('button');nb.className='big-btn go';nb.innerHTML=ICON.next.replace('currentColor','#fff')+(nextFn?'Next stop':'Again');
   nb.onclick=()=>{FX.tap();$('reward').hidden=true;const go2=()=>nextFn?nextFn():startRun(n,run.from);S.gamesSinceBreak=(S.gamesSinceBreak||0)+1;if(S.settings.moves!==false&&S.gamesSinceBreak>=3){S.gamesSinceBreak=0;save();moveBreak(go2)}else{save();go2()}};
@@ -1111,14 +1113,14 @@ ACT.d_order=(n)=>{const o=DSC.order[n.arg];let steps=o.steps;const win=ageNow()<
 ACT.d_mcq=(n)=>{const qs=DSC.mcq[n.sec]||[];const qid=deck('dmc'+n.sec,qs.map(x=>x[0]));const [id,a,ds,text]=qs.find(x=>x[0]===qid);const opts=shuffle([a,...ds]);
   pickRound({top:`<div class="card-note" style="font-size:clamp(18px,4.6vw,24px)">${text}</div>`,items:opts.map(k=>({h:dWithName(k),v:k,label:DI(k).n})),itemCls:'pcard grp',ans:a,say:['MC_'+id],cap:text,right:[DN(a),300,...DF(a),250,rnd(PRAISE)],rightCap:DI(a).f||`Yes! ${DI(a).n}!`,wrong:it=>[DN(it.v),300,'P_listen_again','MC_'+id]})};
 function openDiscover(secId){const b=$('corner-body');b.innerHTML='';
-  if(!secId){$('corner-title').textContent='Discover';
-    const sur=document.createElement('button');sur.className='go-btn';sur.style.cssText='width:100%;max-width:640px;animation:none';const open=DSC.sections.filter(s=>S.settings.unlock||inAge(s));
+  if(!secId){$('corner-title').textContent='Discover';b.appendChild(modeTabs('discover',()=>openDiscover()));const dm=modeOf('discover');
+    const sur=document.createElement('button');sur.className='go-btn';sur.style.cssText='width:100%;max-width:640px;animation:none';const open=DSC.sections.filter(s=>tierOf('discover',s.id)===dm);
     sur.innerHTML=`🎲 Surprise me <span style="font-size:15px;font-weight:600">(${open.length} topics open)</span>`;sur.onclick=()=>{unlockAudio();FX.sparkle();const s=fresh('dsur',open.map(x=>x.id));say(['P_surprise'],null);setTimeout(()=>startRun(dNode(s),{corner:'discover',sec:s}),700)};b.appendChild(sur);
     const g=document.createElement('div');g.className='tiles';b.appendChild(g);
-    DSC.sections.filter(s=>S.settings.unlock||ageNow()<=(s.maxAge||99)).forEach(s=>{const lk=!S.settings.unlock&&ageNow()<s.age;const t=document.createElement('button');t.className='tile';if(lk)t.style.opacity='.42';
-      t.innerHTML=`<div class="ico">${s.icon}</div><span>${s.name}</span><small class="agebadge">${s.age}+</small>`;
+    open.forEach(s=>{const lk=false;const t=document.createElement('button');t.className='tile';if(lk)t.style.opacity='.42';
+      t.innerHTML=`<div class="ico">${s.icon}</div><span>${s.name}</span>`;
       t.onclick=()=>{unlockAudio();if(lk){FX.boing();anim(t,'wiggle',500);return}FX.tap();say(['SEC_'+s.id],null);openDiscover(s.id)};g.appendChild(t)});
-    const p=document.createElement('p');p.className='card-note';p.textContent=ageNow()>=6?'Science and knowledge topics for big kids. The picture topics for little ones are hidden; grown-ups can show them with the unlock switch in settings.':`Faded topics are for older children (age shown on each); grown-ups can unlock them in settings.`;b.appendChild(p);
+    const p=document.createElement('p');p.className='card-note';p.textContent=`${open.length} ${MODE_NAMES[dm]} topics. Switch Easy, Medium or Hard with the tabs at the top.`;b.appendChild(p);
     say(['P_d_pick'],null);return}
   const s=DSEC[secId];$('corner-title').textContent=s.name;
   const back=document.createElement('button');back.className='pill-btn small';back.textContent='← All topics';back.onclick=()=>{FX.tap();openDiscover()};b.appendChild(back);
@@ -1336,6 +1338,38 @@ function moveBreak(then){const i=fresh('mv',MOVES.map((_,k)=>k));const [e,t,cnt]
   (async()=>{await sayRaw(['P_mv_intro',300,'P_mv_'+i],t);for(let k=1;k<=cnt;k++){if(done)return;$('mvn').textContent=k;anim($('mvn'),'bumpn',300);FX.tick(k);await sayRaw([N(k)],String(k));await new Promise(r=>setTimeout(r,650))}
     if(done)return;FX.fanfare();await sayRaw(['P_mv_done'],'Great moving!');setTimeout(end,600)})()}
 
+
+/* ======================= EASY / MEDIUM / HARD ======================= */
+/* Every game sits in one mode. Age only picks the starting mode for each corner; the child or a grown-up can switch with the tabs. */
+const MODE_NAMES=['Easy','Medium','Hard'];
+const TIER={
+ letters:{meet:0,bubbles:0,snack:0,picletter:0,letterpic:0,samesound:0,oddsound:0,fishing:0,stones:0,mole:0,hunt:0,sortsound:0,memory:0,bigsmall:0,sameletter:0,shadow:0,hidden:0,rhyme:0,
+  firstmissing:1,nextletter:1,missingletter:1,buildword:1,readpic:1,picword:1,sight:1,digraph:1,
+  jumble:2,misspos:2,spell:2,sentence:2,crossword:2,wordsearch:2,rhymeread:2},
+ numbers:{count:0,numfind:0,dice:0,matchgroup:0,order:0,beats:0,more:0,fewer:0,shape:0,countshapes:0,oddshape:0,pattern:0,sortcolour:0,size:0,heavy:0,length:0,queue:0,
+  rocket:1,bigger:1,smaller:1,next:1,missing:1,add:1,takeaway:1,hiding:1,maketen:1,share:1,shop:1,money:1,double:1,frog:1,skip:1,nlplace:1,barchart:1,
+  tens:2,tenmore:2,clock:2,evenodd:2,groups:2,calendar:2},
+ writing:{slate:0,colour:0,maze:0,wlines:0,wpre:0,tracepic:0,dots:0,wletter:0,wnum:0,joinmatch:0,wsurface:0,countwrite:0,wrainbow:0,
+  wshape:1,drawshapes:1,finishpic:1,wcap:1,wfirst:1,wfamily:1,wname:1,wcopy:1,wheard:1,
+  wword:2,wcopyword:2,wsentence:2}};
+const MODE_NOTE={letters:['Sounds and letters','First letters and simple words','Reading words and sentences'],numbers:['Counting, shapes and sizes','Comparing, adding and taking away','Tens, time, even and odd, tables'],
+ writing:['Lines, tracing and small letters','Shapes, capitals and first letters','Writing words and sentences'],discover:['Picture topics: fruits, animals, colours','Helpers, weather, festivals, science fun','Science and knowledge quizzes']};
+function tierOf(kind,id){if(kind==='discover'){const s=DSEC[id];return !s?1:s.age<=3?0:s.age<=5?1:2}const t=TIER[kind]&&TIER[kind][id];return t==null?1:t}
+function modeOf(kind){S.modes=S.modes||{};if(S.modes[kind]==null){const a=ageR();S.modes[kind]=a<=4?0:a===5?1:2}return S.modes[kind]}
+function setMode(kind,m){S.modes=S.modes||{};S.modes[kind]=m;save()}
+function kindOfNode(n){if(!n)return null;if(n.t.startsWith('d_'))return 'discover';if(TIER.letters[n.t]!=null)return 'letters';const id=n.skill||n.t;if(TIER.numbers[id]!=null)return 'numbers';if(TIER.writing[id]!=null)return 'writing';return null}
+/* for the daily map: games from the current mode, with an occasional easier game for review */
+function inPlay(kind,id){if(kind==='writing'&&id==='wname'&&!nameChars().length)return false;if(id==='oddsound'||id==='sortsound')if(S.intro.length<2)return false;if(id==='memory'&&S.intro.length<3)return false;
+  return tierOf(kind,id)===modeOf(kind)}
+function modeTabs(kind,onPick){const m=modeOf(kind);const w=document.createElement('div');w.className='modetabs';
+  MODE_NAMES.forEach((nm,i)=>{const b=document.createElement('button');b.className='mtab'+(i===m?' on':'');b.innerHTML=`<b>${['🌱','🌿','🌳'][i]} ${nm}</b><small>${MODE_NOTE[kind][i]}</small>`;b.onclick=()=>{unlockAudio();FX.tap();setMode(kind,i);onPick()};w.appendChild(b)});return w}
+/* after a game: if most recent games in this mode got 3 stars, offer the next mode (never forced) */
+function modeSuggest(n,stars,box){const kind=kindOfNode(n);if(!kind)return;S.tierLog=S.tierLog||{};const m=modeOf(kind);const L=S.tierLog[kind]=(S.tierLog[kind]||[]).filter(x=>x.m===m);L.push({m,s:stars});if(L.length>10)L.shift();save();
+  S.suggested=S.suggested||{};if(m>=2||L.length<8||L.filter(x=>x.s===3).length<6||S.suggested[kind]===today())return;
+  const d=document.createElement('div');d.className='suggest';d.innerHTML=`<p><b>You're doing so well!</b> Ready for <b>${MODE_NAMES[m+1]}</b> ${{letters:'letters',numbers:'numbers',writing:'writing',discover:'Discover'}[kind]}?</p>`;
+  const y=document.createElement('button');y.className='pill-btn primary';y.textContent='Yes, try '+MODE_NAMES[m+1];y.onclick=()=>{FX.sparkle();setMode(kind,m+1);S.tierLog[kind]=[];save();d.innerHTML=`<p><b>${MODE_NAMES[m+1]} it is!</b></p>`};
+  const no=document.createElement('button');no.className='pill-btn';no.textContent='Not yet';no.onclick=()=>{FX.tap();S.suggested[kind]=today();save();d.remove()};d.append(y,no);box.appendChild(d)}
+
 /* ======================= PRACTICE CORNERS ======================= */
 const CORNER={
  letters:[['meet','Meet a letter','abc'],['bubbles','Sound Bubbles','○'],['snack',"Haathi's Snack",'🥭'],['picletter','Picture to letter','🐍s'],['letterpic','Letter to picture','s🐍'],['samesound','Same first sound?','👍'],
@@ -1368,17 +1402,18 @@ function cornerNode(id,kind){const pool=S.intro.length?S.intro:['s','a'];
   return {t:id}}
 function cornerLocked(id){if(S.settings.unlock)return false;if(id==='wname')return !nameChars().length;if(LGAMES[id])return !LGAMES[id]();if(SK[id])return !unlocked(id);return false}
 function openCorner(kind,sec){go('corner');if(kind==='discover'){openDiscover(sec);return}const b=$('corner-body');const from={corner:kind};b.innerHTML='';
-  const big=kind==='letters'&&ageR()>=6;$('corner-title').textContent=big?'Reading':{letters:'Letters',numbers:'Numbers',writing:'Writing'}[kind];
-  const RL=Object.keys(READ_G).map(g=>[g,...READ_G[g]]);const KEEP=['buildword','rhyme'];
-  const list=kind!=='letters'?CORNER[kind]:big?[...RL,...CORNER.letters.filter(x=>KEEP.includes(x[0])),...(S.settings.unlock?CORNER.letters.filter(x=>!KEEP.includes(x[0])):[])]:[...CORNER.letters,...RL];const open=list.filter(([id])=>!cornerLocked(id));
-  const sur=document.createElement('button');sur.className='go-btn';sur.style.cssText='width:100%;max-width:640px;animation:none';sur.innerHTML=`🎲 Surprise me <span style="font-size:15px;font-weight:600">(${open.length} games open)</span>`;
-  sur.onclick=()=>{unlockAudio();FX.sparkle();const id=fresh('sur-'+kind,open.map(x=>x[0]));say(['P_surprise'],null);setTimeout(()=>startRun(cornerNode(id,kind),from),700)};b.appendChild(sur);
+  const m=modeOf(kind);$('corner-title').textContent=kind==='letters'&&m===2?'Reading':{letters:'Letters',numbers:'Numbers',writing:'Writing'}[kind];
+  b.appendChild(modeTabs(kind,()=>openCorner(kind)));
+  const all=kind==='letters'?[...CORNER.letters,...Object.keys(READ_G).map(g=>[g,...READ_G[g]])]:CORNER[kind];
+  const list=all.filter(([id])=>tierOf(kind,id)===m&&!(id==='wname'&&!nameChars().length));
+  const sur=document.createElement('button');sur.className='go-btn';sur.style.cssText='width:100%;max-width:640px;animation:none';sur.innerHTML=`🎲 Surprise me <span style="font-size:15px;font-weight:600">(${list.length} ${MODE_NAMES[m].toLowerCase()} games)</span>`;
+  sur.onclick=()=>{unlockAudio();FX.sparkle();const id=fresh('sur-'+kind+m,list.map(x=>x[0]));say(['P_surprise'],null);setTimeout(()=>startRun(cornerNode(id,kind),from),700)};b.appendChild(sur);
   const g=document.createElement('div');g.className='tiles';b.appendChild(g);
-  list.forEach(([id,label,ico])=>{const lk=cornerLocked(id);const t=document.createElement('button');t.className='tile';if(lk)t.style.opacity='.42';
+  list.forEach(([id,label,ico])=>{const t=document.createElement('button');t.className='tile';
     t.innerHTML=`<div class="ico" style="color:${COL_OF[kind]};font-size:${ico.length>3?22:34}px">${ico}</div><span>${label}</span>`;
-    t.onclick=()=>{unlockAudio();if(lk){FX.boing();anim(t,'wiggle',500);return}FX.tap();startRun(cornerNode(id,kind),from)};g.appendChild(t)});
-  const p=document.createElement('p');p.className='card-note';p.textContent=`${list.length} games here. Faded ones open as your child learns. Every game picks new questions at random and avoids repeating the last few.`;b.appendChild(p);
-  if(kind==='letters'&&!big){const h=document.createElement('h3');h.textContent='Meet any letter';h.style.cssText='font-family:var(--f-display);color:var(--leaf);margin:8px 0 0';b.appendChild(h);
+    t.onclick=()=>{unlockAudio();FX.tap();startRun(cornerNode(id,kind),from)};g.appendChild(t)});
+  const p=document.createElement('p');p.className='card-note';p.textContent=`${list.length} ${MODE_NAMES[m]} games. Switch Easy, Medium or Hard with the tabs at the top. Every game picks new questions at random, and the numbers inside each game still grow with your child.`;b.appendChild(p);
+  if(kind==='letters'&&m<2){const h=document.createElement('h3');h.textContent='Meet any letter';h.style.cssText='font-family:var(--f-display);color:var(--leaf);margin:8px 0 0';b.appendChild(h);
     const gp=document.createElement('div');gp.className='grid-pick';ORDER.forEach(l=>{const x=document.createElement('button');x.textContent=l;x.onclick=()=>{unlockAudio();FX.tap();startRun({t:'meet',l},from)};gp.appendChild(x)});b.appendChild(gp)}
   say(['P_pick'],null)}
 

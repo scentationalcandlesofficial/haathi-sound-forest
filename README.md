@@ -32,7 +32,9 @@ No accounts, no ads, no tracking. Progress and recordings stay on the device. No
 3. **Updates:** the sheet is reviewed and `config.json` is updated. `weights` nudge how often each game appears for everyone (1 = normal, 1.3 = more, 0.7 = less), and `notes` tell parents what changed. Bigger fixes go into `app.js`. Every phone picks up changes the next time the game is opened online.
 
 ## Age settings (3 to 7)
-Starting levels are set from the child's age, then adapt to how they do.
+Every corner has Easy, Medium and Hard tabs. Age only picks the starting tab (3-4 Easy, 5 Medium, 6-7 Hard); the child or a grown-up can switch any time, and after 6 of 8 three-star games in a mode Haathi offers the next one. The daily map follows the chosen modes, with an occasional easier review game.
+
+Starting levels inside each game are set from the child's age, then adapt to how they do.
 - Maths follows the Head Start Early Learning Outcomes Framework for ages 3 to 5, and US Kindergarten (5-6) and Grade 1 (6-7) standards: e.g. age 4 starts counting objects to 10 and comparing groups to 5; age 5 adds within 10 and starts tens and ones; age 6 adds within 20, compares numbers to 50, tells time and does 10 more/10 less.
 - Writing follows typical pre-writing milestones (cross about 4 years, square about 4.5, triangle about 5): age 3 traces with full guides only; harder copying and writing from sound open at 5.
 - Age 3 games are 5 questions long; ages 4+ are 8.
