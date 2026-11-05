@@ -157,10 +157,15 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 .objs{display:flex;flex-direction:column;gap:10px;align-items:center;max-width:100%}
 .tenrow{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
 .five{display:flex;gap:6px;padding:5px;border-radius:16px;background:rgba(255,255,255,.6)}
-.obj{width:clamp(34px,9vw,54px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font-size:clamp(26px,7vw,42px);position:relative;transition:transform .15s}
-.obj.small{width:clamp(26px,6.6vw,40px);font-size:clamp(20px,5vw,30px)}
+.obj{aspect-ratio:1;border-radius:50%;display:grid;place-items:center;position:relative;transition:transform .15s;line-height:1}
+.obj.s1{width:clamp(76px,20vw,110px);font-size:clamp(62px,16.5vw,92px)}
+.obj.s2{width:clamp(60px,15vw,84px);font-size:clamp(48px,12.5vw,70px)}
+.obj.s3{width:clamp(44px,11vw,62px);font-size:clamp(36px,9vw,52px)}
+.obj.s4{width:clamp(30px,7.4vw,44px);font-size:clamp(25px,6vw,36px)}
+.obj.s5{width:clamp(22px,5.4vw,32px);font-size:clamp(18px,4.4vw,26px)}
+.nonum .obj.counted::after{display:none}
 .obj.counted{transform:scale(.9)}
-.obj.counted::after{content:attr(data-n);position:absolute;top:-6px;right:-6px;background:var(--leaf-2);color:#fff;font-family:var(--f-display);font-weight:800;font-size:13px;border-radius:999px;min-width:22px;height:22px;display:grid;place-items:center;padding:0 4px}
+.obj.counted::after{content:attr(data-n);position:absolute;top:-6px;right:-6px;background:var(--leaf-2);color:#fff;font-family:var(--f-display);font-weight:800;font-size:16px;border-radius:999px;min-width:26px;height:26px;display:grid;place-items:center;padding:0 4px}
 .ladoo{background:radial-gradient(circle at 35% 30%,#ffd27a,#f0a020 60%,#c97a10);box-shadow:inset 0 -3px 0 rgba(0,0,0,.12)}
 .ladoo::before{content:"";position:absolute;inset:22%;border-radius:50%;background:radial-gradient(#fff6 1.5px,transparent 2px) 0 0/7px 7px}
 .plates{display:flex;gap:clamp(12px,4vw,30px);justify-content:center;flex-wrap:wrap}
@@ -268,7 +273,7 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 .showcard{background:#fff;border-radius:24px;box-shadow:0 6px 0 var(--shadow);padding:10px 22px;display:grid;place-items:center;min-width:110px;min-height:100px}
 .showcard .lchar{width:96px;height:104px;font-size:64px}
 .pcard.small{width:clamp(64px,17vw,96px);font-size:clamp(30px,8vw,44px)}
-.pcard.grp{width:clamp(110px,28vw,170px);padding:8px}
+.pcard.grp{width:clamp(110px,28vw,170px);padding:8px;aspect-ratio:auto;min-height:clamp(110px,28vw,170px)}
 .pcard.grp .pile{gap:3px}
 .pcard.wide{width:clamp(130px,36vw,190px)}
 .choices.queue{gap:6px;flex-wrap:nowrap;position:relative;padding-left:44px}
@@ -352,6 +357,30 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 .learncard{background:#fff;border-radius:26px;box-shadow:0 6px 0 var(--shadow);padding:16px 22px;display:flex;flex-direction:column;align-items:center;gap:8px;max-width:520px}
 .cdot{display:block;width:clamp(56px,15vw,80px);aspect-ratio:1;border-radius:50%;border:3px solid #c9d6cc}
 .kids{display:flex;flex-direction:column;gap:8px}.kidrow{display:flex;align-items:center;gap:10px;background:#f0f6f2;border-radius:14px;padding:8px 12px}.kidrow b{flex:1;font-family:var(--f-display);font-size:18px}.kidrow.on{outline:3px solid var(--peacock)}
+.srf-chalk canvas{background:#2e4a3c!important}
+.srf-sand canvas{background:radial-gradient(#0000 60%,#c9a46a33),repeating-radial-gradient(circle at 30% 40%,#ecd3a0 0 3px,#e6c98f 3px 6px)!important}
+.srf-rangoli canvas{background:#3a1d4d!important}
+.nline{position:relative;width:min(540px,88vw);height:90px;margin:18px auto 0}
+.nl-bar{position:absolute;left:6%;right:6%;top:30px;height:6px;border-radius:3px;background:var(--ink-soft)}
+.nl-tick{overflow:visible;white-space:nowrap;position:absolute;top:8px;transform:translateX(-50%);width:34px;height:76px;background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:6px;padding:0}
+.nl-tick i{width:6px;height:30px;border-radius:3px;background:var(--ink)}
+.nl-tick span{font-family:var(--f-letter);font-weight:700;font-size:clamp(16px,4.4vw,22px);color:var(--ink);min-height:24px}
+.nl-tick.right i{background:var(--leaf-2);height:40px}.nl-tick.right span{color:var(--leaf);font-size:26px}.nl-tick.miss span{color:#c8364b}
+.pairs{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:92vw}.pairs .pr{display:flex;flex-direction:column;gap:4px;background:rgba(255,255,255,.7);border-radius:14px;padding:4px}
+.obj.lone{opacity:.35;font-size:60%}
+.gplates{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:94vw}.gplate{background:#fff;border-radius:18px;padding:6px;box-shadow:0 4px 0 var(--shadow);min-width:64px;max-width:118px;display:grid;place-items:center}.gplate .pile{max-width:106px}
+.bars{display:flex;gap:clamp(10px,3vw,22px);align-items:flex-end;justify-content:center;background:#fff;border-radius:20px;padding:12px 14px 8px;box-shadow:0 5px 0 var(--shadow)}
+.bcol{display:flex;flex-direction:column;align-items:center;gap:4px}.bstack{display:flex;flex-direction:column-reverse;gap:2px;font-size:clamp(22px,6vw,30px);line-height:1}
+.bcol b{font-family:var(--f-display);font-size:14px;color:var(--ink-soft)}.bcol.hl{background:#fff3c9;border-radius:12px}.bcol.hl2{background:#e2f2ff;border-radius:12px}
+.calpage{background:#fff;border-radius:18px;box-shadow:0 5px 0 var(--shadow);padding:14px 26px;display:flex;flex-direction:column;align-items:center;gap:2px;border-top:16px solid #c8364b}
+.calpage span{font-size:34px}.calpage b{font-family:var(--f-display);font-size:clamp(26px,7vw,36px)}
+.newstk{display:flex;align-items:center;gap:10px;justify-content:center;margin-top:6px}.newstk span{font-size:52px;animation:stick .5s cubic-bezier(.3,1.6,.5,1)}.newstk b{font-family:var(--f-display);font-size:20px;color:var(--leaf)}
+.stk{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}.stk span{aspect-ratio:1;display:grid;place-items:center;border-radius:12px;background:#eef3ef;color:#b9c7bd;font-size:clamp(22px,6vw,32px);font-family:var(--f-display)}.stk span.got{background:#fff7dc}
+.wardrobe{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:center}.wd-items{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;flex:1;min-width:220px}
+.wd{background:#fff;border:2px solid #d8e6dc;border-radius:14px;padding:6px 2px;display:flex;flex-direction:column;align-items:center;gap:2px}.wd span{font-size:28px}.wd small{font-size:11px;font-family:var(--f-display);color:var(--ink-soft)}
+.wd.on{border-color:var(--peacock);background:#e6f6f7}.wd.lock{opacity:.6}
+.movebox{text-align:center}.mv-e{font-size:96px;animation:bob 1.2s infinite}.mv-n{font-family:var(--f-letter);font-weight:700;font-size:72px;color:var(--peacock);min-height:84px}
+.bumpn{animation:pulse .3s}
 .agebadge{font-family:var(--f-display);font-weight:700;font-size:12px;color:var(--leaf);background:var(--moss);border-radius:999px;padding:1px 8px}
 .orderrow{display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center}
 .orderrow i{font-style:normal;color:var(--ink-soft);font-size:20px}
@@ -392,6 +421,7 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
   <div class="map-top">
     <div class="friends" id="friends"></div>
     <div class="starcount" id="starcount"></div>
+    <button class="pill-btn small" id="btn-book" aria-label="Sticker book" style="font-size:20px;padding:6px 10px">📒</button>
     <button class="pill-btn small" id="btn-parent" aria-label="Grown-ups settings" style="gap:6px;white-space:nowrap"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#1f6b4a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Grown-ups</button>
   </div>
   <div class="map-scroll" id="map-scroll"></div>
@@ -462,6 +492,8 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
       <div class="field"><label for="ps-age">Age</label><select id="ps-age"><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select></div>
       <div class="field"><label for="ps-limit">Session limit</label><select id="ps-limit"><option value="10">10 minutes</option><option value="15">15 minutes</option><option value="20">20 minutes</option></select></div>
       <label class="check"><input type="checkbox" id="ps-sfx"> Sound effects</label>
+      <label class="check"><input type="checkbox" id="ps-countnums"> Show numbers on objects while counting</label>
+      <label class="check"><input type="checkbox" id="ps-moves"> Movement breaks after every 3 games</label>
       <label class="check"><input type="checkbox" id="ps-consent"> Share anonymous play data to help improve the game</label>
       <label class="check"><input type="checkbox" id="ps-unlock"> Unlock every game in the corners (for grown-ups trying it)</label>
       <button class="pill-btn primary" id="ps-save" style="align-self:flex-start">Save settings</button>
@@ -490,6 +522,7 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
   <button class="pill-btn" id="bye-more">Grown-up: 5 more minutes</button>
 </div></div>
 
+<div class="reward" id="book" hidden></div>
 <div class="reward" id="reward" hidden><div class="box" id="reward-box"></div></div>
 <canvas class="confetti" id="confetti"></canvas>
 
