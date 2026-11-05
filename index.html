@@ -109,8 +109,10 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 .go-btn svg{width:28px;height:28px}
 
 /* ---------- play ---------- */
-.rounds{display:flex;gap:5px}
-.rounds i{width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--shadow)}
+.rounds{display:flex;gap:4px;flex-wrap:wrap;max-width:46vw;justify-content:flex-end}
+.rounds i{width:14px;height:14px;border-radius:50%;background:#fff;border:3px solid var(--shadow)}
+#play-title{font-size:clamp(15px,4vw,24px);overflow:hidden;overflow-wrap:anywhere}
+@media (max-width:420px){#s-play .topbar{gap:6px}}
 .rounds i.on{background:var(--mango);border-color:var(--mango-deep)}
 .rounds i.ok{background:var(--leaf-2);border-color:var(--leaf)}
 .body{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:12px;text-align:center;position:relative}
@@ -458,7 +460,7 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 </section>
 
 <section class="screen" id="s-play" hidden>
-  <div class="topbar"><button class="round" id="play-back" aria-label="Back"></button><h2 id="play-title"></h2><div class="rounds" id="rounds"></div><button class="round" id="play-hear" aria-label="Hear again"></button></div>
+  <div class="topbar"><button class="round" id="play-back" aria-label="Back"></button><h2 id="play-title"></h2><div class="rounds" id="rounds"></div><button class="round" id="play-restart" aria-label="Restart this game" title="Restart this game" style="font-size:22px;width:44px;height:44px">↻</button><button class="round" id="play-hear" aria-label="Hear again"></button></div>
   <div class="stage" id="stage"><div class="body" id="play-body"></div></div>
   <div class="caption" id="cap"></div>
   <div class="actions" id="actions"></div>
@@ -516,6 +518,8 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
       <label class="check"><input type="checkbox" id="ps-consent"> Share anonymous play data to help improve the game</label>
       <label class="check"><input type="checkbox" id="ps-unlock"> Unlock every game in the corners (for grown-ups trying it)</label>
       <button class="pill-btn primary" id="ps-save" style="align-self:flex-start">Save settings</button>
+      <div class="row" style="justify-content:flex-start;gap:8px;margin-top:8px"><button class="pill-btn" id="p-reload">↻ Reload the app</button><button class="pill-btn" id="p-reset">Start over for this child</button></div>
+      <p class="note">Reload fixes a stuck screen and keeps all progress. Start over clears this child's stars, stickers and levels (name, age and settings stay).</p>
       <span id="ps-saved" class="note" hidden>Saved.</span>
     </div>
     <div class="panel"><h3>About</h3>

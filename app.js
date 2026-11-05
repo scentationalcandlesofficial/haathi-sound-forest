@@ -9,11 +9,11 @@ const SHOW={s:'sss',a:'a',t:'t',i:'i',p:'p',n:'nnn',c:'k',k:'k',e:'e',h:'h',r:'r
 const NAME={s:'ess',a:'ay',t:'tee',i:'eye',p:'pee',n:'en',c:'see',k:'kay',e:'ee',h:'aitch',r:'are',m:'em',d:'dee',g:'jee',o:'oh',u:'you',l:'el',f:'ef',b:'bee'};
 const WORDS={
  s:[['sun','☀️'],['snake','🐍'],['sock','🧦']], a:[['ant','🐜'],['apple','🍎']], t:[['tiger','🐅'],['tomato','🍅'],['tent','⛺']],
- i:[['insect','🐛']], p:[['peacock','🦚'],['parrot','🦜'],['pencil','✏️']], n:[['nest','🪺'],['nose','👃'],['nut','🥜']],
+ i:[['insect','🐛'],['iguana','🦎']], p:[['peacock','🦚'],['parrot','🦜'],['pencil','✏️']], n:[['nest','🪺'],['nose','👃'],['nut','🥜']],
  c:[['cat','🐈'],['car','🚗'],['cow','🐄']], k:[['kite','🪁'],['key','🔑'],['kangaroo','🦘']], e:[['egg','🥚'],['elephant','🐘']],
  h:[['hat','👒'],['house','🏠'],['horse','🐎']], r:[['rabbit','🐇'],['rose','🌹'],['rocket','🚀']], m:[['mango','🥭'],['monkey','🐒'],['moon','🌙']],
  d:[['duck','🦆'],['drum','🥁'],['dog','🐕']], g:[['goat','🐐'],['gift','🎁'],['grapes','🍇']], o:[['octopus','🐙'],['orange','🍊'],['ox','🐂']],
- u:[['umbrella','☂️']], l:[['lion','🦁'],['leaf','🍃'],['lemon','🍋']], f:[['fish','🐟'],['frog','🐸'],['fox','🦊']], b:[['ball','⚽'],['bus','🚌'],['banana','🍌']]
+ u:[['umbrella','☂️'],['up','⬆️']], l:[['lion','🦁'],['leaf','🍃'],['lemon','🍋']], f:[['fish','🐟'],['frog','🐸'],['fox','🦊']], b:[['ball','⚽'],['bus','🚌'],['banana','🍌']]
 };
 const CVC=['cat','sun','bus','hat','dog','pig','map','bed','leg','bat','rat','nut','log','ten','hut','sat','pin','tap','pan','tin','nap','man','mud','hen','red'];
 const CVC_CLIP=new Set(['cat','sun','bus','hat','dog','pig','map','bed','leg','bat','rat','nut','log','ten','hut']);
@@ -22,9 +22,10 @@ const SAME={c:'k',k:'c'};
 const ACTION={s:'Hiss like a pressure cooker',a:'Open wide like biting an apple',t:'Tap your toes',i:'Itchy insect! Scratch your arm',p:'Pop bubbles with a finger',n:'Wag your finger: no, no',c:'Click your fingers',k:'Kick a ball',e:'Crack an egg on your knee',h:'Breathe on your hand like hot chai',r:'Drive an auto-rickshaw',m:'Rub your tummy: yummy mango',d:'Beat a dhol on your lap',g:'Gulp some water',o:'Make a big O with your arms',u:'Put up an umbrella',l:'Lick a kulfi',f:'Fan your face',b:'Bounce a ball'};
 const HOWTO={s:'a long hiss, <b>sssss</b>',a:'short <b>a</b> as in ant',t:'a quick whispered <b>t</b>, no "uh"',i:'short <b>i</b> as in insect',p:'a puff of air, <b>p</b>, no "uh"',n:'a hum, <b>nnnn</b>',c:'a whispered <b>k</b> as in kite (also used for k)',e:'short <b>e</b> as in egg',h:'a breathy <b>h</b>, like fogging a mirror',r:'a growl, <b>rrrr</b>',m:'a hum, <b>mmmm</b>',d:'a short <b>d</b>, no "uh"',g:'a short <b>g</b> as in goat',o:'short <b>o</b> as in octopus',u:'short <b>u</b> as in umbrella',l:'<b>llll</b>, tongue up',f:'<b>ffff</b>, like blowing',b:'a short <b>b</b>, lips pop, no "uh"'};
 const COUNT_THINGS=[{k:'ladoo',label:'ladoos'},{k:'🥭',label:'mangoes'},{k:'🍌',label:'bananas'},{k:'🪔',label:'diyas'},{k:'🦆',label:'ducks'},{k:'🌸',label:'flowers'},{k:'⭐',label:'stars'},{k:'🐟',label:'fish'}];
-const SHAPES={circle:'<circle cx="50" cy="50" r="40"/>',square:'<rect x="12" y="12" width="76" height="76" rx="4"/>',triangle:'<path d="M50 10 L92 88 H8 Z"/>',rectangle:'<rect x="6" y="26" width="88" height="48" rx="4"/>',star:'<path d="M50 6l12 30 32 2-25 20 9 32-28-18-28 18 9-32L6 38l32-2z"/>',heart:'<path d="M50 88C10 60 6 34 22 22c12-9 24-2 28 8 4-10 16-17 28-8 16 12 12 38-28 66z"/>'};
-const SHAPESETS=[['circle','square','triangle'],['circle','square','triangle','rectangle'],['star','heart','circle','triangle'],['rectangle','square','star','heart','circle','triangle']];
-const SHAPE_COL=['#147a8a','#c8364b','#f6a821','#2f8a5f','#8a5cc2','#e07a12'];
+const SHAPES={oval:'<ellipse cx="50" cy="50" rx="45" ry="29"/>',diamond:'<path d="M50 6L90 50L50 94L10 50Z"/>',hexagon:'<path d="M28 12H72L94 50L72 88H28L6 50Z"/>',crescent:'<path d="M64 8A43 43 0 1 0 64 92A34 34 0 1 1 64 8Z"/>',circle:'<circle cx="50" cy="50" r="40"/>',square:'<rect x="12" y="12" width="76" height="76" rx="4"/>',triangle:'<path d="M50 10 L92 88 H8 Z"/>',rectangle:'<rect x="6" y="26" width="88" height="48" rx="4"/>',star:'<path d="M50 6l12 30 32 2-25 20 9 32-28-18-28 18 9-32L6 38l32-2z"/>',heart:'<path d="M50 88C10 60 6 34 22 22c12-9 24-2 28 8 4-10 16-17 28-8 16 12 12 38-28 66z"/>'};
+/* the shapes asked about grow by level; the screen always shows 6 shapes to choose from */
+const SHAPESETS=[['circle','square','triangle'],['circle','square','triangle','rectangle'],['circle','square','triangle','rectangle','star','heart','oval'],['circle','square','triangle','rectangle','star','heart','oval','diamond','hexagon','crescent']];
+const SHAPE_COL=['#d94f8a','#3a8fd9','#7a9a1f','#b5651d','#147a8a','#c8364b','#f6a821','#2f8a5f','#8a5cc2','#e07a12'];
 const BEAD={r:['#e2563f','circle'],b:['#147a8a','circle'],y:['#f6a821','circle'],g:['#2f8a5f','square'],p:['#8a5cc2','triangle']};
 const REGIONS=[
  {id:'forest',name:'Mango Forest',clip:'P_reg_forest',friend:['🦚','peacock'],sky:'#d9f0d5'},
@@ -443,6 +444,10 @@ const DEFAULT_ROUNDS=8;
 function setRounds(){const r=$('rounds');r.innerHTML='';for(let i=0;i<RUN.rounds;i++){const e=document.createElement('i');if(i<RUN.round)e.className='ok';else if(i===RUN.round)e.className='on';r.appendChild(e)}}
 function actions(list){const a=$('actions');a.innerHTML='';list.forEach(([cls,label,fn,icon,id])=>{const b=document.createElement('button');b.className='big-btn '+cls;if(id)b.id=id;b.innerHTML=(icon||'')+label;b.onclick=()=>{unlockAudio();FX.tap();fn()};a.appendChild(b)})}
 $('play-hear').onclick=()=>{unlockAudio();FX.tap();RUN&&RUN.prompt&&RUN.prompt()};
+$('play-restart').onclick=()=>{unlockAudio();FX.tap();if(!RUN)return;const n=Object.assign({},RUN.node);Object.keys(n).forEach(k=>{if(k[0]==='_'||['seq','si','fam','stars'].includes(k))delete n[k]});stopVoice();startRun(n,RUN.from)};
+$('p-reload').onclick=()=>{save();location.reload()};
+$('p-reset').onclick=()=>{const b=$('p-reset');if(!b.dataset.sure){b.dataset.sure=1;b.textContent='Tap again to start over (stars, stickers and levels for '+S.profile.name+' will be cleared)';return}
+  const keep={profile:S.profile,settings:S.settings,device:S.device};S=Object.assign(blank(),keep);placeByAge();save();location.reload()};
 $('play-back').onclick=()=>{FX.tap();const f=RUN&&RUN.from;RUN=null;f&&f.corner?openCorner(f.corner,f.sec):go('map')};
 const TITLES={tens:'Tens and ones',clock:'Telling time',tenmore:'10 more, 10 less',bigsmall:'Big and small letters',sameletter:'Same letter',oddsound:'Odd one out',samesound:'Same first sound?',picletter:'Picture to letter',letterpic:'Letter to picture',fishing:'Letter fishing',nextletter:'Next letter',missingletter:'Missing letter',sortsound:'Sound baskets',memory:'Memory pairs',rhyme:'Rhyme time',buildword:'Build a word',firstmissing:'First letter',hunt:'Letter hunt',mole:'Letter moles',hidden:'Hidden letter',stones:'River stones',shadow:'Letter shadows',
  fewer:'Which has fewer?',smaller:'Smaller number',matchgroup:'Match the number',maketen:'Make ten',beats:'Drum beats',rocket:'Rocket countdown',order:'Numbers in order',frog:'Frog hops',skip:'Skip counting',hiding:'Hiding ladoos',oddshape:'Odd shape out',sortcolour:'Colour baskets',size:'Big and small',heavy:'Heavy and light',queue:'First and last',money:'More money?',double:'Butterfly doubles',countshapes:'Count the shapes',
@@ -516,7 +521,7 @@ ACT.bubbles=(n)=>{const pool=S.intro.length?S.intro:(n.pool&&n.pool.length?n.poo
   setTimeout(prompt,300);
 };
 ACT.snack=(n)=>{
-  const pool=S.intro.length?S.intro:(n.pool&&n.pool.length?n.pool:['s']);const weak=n.focus&&pool.includes(n.focus)&&rec(n.focus).att.length>=2&&accuracy(n.focus)<.7;const t=weak&&Math.random()<.25?n.focus:deck('snk',pool);const target=rnd(WORDS[t]);
+  const pool=S.intro.length?S.intro:(n.pool&&n.pool.length?n.pool:['s']);const weak=n.focus&&pool.includes(n.focus)&&rec(n.focus).att.length>=2&&accuracy(n.focus)<.7;const t=weak&&Math.random()<.25?n.focus:deck('snk',pool);const target=rnd(WORDS[t].filter(w=>w[0]!==KEYW(t)[0]).concat(WORDS[t].length<2?WORDS[t]:[]));
   const others=shuffle(ORDER.filter(x=>x!==t&&SAME[t]!==x)).slice(0,nopt()-1).map(l=>rnd(WORDS[l]));const items=shuffle([target,...others]);
   body().innerHTML=`<button class="haathi feed-h" id="fh" aria-label="Haathi">${haathi('open')}</button>${hasRec(t)?'':`<div class="cue"><span class="em">${KEYW(t)[1]}</span>starts like ${KEYW(t)[0]}</div>`}<div class="choices" id="cards"></div>`;
   const h=$('fh');let busy=false,wrong=false;const rec1=once(ok=>recordLetter(t,ok,3,'snack'));
@@ -646,7 +651,7 @@ ACT.length=(n)=>{const lvl=n.lvl;const kind=lvl===0?'longer':rnd(['longer','shor
   body().innerHTML=`<div class="lens ${kind==='taller'?'v':''}">${[a,b].map(thing).join('')}</div>`;
   const prompt=()=>say([kind==='longer'?'P_longer':kind==='shorter'?'P_shorter':'P_taller'],`Which one is ${kind}?`);RUN.prompt=prompt;prompt();let wrong=false,busy=false;const L=once(ok=>learnN(n,ok));
   body().querySelectorAll('.lenbtn').forEach(x=>x.onclick=()=>{if(busy)return;const ok=+x.dataset.v===ans;L(ok);if(ok){busy=true;FX.chime();burst(x,14);anim(x,'dance');say([rnd(PRAISE)],`Yes, that one is ${kind}!`).then(()=>roundDone(!wrong))}else{wrong=true;FX.boing();anim(x,'wiggle',500);say(['P_close'],'Look again!')}})};
-ACT.shape=(n)=>{const set=n.set,t=rnd(set);const opts=shuffle([t,...shuffle(set.filter(x=>x!==t)).slice(0,2)]);const cols=shuffle(SHAPE_COL);
+ACT.shape=(n)=>{const set=n.set,t=deck('shp'+set.length,set);const opts=shuffle([t,...shuffle(Object.keys(SHAPES).filter(x=>x!==t)).slice(0,5)]);const cols=shuffle(SHAPE_COL);
   body().innerHTML=`<div class="haathi" style="width:110px;height:116px">${haathi('happy')}</div><div class="shapes">${opts.map((k,i)=>`<button class="shape" data-k="${k}" aria-label="${k}">${shapeSVG(k,cols[i])}</button>`).join('')}</div>`;
   const prompt=()=>say(['P_shape_find',W(t)],`Can you find the ${t}?`);RUN.prompt=prompt;prompt();let wrong=false,busy=false;const L=once(ok=>learnN(n,ok));
   body().querySelectorAll('.shape').forEach(b=>b.onclick=()=>{if(busy)return;const ok=b.dataset.k===t;L(ok);if(ok){busy=true;FX.chime();burst(b,16);anim(b,'dance');say([W(t),250,rnd(PRAISE)],`Yes, a ${t}!`).then(()=>roundDone(!wrong))}
