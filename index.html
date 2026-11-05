@@ -100,7 +100,7 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 .node.cur .ring{animation:ring 1.4s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
 @keyframes ring{50%{transform:scale(1.18);opacity:.4}}
 .node.locked{opacity:.5}
-.corners{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.corners{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.corner span{font-size:clamp(11px,3.2vw,15px)}
 .corner{background:#fff;border-radius:20px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;box-shadow:0 5px 0 var(--shadow);min-height:74px;justify-content:center;transition:transform .12s}
 .corner:active{transform:translateY(3px)}
 .corner b{font-family:var(--f-letter);font-size:26px;line-height:1}
@@ -207,6 +207,7 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
 /* overlays & parent */
 .overlay{position:fixed;inset:0;background:rgba(23,51,38,.55);display:grid;place-items:center;padding:20px;z-index:50}
+#gate{z-index:70;align-items:start;padding-top:12vh} /* the grown-up question must sit above every other screen, and above the phone keyboard */
 .sheet{background:#fff;border-radius:26px;padding:22px;max-width:440px;width:100%;display:flex;flex-direction:column;gap:12px;text-align:center}
 .sheet h3{font-family:var(--f-display);font-size:26px;margin:0;color:var(--leaf)}
 .sheet p{margin:0;color:var(--ink-soft)}
@@ -392,6 +393,11 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 .r-obj span{font-size:42px;line-height:1}
 .ruler{position:absolute;left:0;right:0;top:70px;height:54px;background:#fdf0c4;border:2px solid #c9a24a;border-radius:6px}
 .ruler i{position:absolute;top:0;width:2px;height:18px;background:#5a4a1e;transform:translateX(-1px)}.ruler i b{position:absolute;top:20px;left:50%;transform:translateX(-50%);font-family:var(--f-display);font-size:clamp(11px,3vw,15px);color:#5a4a1e}
+.fcard{width:min(340px,80vw);aspect-ratio:3/4;background:#fff;border-radius:28px;box-shadow:0 8px 0 var(--shadow),0 0 0 6px #fff3c9 inset;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;position:relative;touch-action:pan-y;transition:transform .2s,opacity .2s;user-select:none}
+.fcard.fly{transform:translateX(-120%) rotate(-12deg)!important;opacity:0}
+.fc-pic{font-size:clamp(110px,34vw,170px);line-height:1}.fc-name{font-family:var(--f-display);font-weight:800;font-size:clamp(30px,8vw,44px);color:var(--ink)}
+.fc-snd{font-family:var(--f-display);font-size:18px;color:var(--peacock)}.fc-count{position:absolute;top:12px;right:16px;font-family:var(--f-display);font-size:14px;color:var(--ink-soft)}
+.tile.deck .ico{font-size:24px;letter-spacing:-2px}
 .agebadge{font-family:var(--f-display);font-weight:700;font-size:12px;color:var(--leaf);background:var(--moss);border-radius:999px;padding:1px 8px}
 .orderrow{display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center}
 .orderrow i{font-style:normal;color:var(--ink-soft);font-size:20px}
@@ -442,6 +448,7 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
     <button class="corner" data-corner="numbers"><b style="color:var(--c-number)">123</b><span>Numbers</span></button>
     <button class="corner" data-corner="writing"><b style="color:var(--c-write)">✎</b><span>Writing</span></button>
     <button class="corner" data-corner="discover"><b>🌍</b><span>Discover</span></button>
+    <button class="corner" data-corner="cards"><b>🃏</b><span>Cards</span></button>
   </div>
 </section>
 

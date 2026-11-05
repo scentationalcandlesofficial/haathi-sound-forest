@@ -1081,7 +1081,7 @@ ACT.d_learn=(n,round)=>{const LP=DSEC[n.sec].learnPairs&&DSC.match[DSEC[n.sec].l
     actions([['soft','Hear again',()=>RUN.prompt()],['go','Next',()=>{learnN(n,true);roundDone(true)},ICON.next]]);return}
   if(!n._ord)n._ord=DSEC[n.sec].learnOrder?learnList(n.sec):shuffle(dPool(n.sec));const k=n._ord[round%n._ord.length];const sf=(DSEC[n.sec].items.find(i=>i.k===k)||{}).f||'';const it=Object.assign({},DI(k),{f:sf});const DF=k=>sf&&sf===DI(k).f?['F_'+k]:[];
   body().innerHTML=`<div class="learncard">${dCard(k,true)}<div class="word" style="font-size:clamp(28px,7vw,40px)">${it.n}</div>${it.f?`<div class="card-note">${it.f}</div>`:''}</div>`;
-  RUN.prompt=()=>say([...(round===0?['P_d_learn','SEC_'+n.sec,300]:[]),DN(k),300,...DF(k)],it.f||it.n);RUN.prompt();anim(body().querySelector('.learncard'),'dance');
+  RUN.prompt=()=>say([...(round===0?['P_d_learn','SEC_'+n.sec,300]:[]),DN(k),300,...DF(k),...(DSEC[n.sec].voiceLearn&&DSC.sounds[k]?[300,'SND_'+k]:[])],it.f||it.n);RUN.prompt();anim(body().querySelector('.learncard'),'dance');
   actions([['soft','Hear again',()=>RUN.prompt()],['go','Next',()=>{learnN(n,true);roundDone(true)},ICON.next]])};
 ACT.d_find=(n)=>{const pool=dPool(n.sec);const t=deck('df'+n.sec+pool.length,pool);const fc=DSEC[n.sec].findClip;
   pickRound({items:dOpts(pool,t,nopt()).map(k=>({h:dCard(k),v:k,label:DI(k).n})),ans:t,say:[fc||'P_d_find',DN(t)],cap:fc?`Who looks ${DI(t).n.toLowerCase()}?`:`Can you find the ${DI(t).n.toLowerCase()}?`,right:[DN(t),300,...DF(t)],rightCap:DI(t).f||`Yes, the ${DI(t).n.toLowerCase()}!`,wrong:it=>['P_hmm_thats',DN(it.v)]})};
@@ -1471,6 +1471,36 @@ function modeSuggest(n,stars,box){const kind=kindOfNode(n);if(!kind)return;S.tie
   const y=document.createElement('button');y.className='pill-btn primary';y.textContent='Yes, try '+MODE_NAMES[m+1];y.onclick=()=>{FX.sparkle();setMode(kind,m+1);S.tierLog[kind]=[];save();d.innerHTML=`<p><b>${MODE_NAMES[m+1]} it is!</b></p>`};
   const no=document.createElement('button');no.className='pill-btn';no.textContent='Not yet';no.onclick=()=>{FX.tap();S.suggested[kind]=today();save();d.remove()};d.append(y,no);box.appendChild(d)}
 
+
+/* ======================= PICTURE CARDS (the flash cards parents use with 2 to 4 year olds) ======================= */
+const CARD_DECKS=['fruits','vegetables','indianfood','vehicles','farm','wild','birds','voices','sea','bugs','body','colours','clothes','home','music','helpers','feelings','food'];
+const hasVoices=id=>DSEC[id]&&DSEC[id].items.filter(i=>DSC.sounds[i.k]).length>=3;
+ACT.cards=(n,round)=>{const sc=DSEC[n.sec];if(!n._ord)n._ord=shuffle(sc.items.map(i=>i.k)).slice(0,12);const k=n._ord[round%n._ord.length];const it=DI(k);const snd=DSC.sounds[k];
+  body().innerHTML=`<div class="fcard" id="fc"><div class="fc-pic">${it.e}</div><div class="fc-name">${it.n}</div>${snd?`<div class="fc-snd">🔊 ${snd}</div>`:''}<div class="fc-count">${round+1} / ${n._ord.length}</div></div><p class="card-note">Tap the card to hear it again. Swipe or tap Next for the next card.</p>`;
+  const c=$('fc');RUN.prompt=()=>say([...(round===0?['SEC_'+n.sec,400]:[]),DN(k),...(snd?[450,'SND_'+k]:[]),...(round%3===1?[700,'P_your_turn']:[])],it.n);RUN.prompt();anim(c,'dance');
+  const next=()=>{if(c.dataset.done)return;c.dataset.done=1;learnN(n,true);FX.swish&&FX.swish();c.classList.add('fly');setTimeout(()=>roundDone(true),250)};
+  let x0=null,moved=false;c.onpointerdown=e=>{x0=e.clientX;moved=false};c.onpointermove=e=>{if(x0!=null&&Math.abs(e.clientX-x0)>12){moved=true;c.style.transform=`translateX(${e.clientX-x0}px) rotate(${(e.clientX-x0)/20}deg)`}};
+  c.onpointerup=c.onpointercancel=e=>{const dx=x0==null?0:e.clientX-x0;x0=null;c.style.transform='';if(Math.abs(dx)>60)next()};
+  c.onclick=()=>{if(moved)return;FX.tap();anim(c,'bumpn',300);say([DN(k),...(snd?[300,'SND_'+k]:[])],it.n)};
+  actions([['soft','Hear again',()=>RUN.prompt()],['go','Next card',next,ICON.next]])};
+function cardNode(id,g){const sc=DSEC[id];const n={sec:id,skill:'d_'+id,title:sc.name};
+  if(g==='cards')return Object.assign(n,{t:'cards',rounds:Math.min(12,sc.items.length),title:sc.name+': Picture cards'});
+  return Object.assign(dNode(id,g),{title:sc.name+': '+{find:'Find the card',memory:'Memory cards',sound:'Whose voice?'}[g]})}
+function openCards(deck){const b=$('corner-body');b.innerHTML='';const from={corner:'cards',sec:deck};
+  if(!deck){$('corner-title').textContent='Picture Cards';
+    const v=document.createElement('button');v.className='go-btn';v.style.cssText='width:100%;max-width:640px;animation:none';v.innerHTML='🔊 Whose voice is this? <span style="font-size:15px;font-weight:600">(animals and birds)</span>';
+    v.onclick=()=>{unlockAudio();FX.tap();startRun(cardNode('voices','sound'),{corner:'cards',sec:'voices'})};b.appendChild(v);
+    const g=document.createElement('div');g.className='tiles';b.appendChild(g);
+    CARD_DECKS.filter(id=>DSEC[id]).forEach(id=>{const s=DSEC[id];const t=document.createElement('button');t.className='tile deck';t.innerHTML=`<div class="ico">${s.items.slice(0,3).map(i=>i.e).join('')}</div><span>${s.name}</span><small class="note">${s.items.length} cards</small>`;
+      t.onclick=()=>{unlockAudio();FX.tap();say(['SEC_'+id],null);openCards(id)};g.appendChild(t)});
+    const p=document.createElement('p');p.className='card-note';p.textContent='Picture cards for little ones: look, listen and say the name. Then find the card, play memory, or guess whose voice it is.';b.appendChild(p);say(['P_d_pick'],null);return}
+  const s=DSEC[deck];$('corner-title').textContent=s.name;
+  const back=document.createElement('button');back.className='pill-btn small';back.textContent='← All cards';back.onclick=()=>{FX.tap();openCards()};b.appendChild(back);
+  const hero=document.createElement('div');hero.className='learncard';hero.style.cssText='flex-direction:row;gap:10px;flex-wrap:wrap;justify-content:center;max-width:640px';hero.innerHTML=s.items.slice(0,12).map(i=>`<span style="font-size:34px">${i.e}</span>`).join('');b.appendChild(hero);
+  const g=document.createElement('div');g.className='tiles';b.appendChild(g);
+  [['cards','🃏','Picture cards'],['find','🔍','Find the card'],['memory','🧠','Memory cards'],...(hasVoices(deck)?[['sound','🔊','Whose voice?']]:[])].forEach(([gm,ic,lb])=>{const t=document.createElement('button');t.className='tile';t.innerHTML=`<div class="ico">${ic}</div><span>${lb}</span>`;
+    t.onclick=()=>{unlockAudio();FX.tap();startRun(cardNode(deck,gm),from)};g.appendChild(t)})}
+
 /* ======================= PRACTICE CORNERS ======================= */
 const CORNER={
  letters:[['meet','Meet a letter','abc'],['bubbles','Sound Bubbles','○'],['snack',"Haathi's Snack",'🥭'],['picletter','Picture to letter','🐍s'],['letterpic','Letter to picture','s🐍'],['samesound','Same first sound?','👍'],
@@ -1503,7 +1533,7 @@ function cornerNode(id,kind){const pool=S.intro.length?S.intro:['s','a'];
   if(SK[id])return Object.assign(SK[id].node(param(id)),{skill:id});
   return {t:id}}
 function cornerLocked(id){if(S.settings.unlock)return false;if(id==='wname')return !nameChars().length;if(LGAMES[id])return !LGAMES[id]();if(SK[id])return !unlocked(id);return false}
-function openCorner(kind,sec){go('corner');if(kind==='discover'){openDiscover(sec);return}const b=$('corner-body');const from={corner:kind};b.innerHTML='';
+function openCorner(kind,sec){go('corner');if(kind==='discover'){openDiscover(sec);return}if(kind==='cards'){openCards(sec);return}const b=$('corner-body');const from={corner:kind};b.innerHTML='';
   const m=modeOf(kind);$('corner-title').textContent=kind==='letters'&&m===2?'Reading':{letters:'Letters',numbers:'Numbers',writing:'Writing'}[kind];
   b.appendChild(modeTabs(kind,()=>openCorner(kind)));
   const all=kind==='letters'?[...CORNER.letters,...Object.keys(READ_G).map(g=>[g,...READ_G[g]])]:CORNER[kind];
