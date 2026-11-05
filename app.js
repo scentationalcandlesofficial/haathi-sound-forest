@@ -43,6 +43,15 @@ let S=load();
 function blank(){return {profile:null,chapters:[],intro:[],lastIntroCh:-9,sounds:{},sk:{},minutes:{},settings:{sfx:true,unlock:false,consent:false},said:0,likes:{},fbPrefs:{},device:null,lastSync:0,sentFb:0}}
 function load(){try{const r=localStorage.getItem(KEY);if(r){const o=Object.assign(blank(),JSON.parse(r));o.settings=Object.assign(blank().settings,o.settings);o.likes=o.likes||{};o.fbPrefs=o.fbPrefs||{};return o}}catch(e){}return blank()}
 function loadHindi(){if(window.__hiLoaded||window.__hiLoading||!(S.settings&&S.settings.lang==='hi'))return;window.__hiLoading=1;const sc=document.createElement('script');sc.src='clips-hi.js';sc.onerror=()=>{window.__hiLoading=0};document.head.appendChild(sc)}
+function badge(){const b=$('btn-parent');if(b)b.classList.toggle('has-news',(S.unseen||0)>0)}
+function renderProgress(){const el=$('p-progress');if(!el)return;const nm=S.profile?S.profile.name:'Your child';
+  const modes=['letters','numbers','writing','discover'].map(k=>`<span class="chip">${{letters:'Letters',numbers:'Numbers',writing:'Writing',discover:'Discover'}[k]}: <b>${MODE_NAMES[modeOf(k)]}</b></span>`).join(' ');
+  const ch=(S.changes||[]).slice(-12).reverse();
+  const rows=Object.keys(SK).filter(id=>S.sk[id]&&S.sk[id].n).sort((a,b)=>(S.sk[b].last||'').localeCompare(S.sk[a].last||'')).slice(0,14).map(id=>{const s=S.sk[id];const last=(S.changes||[]).filter(c=>c.id===id&&c.kind==='level').slice(-1)[0];
+    const tr=last?(last.to>last.from?'<span class="up">▲ up</span>':'<span class="down">▼ down</span>')+` <small>${last.d.slice(5)}</small>`:'<small>steady</small>';
+    return `<tr><td>${SK[id].name}</td><td>${SK[id].lab(param(id))}</td><td>${tr}</td><td>${Math.round(s.p*100)}%</td></tr>`}).join('');
+  el.innerHTML=`<p>${modes}</p><h4>Recent changes</h4>${ch.length?`<ul class="why">${ch.map(c=>`<li><small>${c.d.slice(5)}</small> ${c.kind==='mode'?'🔀 ':''}${c.txt}</li>`).join('')}</ul>`:'<p class="note">No changes yet. Levels move after a few games.</p>'}
+    <h4>Skills played recently</h4>${rows?`<div style="overflow-x:auto"><table class="eng-table"><tr><th>Skill</th><th>Now</th><th>Last change</th><th>Right first try</th></tr>${rows}</table></div>`:'<p class="note">Play a few games first.</p>'}`}
 function applyNums(){document.body.classList.toggle('nonum',S.settings&&S.settings.countNums===false)}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 /* ---- several children on one phone: the active child lives in KEY, the others are parked under KEY::id ---- */
@@ -162,12 +171,17 @@ const LGAMES={bubbles:()=>true,snack:()=>true,picletter:()=>true,letterpic:()=>t
 function strongL(){return ageR()>=5||(S.intro.length>=10&&letterSkill()>=.75)}
 function pickLetterGame(exclude){let c=Object.keys(LGAMES).filter(g=>g!==exclude&&inPlay('letters',g));if(!c.length)c=Object.keys(LGAMES).filter(g=>tierOf('letters',g)===modeOf('letters'))
   let best=null,bs=-9;c.forEach(g=>{const sc=Math.random()*1.4+Math.max(-.5,Math.min(.5,prefBonus(g)))-recentPenalty(g);if(sc>bs){bs=sc;best=g}});return best||'bubbles'}
+/* every level or mode change is written down for the grown-ups panel */
+function logChange(id,from,to,kind,why){S.changes=S.changes||[];const sk=SK[id];S.changes.push({d:today(),id,from,to,kind:kind||'level',why:why||'',
+  txt:kind==='mode'?why:`${sk?sk.name:id}: ${sk?sk.lab(sk.levels[Math.min(from,sk.levels.length-1)]):from} → ${sk?sk.lab(sk.levels[Math.min(to,sk.levels.length-1)]):to}`});if(S.changes.length>60)S.changes=S.changes.slice(-60);S.unseen=(S.unseen||0)+1}
 function st(id){return S.sk[id]||(S.sk[id]={lvl:0,p:.5,n:0,ln:0,last:null,up:null})}
 const lv=id=>(S.sk[id]||{lvl:0}).lvl, pr=id=>(S.sk[id]||{p:0}).p, n_=id=>(S.sk[id]||{n:0}).n;
 function learn(id,ok){if(!SK[id])return;const s=st(id);s.n++;s.ln++;s.p=s.p+.25*((ok?1:0)-s.p);s.last=today();s.streak=ok?(s.streak||0)+1:0;s.miss=ok?0:(s.miss||0)+1;
   const L=SK[id].levels.length;
+  const was=s.lvl;
   if(s.lvl<L-1&&((s.ln>=5&&s.p>=.8)||s.streak>=6)){s.lvl++;s.ln=0;s.p=.6;s.streak=0;s.up=today();s.justUp=1}
   else if(s.lvl>0&&((s.ln>=3&&s.p<.35)||s.miss>=3)){s.lvl--;s.ln=0;s.p=.5;s.miss=0}
+  if(s.lvl!==was){s.changedAt=Date.now();logChange(id,was,s.lvl)}
   save()}
 /* ---- starting point by age, so a 4-year-old starts at 1-10, not 1-3 ---- */
 /* Starting levels by age. Maths follows Head Start ELOF (3-5), US Kindergarten (5-6) and Grade 1 (6-7) standards;
@@ -390,7 +404,7 @@ function nodeIcon(n){const t=n.t;if(t.startsWith('d_')&&DSEC[n.sec])return DSEC[
 const WRITE_T=new Set(['dots','slate','maze','tracepic','drawshapes','finishpic','countwrite','joinmatch','colour']);
 const SUBJ=n=>n.t.startsWith('d_')?'discover':LGAMES[n.t]||n.t==='meet'?'letter':n.t==='friend'?'friend':(n.t[0]==='w'||WRITE_T.has(n.t))?'write':'number';
 function nodeColor(n){const s=SUBJ(n);if(s==='discover')return '#2f8a5f';return s==='letter'?'#147a8a':s==='number'?'#e07a12':s==='write'?'#8a5cc2':'#f6a821'}
-function renderMap(){if(S.profile)markDay();{const lc=document.querySelector('[data-corner="letters"]');if(lc){lc.querySelector('span').textContent=modeOf('letters')===2?'Reading':'Letters';lc.querySelector('b').textContent=modeOf('letters')===2?'Read':'abc'}}
+function renderMap(){if(S.profile)markDay();badge();{const lc=document.querySelector('[data-corner="letters"]');if(lc){lc.querySelector('span').textContent=modeOf('letters')===2?'Reading':'Letters';lc.querySelector('b').textContent=modeOf('letters')===2?'Read':'abc'}}
   const cur=curChapter();const W=Math.min(560,$('map-scroll').clientWidth||360);
   const chs=S.chapters.slice(-4);let y=0,svg='';const pos=[],meta=[];
   const GAP=100,HEAD=86;
@@ -431,7 +445,7 @@ function scenery(id,W,y,h){let s='';for(let i=0;i<6;i++){const x=(i%2?W*.9:W*.1)
   else s+=`<path d="M${x-30} ${yy+18}L${x} ${yy-24}L${x+30} ${yy+18}Z" fill="#9fb7cf"/><path d="M${x-10} ${yy-10}L${x} ${yy-24}L${x+10} ${yy-10}Z" fill="#fff"/>`}return s}
 $('btn-go').onclick=()=>{unlockAudio();FX.tap();const c=curChapter();playChapterNode(c,curNodeIdx(c))};
 document.querySelectorAll('[data-corner]').forEach(b=>b.onclick=()=>{unlockAudio();FX.tap();openCorner(b.dataset.corner)});
-function playChapterNode(ch,i){const n=ch.nodes[i];const first=i===0&&n.stars==null;startRun(n,{chapter:ch.id,i,first})}
+function playChapterNode(ch,i){const n=ch.nodes[i];syncNode(n);if(LGAMES[n.t])n.pool=S.intro.slice();const first=i===0&&n.stars==null;startRun(n,{chapter:ch.id,i,first})}
 
 /* ======================= ACTIVITY RUNNER ======================= */
 let RUN=null;
@@ -461,8 +475,16 @@ function startRun(n,from){
   let delay=250;if(from.first){const ch=S.chapters.find(c=>c.id===from.chapter);say(ch&&ch.id%3===0?[REGIONS[ch.region].clip,200,'P_chapter']:['P_chapter'],null);delay=1700}
   setTimeout(()=>{if(RUN&&RUN.node===n)nextRound()},delay);
 }
-function nextRound(){if(!RUN)return;setRounds();$('actions').innerHTML='';{const id=RUN.node.skill||RUN.node.t;if(SK[id]&&RUN.node.max!=null&&typeof param(id)==='number'&&RUN.node.max!==param(id)){const up=param(id)>RUN.node.max;RUN.node.max=param(id);if(up){FX.sparkle();$('cap').textContent='Level up! Numbers up to '+RUN.node.max}}}ACT[RUN.node.t](RUN.node,RUN.round)}
-function roundDone(ok){if(!RUN||RUN._lock===RUN.round)return;RUN._lock=RUN.round;RUN.ok.push(!!ok);RUN.round++;setRounds();if(RUN.round>=RUN.rounds)finishRun();else{const r=RUN;setTimeout(()=>{if(RUN===r)nextRound()},600)}}
+function stair(ok){const id=RUN.node.skill||RUN.node.t;const sk=SK[id];if(!sk||sk.levels.length<2||id.startsWith('d_'))return;const s=st(id);if(RUN.startLvl==null)RUN.startLvl=s.lvl;
+  if(s.changedAt&&Date.now()-s.changedAt<4000)return;RUN.c2=ok?(RUN.c2||0)+1:0;let to=s.lvl;
+  if(ok&&RUN.c2>=2&&s.lvl<sk.levels.length-1){to=s.lvl+1;RUN.c2=0}else if(!ok&&s.lvl>Math.max(0,RUN.startLvl-1))to=s.lvl-1;
+  if(to!==s.lvl){const was=s.lvl;s.lvl=to;s.ln=0;s.changedAt=Date.now();logChange(id,was,to,'level');RUN.stairMsg=to>was?'up':'down';save()}}
+/* each round (and each map stop) uses the child's level right now, not the level when the chapter was planned */
+function syncNode(n){const id=n.skill||n.t;const sk=SK[id];if(!sk||sk.levels.length<2||id.startsWith('d_'))return null;const f=sk.node(param(id));let changed=false;
+  ['max','set','lvl'].forEach(k=>{if(f[k]!==undefined&&JSON.stringify(f[k])!==JSON.stringify(n[k])){n[k]=f[k];changed=true}});return changed}
+function nextRound(){if(!RUN)return;setRounds();$('actions').innerHTML='';const ch=syncNode(RUN.node);
+  if(ch&&RUN.stairMsg==='up'){FX.sparkle();const id=RUN.node.skill||RUN.node.t;$('cap').textContent='⭐ A bit harder now: '+SK[id].lab(param(id))}RUN.stairMsg=null;ACT[RUN.node.t](RUN.node,RUN.round)}
+function roundDone(ok){if(!RUN||RUN._lock===RUN.round)return;RUN._lock=RUN.round;RUN.ok.push(!!ok);stair(ok);RUN.round++;setRounds();if(RUN.round>=RUN.rounds)finishRun();else{const r=RUN;setTimeout(()=>{if(RUN===r)nextRound()},600)}}
 const learnN=(n,ok)=>{const id=n.skill||(SK[n.t]?n.t:(typeof READ_G!=='undefined'&&READ_G[n.t])?'read':null);if(id)learn(id,ok)};
 function finishRun(){
   const run=RUN,n=run.node;const stars=Math.max(1,Math.round(run.ok.filter(Boolean).length/run.ok.length*3));
@@ -1471,10 +1493,13 @@ function modeTabs(kind,onPick){const m=modeOf(kind);const w=document.createEleme
   MODE_NAMES.forEach((nm,i)=>{const b=document.createElement('button');b.className='mtab'+(i===m?' on':'');b.innerHTML=`<b>${['🌱','🌿','🌳'][i]} ${nm}</b><small>${MODE_NOTE[kind][i]}</small>`;b.onclick=()=>{unlockAudio();FX.tap();setMode(kind,i);onPick()};w.appendChild(b)});return w}
 /* after a game: if most recent games in this mode got 3 stars, offer the next mode (never forced) */
 function modeSuggest(n,stars,box){const kind=kindOfNode(n);if(!kind)return;S.tierLog=S.tierLog||{};const m=modeOf(kind);const L=S.tierLog[kind]=(S.tierLog[kind]||[]).filter(x=>x.m===m);L.push({m,s:stars});if(L.length>10)L.shift();save();
-  S.suggested=S.suggested||{};if(m>=2||L.length<8||L.filter(x=>x.s===3).length<6||S.suggested[kind]===today())return;
-  const d=document.createElement('div');d.className='suggest';d.innerHTML=`<p><b>You're doing so well!</b> Ready for <b>${MODE_NAMES[m+1]}</b> ${{letters:'letters',numbers:'numbers',writing:'writing',discover:'Discover'}[kind]}?</p>`;
-  const y=document.createElement('button');y.className='pill-btn primary';y.textContent='Yes, try '+MODE_NAMES[m+1];y.onclick=()=>{FX.sparkle();setMode(kind,m+1);S.tierLog[kind]=[];save();d.innerHTML=`<p><b>${MODE_NAMES[m+1]} it is!</b></p>`};
-  const no=document.createElement('button');no.className='pill-btn';no.textContent='Not yet';no.onclick=()=>{FX.tap();S.suggested[kind]=today();save();d.remove()};d.append(y,no);box.appendChild(d)}
+  const KN={letters:'Letters',numbers:'Numbers',writing:'Writing',discover:'Discover'}[kind];
+  const up=m<2&&L.length>=8&&L.slice(-8).filter(x=>x.s===3).length>=6,down=m>0&&L.length>=5&&L.slice(-5).filter(x=>x.s<=1).length>=3;if(!up&&!down)return;
+  const to=up?m+1:m-1,why=up?'6 of the last 8 games got 3 stars':'3 of the last 5 games got only 1 star';
+  if(S.settings.autoMode===false){logChange(kind,m,to,'mode',`${KN} looks ready for ${MODE_NAMES[to]} (${why}). Auto-move is off, so nothing changed.`);S.tierLog[kind]=[];save();return}
+  setMode(kind,to);S.tierLog[kind]=[];logChange(kind,m,to,'mode',`${KN} moved ${up?'up':'down'} from ${MODE_NAMES[m]} to ${MODE_NAMES[to]} (${why}).`);save();
+  const d=document.createElement('div');d.className='gnote';d.innerHTML=up?`<b>⭐ ${KN} is now ${MODE_NAMES[to]}!</b>`:`<b>${KN} is now ${MODE_NAMES[to]}</b>`;
+  d.insertAdjacentHTML('beforeend',`<small>For grown-ups: moved because ${why}. You can change it any time with the tabs, or turn this off in Grown-ups.</small>`);box.appendChild(d)}
 
 
 /* ======================= PICTURE CARDS (the flash cards parents use with 2 to 4 year olds) ======================= */
@@ -1563,7 +1588,7 @@ async function aiPlan(){const z=$('ai-zone');let sample=null;try{sample=window.c
     const letters=S.intro.map(l=>`${l}: ${status(l)}, ${Math.round(accuracy(l)*100)}%`).join('; ');
     const prompt=`You are an early-years teacher in India. A child aged ${S.profile.age} uses a phonics, maths and writing app. Current data:\n${lines.join('\n')}\nLetters met: ${letters||'none'}.\nWrite a 7-day home plan for the parent: one short off-screen activity per day (5 to 10 minutes) using everyday Indian household items, aimed at the weakest skills, and one line per day on what to say. Plain text, numbered Day 1 to Day 7, under 220 words, no emoji, no em dashes, no diagnosis.`;
     try{const r=await sample(prompt,{onText:({text})=>{out.textContent=text}});out.textContent=r.text}catch(e){out.textContent=e&&e.code==='not_granted'?'Permission was not given, so no plan was made.':"Couldn't get a plan right now. Try again later."}}}
-function renderParent(){renderKids();
+function renderParent(){renderKids();renderProgress();S.unseen=0;save();badge();
   let wk=0;for(let i=0;i<7;i++){const dt=new Date();dt.setDate(dt.getDate()-i);wk+=S.minutes[dkey(dt)]||0}
   const stars=S.chapters.reduce((a,c)=>a+c.nodes.reduce((b,n)=>b+(n.stars||0),0),0),mast=ORDER.filter(l=>['mast','due'].includes(status(l))).length;
   $('p-stats').innerHTML=[[Math.round(S.minutes[today()]||0),'min today'],[Math.round(wk),'min this week'],[S.chapters.filter(c=>c.done).length,'chapters done'],[stars,'stars'],[S.intro.length,'letters met'],[mast,'sounds mastered']].map(([v,k])=>`<div class="stat"><b>${v}</b><span>${k}</span></div>`).join('');
@@ -1580,10 +1605,10 @@ function renderParent(){renderKids();
     const chip=!un?'<span class="chip locked">locked</span>':!s||!s.n?'<span class="chip new">not tried</span>':s.p>=.75?'<span class="chip strong">strong</span>':s.p<.55?'<span class="chip weak">practising</span>':'';
     return `<tr><td>${SK[id].sub}: ${SK[id].name}${chip}</td><td>${SK[id].lab(param(id))}</td><td>${s&&s.n?`<div class="bar"><i style="width:${Math.round(s.p*100)}%"></i></div>${Math.round(s.p*100)}% · ${s.n} tries`:'–'}</td></tr>`}).join('');
   $('p-map').innerHTML=ORDER.map(l=>{const st=S.intro.includes(l)||S.intro.includes(SAME[l])?status(l):'none',lab={none:S.intro.includes(l)?'met':'not yet',prac:'practising',mast:'mastered',due:'review'}[st];return `<div class="scell st-${st}"><div class="l">${l}</div><div class="s">${lab}</div></div>`}).join('');
-  $('ps-name').value=S.profile.name;$('ps-age').value=S.profile.age;$('ps-limit').value=S.profile.limit;$('ps-sfx').checked=S.settings.sfx!==false;$('ps-countnums').checked=S.settings.countNums!==false;$('ps-moves').checked=S.settings.moves!==false;$('ps-lang').value=S.settings.lang||'en';$('ps-unlock').checked=!!S.settings.unlock;$('ps-consent').checked=!!S.settings.consent;renderLikes();
+  $('ps-name').value=S.profile.name;$('ps-age').value=S.profile.age;$('ps-limit').value=S.profile.limit;$('ps-sfx').checked=S.settings.sfx!==false;$('ps-countnums').checked=S.settings.countNums!==false;$('ps-moves').checked=S.settings.moves!==false;$('ps-automode').checked=S.settings.autoMode!==false;$('ps-lang').value=S.settings.lang||'en';$('ps-unlock').checked=!!S.settings.unlock;$('ps-consent').checked=!!S.settings.consent;renderLikes();
   renderStudio();resetZone();renderFeedback()}
 $('ps-save').addEventListener('click',()=>setTimeout(()=>{kidsIdx();renderKids()},0));
-$('ps-save').onclick=()=>{S.profile.name=$('ps-name').value.trim()||S.profile.name;const oldAge=S.profile.age;S.profile.age=+$('ps-age').value;if(S.profile.age!==oldAge)placeByAge();S.profile.limit=+$('ps-limit').value;S.settings.sfx=$('ps-sfx').checked;S.settings.countNums=$('ps-countnums').checked;S.settings.moves=$('ps-moves').checked;S.settings.lang=$('ps-lang').value;loadHindi();applyNums();S.settings.unlock=$('ps-unlock').checked;S.settings.consent=$('ps-consent').checked;save();$('ps-saved').hidden=false;setTimeout(()=>$('ps-saved').hidden=true,1600)};
+$('ps-save').onclick=()=>{S.profile.name=$('ps-name').value.trim()||S.profile.name;const oldAge=S.profile.age;S.profile.age=+$('ps-age').value;if(S.profile.age!==oldAge)placeByAge();S.profile.limit=+$('ps-limit').value;S.settings.sfx=$('ps-sfx').checked;S.settings.countNums=$('ps-countnums').checked;S.settings.moves=$('ps-moves').checked;S.settings.autoMode=$('ps-automode').checked;S.settings.lang=$('ps-lang').value;loadHindi();applyNums();S.settings.unlock=$('ps-unlock').checked;S.settings.consent=$('ps-consent').checked;save();$('ps-saved').hidden=false;setTimeout(()=>$('ps-saved').hidden=true,1600)};
 function resetZone(){const z=$('reset-zone');z.innerHTML='<button class="pill-btn danger" id="p-reset">Reset all progress</button>';
   $('p-reset').onclick=()=>{z.innerHTML='<p>This deletes chapters, stars and skill levels (recordings are kept). It cannot be undone.</p><div class="row" style="justify-content:flex-start"><button class="pill-btn" id="r-no">Keep progress</button><button class="pill-btn danger" id="r-yes">Delete progress</button></div>';
     $('r-no').onclick=resetZone;$('r-yes').onclick=()=>{S=blank();save();sessSec=0;go('setup')}}}

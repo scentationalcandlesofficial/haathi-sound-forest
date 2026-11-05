@@ -400,6 +400,9 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 .fc-pic{font-size:clamp(110px,34vw,170px);line-height:1}.fc-name{font-family:var(--f-display);font-weight:800;font-size:clamp(30px,8vw,44px);color:var(--ink)}
 .fc-snd{font-family:var(--f-display);font-size:18px;color:var(--peacock)}.fc-count{position:absolute;top:12px;right:16px;font-family:var(--f-display);font-size:14px;color:var(--ink-soft)}
 .tile.deck .ico{font-size:24px;letter-spacing:-2px}
+.gnote{margin-top:10px;background:#e6f6f7;border-radius:16px;padding:8px 12px;display:flex;flex-direction:column;gap:2px;text-align:center}.gnote small{color:var(--ink-soft)}
+#btn-parent.has-news{position:relative}#btn-parent.has-news::after{content:"";position:absolute;top:-3px;right:-3px;width:14px;height:14px;border-radius:50%;background:#e2563f;border:2px solid #fff}
+.up{color:var(--leaf);font-weight:700}.down{color:#c8364b;font-weight:700}#p-progress h4{margin:10px 0 4px;font-family:var(--f-display);color:var(--leaf)}
 .agebadge{font-family:var(--f-display);font-weight:700;font-size:12px;color:var(--leaf);background:var(--moss);border-radius:999px;padding:1px 8px}
 .orderrow{display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center}
 .orderrow i{font-style:normal;color:var(--ink-soft);font-size:20px}
@@ -474,6 +477,7 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
       <div id="kids-list" class="kids"></div>
       <button class="pill-btn primary" id="kid-add" style="align-self:flex-start">+ Add another child</button>
     </div>
+    <div class="panel" style="grid-column:1/-1" id="prog-panel"><h3>How your child is doing</h3><p class="note">Levels adjust during every game: 2 right in a row makes the next question a little harder, a miss makes it a little easier. Easy, Medium and Hard move on their own after a run of games, and every change is listed here.</p><div id="p-progress"></div></div>
     <div class="panel" style="grid-column:1/-1" id="likes-panel"><h3>What your child enjoys</h3><p id="p-likes"></p><p class="note" id="p-global" hidden></p></div>
     <div class="panel" style="grid-column:1/-1"><h3>Share this game</h3>
       <p>Send the game to other parents. It opens in any phone browser, no sign-up.</p>
@@ -515,6 +519,7 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
       <label class="check"><input type="checkbox" id="ps-sfx"> Sound effects</label>
       <label class="check"><input type="checkbox" id="ps-countnums"> Show numbers on objects while counting</label>
       <label class="check"><input type="checkbox" id="ps-moves"> Movement breaks after every 3 games</label>
+      <label class="check"><input type="checkbox" id="ps-automode"> Move between Easy, Medium and Hard automatically (you are told each time)</label>
       <label class="check"><input type="checkbox" id="ps-consent"> Share anonymous play data to help improve the game</label>
       <label class="check"><input type="checkbox" id="ps-unlock"> Unlock every game in the corners (for grown-ups trying it)</label>
       <button class="pill-btn primary" id="ps-save" style="align-self:flex-start">Save settings</button>
