@@ -369,11 +369,11 @@ const ICON={back:'<svg viewBox="0 0 24 24" fill="none" stroke="#1f6b4a" stroke-w
  next:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>',
  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>'};
 document.querySelectorAll('[data-back]').forEach(b=>{b.innerHTML=ICON.back;b.onclick=()=>{FX.tap();go('map')}});
-$('play-back').innerHTML=ICON.back;$('play-hear').innerHTML=ICON.ear;
+$('play-back').innerHTML=ICON.back;$('st-back').innerHTML=ICON.back;$('play-hear').innerHTML=ICON.ear;
 
 /* ======================= NAV, TIMER, GATE ======================= */
 let current=null;const CHILD=['map','corner','play'];
-function go(name){document.querySelectorAll('.screen').forEach(s=>s.hidden=true);$('s-'+name).hidden=false;current=name;stopVoice();
+function go(name){if(name!=='story'&&typeof stStop==='function'&&window.SR_ACTIVE!==false){try{stStop()}catch(e){}}document.querySelectorAll('.screen').forEach(s=>s.hidden=true);$('s-'+name).hidden=false;current=name;stopVoice();
   ({start:renderStart,setup:renderSetup,map:renderMap,parent:renderParent}[name]||(()=>{}))()}
 let sessSec=0;
 setInterval(()=>{if(document.hidden||!S.profile||!CHILD.includes(current)||!$('bye').hidden||!$('gate').hidden)return;sessSec++;const d=today();S.minutes[d]=(S.minutes[d]||0)+1/60;if(sessSec%15===0)save();if(sessSec>=S.profile.limit*60)bedtime()},1000);
@@ -1531,6 +1531,99 @@ function openCards(deck){const b=$('corner-body');b.innerHTML='';const from={cor
   [['cards','🃏','Picture cards'],['find','🔍','Find the card'],['memory','🧠','Memory cards'],...(hasVoices(deck)?[['sound','🔊','Whose voice?']]:[])].forEach(([gm,ic,lb])=>{const t=document.createElement('button');t.className='tile';t.innerHTML=`<div class="ico">${ic}</div><span>${lb}</span>`;
     t.onclick=()=>{unlockAudio();FX.tap();startRun(cardNode(deck,gm),from)};g.appendChild(t)})}
 
+/* ======================= BEDTIME BEDTIME ======================= */
+/* Picture-book stories: a drawn scene per page, narration per page (downloaded the first time a story is opened, then offline).
+   Read to me = narration with words lit up and pages turning by themselves. I'll read = no sound, a grown-up reads aloud.
+   Story time does not count towards the game time limit. */
+const BEDTIME=window.HAATHI_STORIES||[];
+/* ---------- scenes: soft drawn backgrounds + characters ---------- */
+const SKY={day:['#bfe6ff','#f2fbff'],night:['#141a3d','#3b3f7a']};
+let SKID=0;
+function bgSVG(key){const night=/N$/.test(key)||key==='skyN';const k=key.replace(/N$/,'');const [s1,s2]=night?SKY.night:SKY.day;const gid='sk'+(++SKID);let g=`<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${s1}"/><stop offset="1" stop-color="${s2}"/></linearGradient></defs><rect width="400" height="300" fill="url(#${gid})"/>`;
+  const hill=(c1,c2)=>`<path d="M0 190 Q90 150 180 185 T400 175 V300 H0Z" fill="${c1}"/><path d="M0 225 Q120 195 230 222 T400 215 V300 H0Z" fill="${c2}"/>`;
+  const tree=(x,y,s,c)=>`<rect x="${x-4*s}" y="${y}" width="${8*s}" height="${30*s}" rx="3" fill="#8a5a3b"/><circle cx="${x}" cy="${y-6*s}" r="${22*s}" fill="${c}"/><circle cx="${x-14*s}" cy="${y+4*s}" r="${14*s}" fill="${c}"/><circle cx="${x+14*s}" cy="${y+4*s}" r="${14*s}" fill="${c}"/>`;
+  const hut=(x,y,c)=>`<rect x="${x}" y="${y}" width="56" height="40" fill="${c}" rx="3"/><path d="M${x-8} ${y+2} L${x+28} ${y-26} L${x+64} ${y+2}Z" fill="#b5653a"/><rect x="${x+21}" y="${y+16}" width="14" height="24" fill="#6b4226"/>`;
+  switch(k){
+   case 'forest':g+=hill('#8fcf7a','#6fb85f')+tree(60,170,1.3,'#4f9a4a')+tree(340,160,1.5,'#3f8a42')+tree(300,190,.9,'#5aa857')+tree(110,200,.8,'#5aa857');break;
+   case 'river':g+=`<path d="M0 170 Q100 150 200 168 T400 160 V300 H0Z" fill="#8fcf7a"/><path d="M0 220 Q120 200 230 222 T400 210 V270 Q260 258 140 272 T0 268Z" fill="#6ec1e4"/><path d="M40 238 q12 -6 24 0 M180 246 q12 -6 24 0 M300 236 q12 -6 24 0" stroke="#fff" stroke-width="3" fill="none" opacity=".7"/>`+tree(330,150,1.2,'#4f9a4a');break;
+   case 'pond':g+=`<rect y="170" width="400" height="130" fill="#8fcf7a"/><ellipse cx="200" cy="240" rx="150" ry="42" fill="#6ec1e4"/><ellipse cx="120" cy="236" rx="18" ry="6" fill="#4f9a4a"/><ellipse cx="270" cy="250" rx="16" ry="5" fill="#4f9a4a"/>`;break;
+   case 'village':g+=hill('#cfe3a0','#e8d3a0')+hut(40,170,'#f3c98b')+hut(300,165,'#f0b9a0')+`<path d="M170 300 Q200 240 230 200" stroke="#d9b98a" stroke-width="26" fill="none"/>`+tree(250,170,.8,'#5aa857');break;
+   case 'home':g=`<rect width="400" height="300" fill="${night?'#2a2f5c':'#f6e3c6'}"/><rect y="220" width="400" height="80" fill="${night?'#3a3150':'#c9965f'}"/><rect x="250" y="40" width="100" height="90" rx="6" fill="${night?'#141a3d':'#bfe6ff'}" stroke="${night?'#5b5f9a':'#fff'}" stroke-width="8"/><path d="M240 36 q30 70 0 104 M360 36 q-30 70 0 104" stroke="${night?'#7a5a8a':'#e8798a'}" stroke-width="10" fill="none"/>`;break;
+   case 'palace':g+=`<rect y="230" width="400" height="70" fill="#e8d3a0"/><rect x="90" y="120" width="220" height="110" fill="#f6d27a"/><circle cx="200" cy="112" r="40" fill="#f2c14e"/><rect x="194" y="58" width="12" height="20" fill="#e8a33a"/><rect x="70" y="110" width="30" height="120" fill="#f2c14e"/><rect x="300" y="110" width="30" height="120" fill="#f2c14e"/><path d="M180 230 V180 Q200 158 220 180 V230Z" fill="#b5653a"/>`;break;
+   case 'court':g=`<rect width="400" height="300" fill="#7a2f3a"/><rect y="230" width="400" height="70" fill="#5a2028"/><path d="M160 300 L180 230 H220 L240 300Z" fill="#c8364b"/>${[40,120,280,360].map(x=>`<rect x="${x-10}" y="40" width="20" height="190" fill="#f2c14e"/>`).join('')}<path d="M150 230 V120 Q200 70 250 120 V230" fill="none" stroke="#f2c14e" stroke-width="10"/>`;break;
+   case 'school':g=`<rect width="400" height="300" fill="#f9f1d8"/><rect y="230" width="400" height="70" fill="#d9b98a"/><rect x="110" y="40" width="180" height="100" rx="6" fill="#2f5a46" stroke="#8a5a3b" stroke-width="8"/><text x="130" y="80" font-size="22" fill="#fff" font-family="sans-serif">A B C 1 2 3</text>`;break;
+   case 'garden':g+=`<rect y="190" width="400" height="110" fill="#8fcf7a"/>`+tree(330,150,1.4,'#4f9a4a')+[40,90,150,210,260].map((x,i)=>`<circle cx="${x}" cy="${250+(i%2)*14}" r="8" fill="${['#ff8fb1','#ffd23f','#ff8c42','#c58fff','#ff6b6b'][i]}"/>`).join('');break;
+   case 'mountain':g+=`<path d="M-20 230 L90 90 L200 230Z" fill="#9aa9c2"/><path d="M120 230 L250 60 L380 230Z" fill="#7d8fae"/><path d="M230 86 L250 60 L270 86 L258 80 L250 90 L242 80Z" fill="#fff"/><rect y="226" width="400" height="74" fill="#8fcf7a"/>`;break;
+   case 'sea':g+=`<rect y="160" width="400" height="90" fill="#4fa8d8"/><path d="M0 180 q20 -8 40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0" stroke="#fff" stroke-width="3" fill="none" opacity=".6"/><rect y="250" width="400" height="50" fill="#f3dfa8"/>`;break;
+   case 'field':g+=`<rect y="200" width="400" height="100" fill="#b9d97a"/><path d="M0 230 H400" stroke="#a0c060" stroke-width="2"/>${[30,90,150,210,270,330,390].map(x=>`<rect x="${x}" y="196" width="6" height="34" fill="#c89a5a"/>`).join('')}<rect y="204" width="400" height="5" fill="#c89a5a"/>`;break;
+   case 'sky':break;}
+  if(night&&!['home','court','school'].includes(k))g+=`<rect width="400" height="300" fill="#0b1030" opacity="${k==='sky'?0:.42}"/>`;
+  return {svg:g,night}}
+function addons(list,night){return list.map(a=>{switch(a){
+  case 'sun':return '<circle cx="345" cy="52" r="26" fill="#ffd23f"/><circle cx="345" cy="52" r="36" fill="#ffd23f" opacity=".25"/>';
+  case 'moon':return '<circle cx="340" cy="52" r="34" fill="#fff6c9" opacity=".15"/><path d="M346 26 A26 26 0 1 0 346 78 A34 34 0 0 1 346 26Z" fill="#fff6c9"/>';
+  case 'stars':return Array.from({length:22},(_,i)=>`<circle cx="${(i*97)%400}" cy="${(i*53)%150+8}" r="${i%3?1.6:2.6}" fill="#fff" opacity="${.5+((i*7)%5)/10}"/>`).join('');
+  case 'clouds':return [[80,60,1],[250,40,.8]].map(([x,y,s])=>`<g fill="#fff" opacity=".92"><ellipse cx="${x}" cy="${y}" rx="${36*s}" ry="${16*s}"/><ellipse cx="${x+24*s}" cy="${y-10*s}" rx="${24*s}" ry="${16*s}"/><ellipse cx="${x-22*s}" cy="${y-6*s}" rx="${18*s}" ry="${12*s}"/></g>`).join('');
+  case 'rain':return `<g stroke="#9ec9ff" stroke-width="2.4" opacity=".75">${Array.from({length:40},(_,i)=>`<line x1="${(i*41)%400}" y1="${(i*67)%260}" x2="${(i*41)%400-6}" y2="${(i*67)%260+16}"/>`).join('')}</g>`;}return ''}).join('')}
+function sceneHTML(spec){const [bg,acts]=spec.split('|');const [b,...adds]=bg.split('+');const B=bgSVG(b);
+  /* characters are drawn inside the picture, so they scale with it on any screen */
+  const actors=(acts?acts.split(';'):[]).filter(Boolean).map(a=>{const [e,pos]=a.split('@');const [x,y,sz,f]=pos.split(',').map((v,i)=>i<3?+v:v);const X=x*4,Y=y*3,F=sz*3.8;
+    return `<text class="act" x="${X}" y="${Y}" font-size="${F}" text-anchor="middle" dominant-baseline="central"${f?` transform="translate(${2*X} 0) scale(-1 1)"`:''}>${e}</text>`}).join('');
+  return `<div class="scene${B.night?' nightscene':''}"><svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">${B.svg}${addons(adds,B.night)}${actors}</svg></div>`}
+
+/* ---------- library ---------- */
+const ST_GROUPS=['All','Mythological','Panchatantra','Aesop','Folk tale','Feelings','Clever and funny','Sleepy'];
+function openStories(){const b=$('corner-body');$('corner-title').textContent='Bedtime Stories';b.innerHTML='';const f=S.storyFilter||(S.storyFilter={g:'All',a:0});
+  const chips=document.createElement('div');chips.className='st-chips';
+  [['a',0,'All ages'],['a',3,'Age 3+'],['a',5,'Age 5+']].concat(ST_GROUPS.map(g=>['g',g,g==='All'?'All stories':g])).forEach(([k,v,lab])=>{if(k==='g'&&v==='All')return;const c=document.createElement('button');c.className='st-chip'+(f[k]===v?' on':'');c.textContent=lab;
+    c.onclick=()=>{FX.tap();f[k]=f[k]===v&&k==='g'?'All':v;save();openStories()};chips.appendChild(c)});b.appendChild(chips);
+  const list=BEDTIME.filter(s=>(f.g==='All'||s.group===f.g)&&(!f.a||s.age===f.a));
+  const g=document.createElement('div');g.className='st-grid';b.appendChild(g);
+  list.forEach(s=>{const t=document.createElement('button');t.className='st-card';const done=(S.storiesRead||{})[s.id];
+    t.innerHTML=`<div class="st-cover">${sceneHTML(s.pages[0].s)}</div><b>${s.title}</b><small>${s.group} · ${s.age}+ · ${s.pages.length} pages${done?' · ✓ read':''}</small>`;
+    t.onclick=()=>{unlockAudio();FX.tap();openStory(s.id)};g.appendChild(t)});
+  if(!list.length)b.insertAdjacentHTML('beforeend','<p class="card-note">No stories match. Try another filter.</p>');
+  b.insertAdjacentHTML('beforeend','<p class="card-note">Tip: stories are best shared. Read together, then talk about the question at the end. For sleep, use the 🌙 night mode, or switch the screen off with "Lights off" and just listen.</p>')}
+
+/* ---------- reader ---------- */
+let SR=null;const stAudio=new Audio();stAudio.preload='auto';
+function stUrl(key){return 'stories/audio/'+key+'.mp3'}
+async function stBlob(key){SR.blobs=SR.blobs||{};if(SR.blobs[key])return SR.blobs[key];try{const r=await fetch(stUrl(key));if(!r.ok)throw 0;const u=URL.createObjectURL(await r.blob());SR.blobs[key]=u;return u}catch(e){return null}}
+function stPrefetch(s){(async()=>{const keys=[s.id+'_t',...s.pages.map((_,i)=>s.id+'_'+i),s.id+'_e'];for(const k of keys){if(!SR||SR.id!==s.id)return;await stBlob(k)}})()}
+function openStory(id){const s=BEDTIME.find(x=>x.id===id);if(!s)return;stopVoice();SR={id,s,p:-1,mode:S.settings.storyMode||'read',night:S.settings.storyNight!==false,blobs:{}};go('story');stPrefetch(s);stRender()}
+function stKey(){const {s,p}=SR;return p<0?s.id+'_t':p>=s.pages.length?s.id+'_e':s.id+'_'+p}
+function stRender(){const {s,p}=SR;const el=$('s-story');el.classList.toggle('night',SR.night);$('st-title').textContent=s.title;
+  $('st-night').textContent=SR.night?'🌙':'☀️';$('st-mode').textContent=SR.mode==='read'?'🔊 Read to me':'📖 I\'ll read';
+  let pic,txt;
+  if(p<0){pic=sceneHTML(s.pages[0].s);txt=`<div class="st-cover-title">${s.title}</div><div class="st-sub">${s.group} · for age ${s.age}+</div>`}
+  else if(p>=s.pages.length){pic=sceneHTML('skyN+stars|🌙@50,36,20'+(s.pages[0].s.split('|')[1]||'').split(';').slice(0,1).map(a=>';'+a.replace(/@[\d.]+,[\d.]+,[\d.]+/,'@50,74,22')).join(''));
+    txt=`<div class="st-cover-title">The End</div>${s.moral?`<p class="st-moral">${s.moral}</p>`:''}<p class="st-talk">💬 ${s.talk}</p><div class="st-endbtns"><button class="pill-btn" id="st-again">Read again</button><button class="pill-btn" id="st-more">Another story</button><button class="pill-btn primary" id="st-sleep">🌙 Goodnight</button></div>`;
+    S.storiesRead=S.storiesRead||{};S.storiesRead[s.id]=today();save()}
+  else{pic=sceneHTML(s.pages[p].s);txt=`<p class="st-text" id="st-text">${s.pages[p].t.split(/(\s+)/).map(w=>/\s/.test(w)?w:`<span>${w}</span>`).join('')}</p>`}
+  $('st-pic').innerHTML=pic;$('st-words').innerHTML=txt;
+  $('st-dots').innerHTML=Array.from({length:s.pages.length+2},(_,i)=>`<i class="${i-1===p?'on':''}"></i>`).join('');
+  $('st-prev').disabled=p<0;$('st-next').disabled=p>=s.pages.length;
+  if(p>=s.pages.length){$('st-again').onclick=()=>{FX.tap();SR.p=-1;stRender()};$('st-more').onclick=()=>{stStop();FX.tap();go('corner');openStories()};$('st-sleep').onclick=()=>{stStop();stLights(true)}}
+  stPlay()}
+async function stPlay(){stAudio.pause();clearTimeout(SR&&SR.tm);$('st-play').textContent='▶';if(!SR||SR.mode!=='read')return;const key=stKey();const myP=SR.p;const u=await stBlob(key);if(!SR||SR.p!==myP)return;
+  if(!u){$('st-play').textContent='▶';return}stAudio.src=u;stAudio.playbackRate=1;try{await stAudio.play();$('st-play').textContent='⏸'}catch(e){$('st-play').textContent='▶'}}
+function stStop(){stAudio.pause();if(SR)clearTimeout(SR.tm);$('st-play').textContent='▶'}
+/* light up the words roughly in step with the voice */
+stAudio.ontimeupdate=()=>{const t=$('st-text');if(!t||!stAudio.duration)return;const ws=[...t.querySelectorAll('span')];const lead=.25,tail=.4;const f=Math.max(0,Math.min(1,(stAudio.currentTime-lead)/Math.max(.1,stAudio.duration-lead-tail)));
+  const tot=ws.reduce((a,w)=>a+w.textContent.length+1,0);let acc=0,cut=f*tot;ws.forEach(w=>{acc+=w.textContent.length+1;w.classList.toggle('lit',acc<=cut+2)})};
+stAudio.onended=()=>{$('st-play').textContent='▶';if(!SR||SR.mode!=='read')return;const t=$('st-text');if(t)t.querySelectorAll('span').forEach(w=>w.classList.add('lit'));
+  if(SR.p<SR.s.pages.length)SR.tm=setTimeout(()=>{if(SR){SR.p++;stRender()}},1300)};
+function stLights(off){const o=$('st-lights');o.hidden=!off;if(off){o.onclick=()=>{o.hidden=true}}}
+$('st-back').onclick=()=>{FX.tap();stStop();SR=null;go('corner');openStories()};
+$('st-prev').onclick=()=>{if(SR.p>-1){FX.tap();SR.p--;stRender()}};
+$('st-next').onclick=()=>{if(SR.p<SR.s.pages.length){FX.tap();SR.p++;stRender()}};
+$('st-play').onclick=()=>{unlockAudio();if(SR.mode!=='read'){SR.mode='read';S.settings.storyMode='read';save();stRender();return}if(stAudio.paused){if(stAudio.src&&stAudio.currentTime>0&&!stAudio.ended)stAudio.play().then(()=>$('st-play').textContent='⏸').catch(()=>{});else stPlay()}else stStop()};
+$('st-mode').onclick=()=>{FX.tap();SR.mode=SR.mode==='read'?'self':'read';S.settings.storyMode=SR.mode;save();if(SR.mode!=='read')stStop();stRender()};
+$('st-night').onclick=()=>{FX.tap();SR.night=!SR.night;S.settings.storyNight=SR.night;save();$('s-story').classList.toggle('night',SR.night);$('st-night').textContent=SR.night?'🌙':'☀️'};
+$('st-off').onclick=()=>{FX.tap();stLights(true)};
+/* swipe pages */
+{let x0=null;$('st-pic').addEventListener('pointerdown',e=>x0=e.clientX);$('st-pic').addEventListener('pointerup',e=>{if(x0==null||!SR)return;const dx=e.clientX-x0;x0=null;if(dx<-50)$('st-next').click();else if(dx>50)$('st-prev').click()})}
+
 /* ======================= PRACTICE CORNERS ======================= */
 const CORNER={
  letters:[['meet','Meet a letter','abc'],['bubbles','Sound Bubbles','○'],['snack',"Haathi's Snack",'🥭'],['picletter','Picture to letter','🐍s'],['letterpic','Letter to picture','s🐍'],['samesound','Same first sound?','👍'],
@@ -1563,7 +1656,7 @@ function cornerNode(id,kind){const pool=S.intro.length?S.intro:['s','a'];
   if(SK[id])return Object.assign(SK[id].node(param(id)),{skill:id});
   return {t:id}}
 function cornerLocked(id){if(S.settings.unlock)return false;if(id==='wname')return !nameChars().length;if(LGAMES[id])return !LGAMES[id]();if(SK[id])return !unlocked(id);return false}
-function openCorner(kind,sec){go('corner');if(kind==='discover'){openDiscover(sec);return}if(kind==='cards'){openCards(sec);return}const b=$('corner-body');const from={corner:kind};b.innerHTML='';
+function openCorner(kind,sec){go('corner');if(kind==='discover'){openDiscover(sec);return}if(kind==='cards'){openCards(sec);return}if(kind==='stories'){openStories();return}const b=$('corner-body');const from={corner:kind};b.innerHTML='';
   const m=modeOf(kind);$('corner-title').textContent=kind==='letters'&&m===2?'Reading':{letters:'Letters',numbers:'Numbers',writing:'Writing'}[kind];
   b.appendChild(modeTabs(kind,()=>openCorner(kind)));
   const all=kind==='letters'?[...CORNER.letters,...Object.keys(READ_G).map(g=>[g,...READ_G[g]])]:CORNER[kind];
@@ -1681,6 +1774,6 @@ if(S.profile&&S.placed!==3)placeByAge();
 document.addEventListener('visibilitychange',()=>{if(document.hidden){save();stopVoice();sync(false);document.querySelectorAll('canvas').forEach(c=>c.dispatchEvent(new PointerEvent('pointercancel')))}else{if(actx&&actx.state!=='running')try{actx.resume()}catch(e){}}});
 window.addEventListener('pageshow',()=>{if(actx&&actx.state!=='running')try{actx.resume()}catch(e){}});
 document.addEventListener('pointerdown',()=>{if(actx&&actx.state!=='running')actx.resume()},{passive:true});
-window.__haathi={placeByAge:()=>placeByAge(),SK,LS,CS,DIG,PREP,DOTPICS,S:()=>S,compose,learn,startRun};
+window.__haathi={placeByAge:()=>placeByAge(),SK,LS,CS,DIG,PREP,DOTPICS,S:()=>S,compose,learn,startRun,sceneHTML,openStory};
 go('start');
 })();

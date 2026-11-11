@@ -100,7 +100,7 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 .node.cur .ring{animation:ring 1.4s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
 @keyframes ring{50%{transform:scale(1.18);opacity:.4}}
 .node.locked{opacity:.5}
-.corners{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.corner span{font-size:clamp(11px,3.2vw,15px)}
+.corners{display:grid;grid-template-columns:repeat(6,1fr);gap:5px}@media (max-width:520px){.corners{grid-template-columns:repeat(3,1fr)}}.corner span{font-size:clamp(11px,3.2vw,15px)}
 .corner{background:#fff;border-radius:20px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;box-shadow:0 5px 0 var(--shadow);min-height:74px;justify-content:center;transition:transform .12s}
 .corner:active{transform:translateY(3px)}
 .corner b{font-family:var(--f-letter);font-size:26px;line-height:1}
@@ -403,6 +403,25 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 .gnote{margin-top:10px;background:#e6f6f7;border-radius:16px;padding:8px 12px;display:flex;flex-direction:column;gap:2px;text-align:center}.gnote small{color:var(--ink-soft)}
 #btn-parent.has-news{position:relative}#btn-parent.has-news::after{content:"";position:absolute;top:-3px;right:-3px;width:14px;height:14px;border-radius:50%;background:#e2563f;border:2px solid #fff}
 .up{color:var(--leaf);font-weight:700}.down{color:#c8364b;font-weight:700}#p-progress h4{margin:10px 0 4px;font-family:var(--f-display);color:var(--leaf)}
+.st-chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:680px}.st-chip{background:#fff;border:2px solid #d8e6dc;border-radius:999px;padding:5px 12px;font-family:var(--f-display);font-size:14px}.st-chip.on{background:var(--peacock);color:#fff;border-color:var(--peacock)}
+.st-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;width:100%;max-width:760px}
+.st-card{background:#fff;border-radius:18px;padding:6px 6px 10px;box-shadow:0 4px 0 var(--shadow);display:flex;flex-direction:column;gap:4px;text-align:left}.st-card b{font-family:var(--f-display);font-size:16px;padding:0 4px;line-height:1.15}.st-card small{color:var(--ink-soft);font-size:12px;padding:0 4px}
+.st-cover{border-radius:12px;overflow:hidden;aspect-ratio:4/3}
+.scene{width:100%;height:100%;position:relative}.scene svg{width:100%;height:100%;display:block}
+#s-story{display:flex;flex-direction:column;gap:8px;padding-bottom:10px}#s-story[hidden]{display:none}
+.st-book{flex:1;display:flex;flex-direction:column;gap:10px;align-items:center;min-height:0}
+.st-pic{width:min(640px,100%);aspect-ratio:4/3;max-height:46vh;border-radius:22px;overflow:hidden;box-shadow:0 6px 0 var(--shadow);touch-action:pan-y}
+.st-words{width:min(640px,100%);background:#fffaf0;border-radius:18px;padding:12px 16px;min-height:96px;display:flex;flex-direction:column;justify-content:center;gap:6px}
+.st-text{font-family:var(--f-letter);font-size:clamp(19px,4.8vw,26px);line-height:1.45;margin:0;color:#3b3226}.st-text span{transition:color .2s}.st-text span.lit{color:var(--peacock)}
+.st-cover-title{font-family:var(--f-display);font-weight:800;font-size:clamp(26px,7vw,40px);text-align:center;color:var(--leaf)}.st-sub{text-align:center;color:var(--ink-soft)}
+.st-moral{text-align:center;font-weight:700;margin:2px 0}.st-talk{text-align:center;margin:2px 0}.st-endbtns{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.st-dots{display:flex;gap:5px;justify-content:center;flex-wrap:wrap}.st-dots i{width:9px;height:9px;border-radius:50%;background:#cbd8cf}.st-dots i.on{background:var(--peacock);transform:scale(1.3)}
+.st-ctrl{display:flex;gap:18px;justify-content:center;align-items:center}.st-ctrl .round{font-size:22px}.st-playbtn{width:68px!important;height:68px!important;font-size:28px!important;background:var(--peacock)!important;color:#fff}
+.st-ctrl .round:disabled{opacity:.35}
+#s-story.night{background:#151229;color:#f3e6c8}#s-story.night .topbar h2{color:#f3d38a}#s-story.night .st-words{background:#231d3d}#s-story.night .st-text{color:#f3e6c8}#s-story.night .st-text span.lit{color:#ffd27a}
+#s-story.night .st-pic{filter:brightness(.82) saturate(.85)}#s-story.night .round{background:#2a2350;color:#f3e6c8;box-shadow:0 4px 0 #0c0a1a}#s-story.night .st-playbtn{background:#c98a2e!important}
+#s-story.night .st-cover-title{color:#f3d38a}#s-story.night .st-dots i{background:#3a335e}#s-story.night .st-dots i.on{background:#ffd27a}#s-story.night .pill-btn{background:#2a2350;color:#f3e6c8}
+.st-lights{position:fixed;inset:0;background:#000;z-index:80;display:grid;place-items:center;text-align:center}.st-lights span{color:#333;font-size:14px}
 .agebadge{font-family:var(--f-display);font-weight:700;font-size:12px;color:var(--leaf);background:var(--moss);border-radius:999px;padding:1px 8px}
 .orderrow{display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center}
 .orderrow i{font-style:normal;color:var(--ink-soft);font-size:20px}
@@ -454,6 +473,7 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
     <button class="corner" data-corner="writing"><b style="color:var(--c-write)">✎</b><span>Writing</span></button>
     <button class="corner" data-corner="discover"><b>🌍</b><span>Discover</span></button>
     <button class="corner" data-corner="cards"><b>🃏</b><span>Cards</span></button>
+    <button class="corner" data-corner="stories"><b>🌙</b><span>Stories</span></button>
   </div>
 </section>
 
@@ -462,6 +482,14 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
   <div class="stage scroll"><div class="body" id="corner-body" style="justify-content:flex-start"></div></div>
 </section>
 
+<section class="screen" id="s-story" hidden>
+  <div class="topbar"><button class="round" id="st-back" aria-label="Back to stories"></button><h2 id="st-title"></h2><button class="round" id="st-night" aria-label="Night mode">🌙</button><button class="round" id="st-off" aria-label="Lights off, keep listening">💡</button></div>
+  <div class="st-book"><div class="st-pic" id="st-pic"></div><div class="st-words" id="st-words"></div></div>
+  <div class="st-dots" id="st-dots"></div>
+  <div class="st-ctrl"><button class="round" id="st-prev" aria-label="Previous page">◀</button><button class="round st-playbtn" id="st-play" aria-label="Play or pause">▶</button><button class="round" id="st-next" aria-label="Next page">▶</button></div>
+  <div style="text-align:center"><button class="pill-btn small" id="st-mode"></button></div>
+  <div class="st-lights" id="st-lights" hidden><span>Lights off. The story keeps playing.<br>Tap anywhere to turn the screen back on.</span></div>
+</section>
 <section class="screen" id="s-play" hidden>
   <div class="topbar"><button class="round" id="play-back" aria-label="Back"></button><h2 id="play-title"></h2><div class="rounds" id="rounds"></div><button class="round" id="play-restart" aria-label="Restart this game" title="Restart this game" style="font-size:22px;width:44px;height:44px">↻</button><button class="round" id="play-hear" aria-label="Hear again"></button></div>
   <div class="stage" id="stage"><div class="body" id="play-body"></div></div>
@@ -556,6 +584,7 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 
 <script src="clips.js"></script>
 <script src="discover-data.js"></script>
+<script src="stories/stories.js"></script>
 <script src="app.js"></script>
 <script>if("serviceWorker" in navigator){addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}</script>
 </body>
