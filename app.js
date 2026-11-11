@@ -1572,15 +1572,17 @@ function sceneHTML(spec){const [bg,acts]=spec.split('|');const [b,...adds]=bg.sp
   return `<div class="scene${B.night?' nightscene':''}"><svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">${B.svg}${addons(adds,B.night)}${actors}</svg></div>`}
 
 /* ---------- library ---------- */
-const ST_GROUPS=['All','Mythological','Panchatantra','Aesop','Folk tale','Feelings','Clever and funny','Sleepy'];
+const ST_GROUPS=['All','Ramayana','Mahabharata','Gita','Puranas and folk','Panchatantra','Aesop','Folk tale','Feelings','Clever and funny','Sleepy'];
+const SERIES_ORDER={Ramayana:0,Mahabharata:1,Gita:2};
+const stSort=(a,b)=>((SERIES_ORDER[a.series]??9)-(SERIES_ORDER[b.series]??9))||((a.ep||0)-(b.ep||0));
 function openStories(){const b=$('corner-body');$('corner-title').textContent='Bedtime Stories';b.innerHTML='';const f=S.storyFilter||(S.storyFilter={g:'All',a:0});
   const chips=document.createElement('div');chips.className='st-chips';
   [['a',0,'All ages'],['a',3,'Age 3+'],['a',5,'Age 5+']].concat(ST_GROUPS.map(g=>['g',g,g==='All'?'All stories':g])).forEach(([k,v,lab])=>{if(k==='g'&&v==='All')return;const c=document.createElement('button');c.className='st-chip'+(f[k]===v?' on':'');c.textContent=lab;
     c.onclick=()=>{FX.tap();f[k]=f[k]===v&&k==='g'?'All':v;save();openStories()};chips.appendChild(c)});b.appendChild(chips);
-  const list=BEDTIME.filter(s=>(f.g==='All'||s.group===f.g)&&(!f.a||s.age===f.a));
+  const list=BEDTIME.filter(s=>(f.g==='All'||s.group===f.g)&&(!f.a||s.age===f.a)).sort(stSort);
   const g=document.createElement('div');g.className='st-grid';b.appendChild(g);
   list.forEach(s=>{const t=document.createElement('button');t.className='st-card';const done=(S.storiesRead||{})[s.id];
-    t.innerHTML=`<div class="st-cover">${sceneHTML(s.pages[0].s)}</div><b>${s.title}</b><small>${s.group} · ${s.age}+ · ${s.pages.length} pages${done?' · ✓ read':''}</small>`;
+    t.innerHTML=`<div class="st-cover">${sceneHTML(s.pages[0].s)}</div>${s.series?`<span class="st-ep">${s.series} · Episode ${s.ep}</span>`:''}<b>${s.title}</b><small>${s.series?'':s.group+' · '}${s.age}+ · ${s.pages.length} pages${done?' · ✓ read':''}</small>`;
     t.onclick=()=>{unlockAudio();FX.tap();openStory(s.id)};g.appendChild(t)});
   if(!list.length)b.insertAdjacentHTML('beforeend','<p class="card-note">No stories match. Try another filter.</p>');
   b.insertAdjacentHTML('beforeend','<p class="card-note">Tip: stories are best shared. Read together, then talk about the question at the end. For sleep, use the 🌙 night mode, or switch the screen off with "Lights off" and just listen.</p>')}
@@ -1589,30 +1591,31 @@ function openStories(){const b=$('corner-body');$('corner-title').textContent='B
 let SR=null;const stAudio=new Audio();stAudio.preload='auto';
 function stUrl(key){return 'stories/audio/'+key+'.mp3'}
 async function stBlob(key){SR.blobs=SR.blobs||{};if(SR.blobs[key])return SR.blobs[key];try{const r=await fetch(stUrl(key));if(!r.ok)throw 0;const u=URL.createObjectURL(await r.blob());SR.blobs[key]=u;return u}catch(e){return null}}
-function stPrefetch(s){(async()=>{const keys=[s.id+'_t',...s.pages.map((_,i)=>s.id+'_'+i),s.id+'_e'];for(const k of keys){if(!SR||SR.id!==s.id)return;await stBlob(k)}})()}
-function openStory(id){const s=BEDTIME.find(x=>x.id===id);if(!s)return;stopVoice();SR={id,s,p:-1,mode:S.settings.storyMode||'read',night:S.settings.storyNight!==false,blobs:{}};go('story');stPrefetch(s);stRender()}
+function stPrefetch(s){(async()=>{const keys=[s.id+'_t',...s.pages.flatMap((p,i)=>p.sh?[s.id+'_'+i+'_sh',s.id+'_'+i]:[s.id+'_'+i]),s.id+'_e'];for(const k of keys){if(!SR||SR.id!==s.id)return;await stBlob(k)}})()}
+function openStory(id){const s=BEDTIME.find(x=>x.id===id);if(!s)return;stopVoice();if(SR)stStop();SR={id,s,p:-1,mode:S.settings.storyMode||'read',night:S.settings.storyNight!==false,blobs:{}};go('story');stPrefetch(s);stRender()}
 function stKey(){const {s,p}=SR;return p<0?s.id+'_t':p>=s.pages.length?s.id+'_e':s.id+'_'+p}
 function stRender(){const {s,p}=SR;const el=$('s-story');el.classList.toggle('night',SR.night);$('st-title').textContent=s.title;
   $('st-night').textContent=SR.night?'🌙':'☀️';$('st-mode').textContent=SR.mode==='read'?'🔊 Read to me':'📖 I\'ll read';
   let pic,txt;
-  if(p<0){pic=sceneHTML(s.pages[0].s);txt=`<div class="st-cover-title">${s.title}</div><div class="st-sub">${s.group} · for age ${s.age}+</div>`}
+  if(p<0){pic=sceneHTML(s.pages[0].s);txt=`${s.series?`<div class="st-sub">${s.series} · Episode ${s.ep}</div>`:''}<div class="st-cover-title">${s.title}</div><div class="st-sub">${s.series?'':s.group+' · '}for age ${s.age}+</div>${s.source?`<div class="st-src">From: ${s.source}</div>`:''}`}
   else if(p>=s.pages.length){pic=sceneHTML('skyN+stars|🌙@50,36,20'+(s.pages[0].s.split('|')[1]||'').split(';').slice(0,1).map(a=>';'+a.replace(/@[\d.]+,[\d.]+,[\d.]+/,'@50,74,22')).join(''));
-    txt=`<div class="st-cover-title">The End</div>${s.moral?`<p class="st-moral">${s.moral}</p>`:''}<p class="st-talk">💬 ${s.talk}</p><div class="st-endbtns"><button class="pill-btn" id="st-again">Read again</button><button class="pill-btn" id="st-more">Another story</button><button class="pill-btn primary" id="st-sleep">🌙 Goodnight</button></div>`;
+    const nx=s.series&&BEDTIME.find(x=>x.series===s.series&&x.ep===s.ep+1);SR.next=nx&&nx.id;
+    txt=`<div class="st-cover-title">${nx?`End of episode ${s.ep}`:'The End'}</div>${s.moral?`<p class="st-moral">${s.moral}</p>`:''}<p class="st-talk">💬 ${s.talk}</p><div class="st-endbtns">${nx?`<button class="pill-btn primary" id="st-nextep">Next: ${nx.title} ▶</button>`:''}<button class="pill-btn" id="st-again">Read again</button><button class="pill-btn" id="st-more">Another story</button><button class="pill-btn primary" id="st-sleep">🌙 Goodnight</button></div>`;
     S.storiesRead=S.storiesRead||{};S.storiesRead[s.id]=today();save()}
-  else{pic=sceneHTML(s.pages[p].s);txt=`<p class="st-text" id="st-text">${s.pages[p].t.split(/(\s+)/).map(w=>/\s/.test(w)?w:`<span>${w}</span>`).join('')}</p>`}
+  else{pic=sceneHTML(s.pages[p].s);txt=(s.pages[p].sh?`<div class="st-shloka">${s.pages[p].sh.replace(/।\s*/,'।<br>')}</div>`:'')+`<p class="st-text" id="st-text">${s.pages[p].t.split(/(\s+)/).map(w=>/\s/.test(w)?w:`<span>${w}</span>`).join('')}</p>`}
   $('st-pic').innerHTML=pic;$('st-words').innerHTML=txt;
   $('st-dots').innerHTML=Array.from({length:s.pages.length+2},(_,i)=>`<i class="${i-1===p?'on':''}"></i>`).join('');
   $('st-prev').disabled=p<0;$('st-next').disabled=p>=s.pages.length;
-  if(p>=s.pages.length){$('st-again').onclick=()=>{FX.tap();SR.p=-1;stRender()};$('st-more').onclick=()=>{stStop();FX.tap();go('corner');openStories()};$('st-sleep').onclick=()=>{stStop();stLights(true)}}
+  if(p>=s.pages.length){if(SR.next)$('st-nextep').onclick=()=>{FX.tap();openStory(SR.next)};$('st-again').onclick=()=>{FX.tap();SR.p=-1;stRender()};$('st-more').onclick=()=>{stStop();FX.tap();go('corner');openStories()};$('st-sleep').onclick=()=>{stStop();stLights(true)}}
   stPlay()}
-async function stPlay(){stAudio.pause();clearTimeout(SR&&SR.tm);$('st-play').textContent='▶';if(!SR||SR.mode!=='read')return;const key=stKey();const myP=SR.p;const u=await stBlob(key);if(!SR||SR.p!==myP)return;
+async function stPlay(){stAudio.pause();clearTimeout(SR&&SR.tm);$('st-play').textContent='▶';if(!SR||SR.mode!=='read')return;const pg=SR.s.pages[SR.p];SR.queue=pg&&pg.sh&&!SR.shDone?[SR.s.id+'_'+SR.p+'_sh']:[];SR.shDone=false;const key=SR.queue.length?SR.queue.shift():stKey();if(pg&&pg.sh&&key.endsWith('_sh'))SR.inSh=true;else SR.inSh=false;const myP=SR.p;const u=await stBlob(key);if(!SR||SR.p!==myP)return;
   if(!u){$('st-play').textContent='▶';return}stAudio.src=u;stAudio.playbackRate=1;try{await stAudio.play();$('st-play').textContent='⏸'}catch(e){$('st-play').textContent='▶'}}
 function stStop(){stAudio.pause();if(SR)clearTimeout(SR.tm);$('st-play').textContent='▶'}
 /* light up the words roughly in step with the voice */
-stAudio.ontimeupdate=()=>{const t=$('st-text');if(!t||!stAudio.duration)return;const ws=[...t.querySelectorAll('span')];const lead=.25,tail=.4;const f=Math.max(0,Math.min(1,(stAudio.currentTime-lead)/Math.max(.1,stAudio.duration-lead-tail)));
+stAudio.ontimeupdate=()=>{const t=$('st-text');if(!t||!stAudio.duration||(SR&&SR.inSh))return;const ws=[...t.querySelectorAll('span')];const lead=.25,tail=.4;const f=Math.max(0,Math.min(1,(stAudio.currentTime-lead)/Math.max(.1,stAudio.duration-lead-tail)));
   const tot=ws.reduce((a,w)=>a+w.textContent.length+1,0);let acc=0,cut=f*tot;ws.forEach(w=>{acc+=w.textContent.length+1;w.classList.toggle('lit',acc<=cut+2)})};
-stAudio.onended=()=>{$('st-play').textContent='▶';if(!SR||SR.mode!=='read')return;const t=$('st-text');if(t)t.querySelectorAll('span').forEach(w=>w.classList.add('lit'));
-  if(SR.p<SR.s.pages.length)SR.tm=setTimeout(()=>{if(SR){SR.p++;stRender()}},1300)};
+stAudio.onended=()=>{$('st-play').textContent='▶';if(!SR||SR.mode!=='read')return;if(SR.inSh){SR.inSh=false;SR.shDone=true;const r=SR,pp=SR.p;SR.tm=setTimeout(()=>{if(SR===r&&SR.p===pp)stPlay()},500);return}const t=$('st-text');if(t)t.querySelectorAll('span').forEach(w=>w.classList.add('lit'));
+  if(SR.p<SR.s.pages.length){const r=SR;SR.tm=setTimeout(()=>{if(SR===r){SR.p++;stRender()}},1300)}};
 function stLights(off){const o=$('st-lights');o.hidden=!off;if(off){o.onclick=()=>{o.hidden=true}}}
 $('st-back').onclick=()=>{FX.tap();stStop();SR=null;go('corner');openStories()};
 $('st-prev').onclick=()=>{if(SR.p>-1){FX.tap();SR.p--;stRender()}};
