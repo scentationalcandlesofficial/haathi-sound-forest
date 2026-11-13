@@ -51,4 +51,4 @@ The redesigned child experience is the app. The old journey map is no longer off
 - Families who used the old design keep all progress and see a one-time note in Grown-ups.
 
 ### Backup of the old app
-The last version before the redesign is tagged `classic-backup-2026-11-12`. To put it back on the main link: `git revert` to that tag's files (or `git checkout classic-backup-2026-11-12 -- .` and commit), then push. As an emergency fallback on a single phone, opening the app with `?new=0` shows the old map again and `?new=1` returns to the new design.
+The last version before the redesign is kept as the branch `classic-backup-2026-11-12` in this repository. To put it back on the main link: `git checkout origin/classic-backup-2026-11-12 -- .`, commit and push. As an emergency fallback on a single phone, opening the app with `?new=0` shows the old map again and `?new=1` returns to the new design.
