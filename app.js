@@ -40,10 +40,12 @@ const SHOP_ITEMS=[['🍎','apple'],['🎈','balloon'],['🍦','ice cream'],['�
 /* ======================= STORE ======================= */
 const KEY='haathi-journey-v3';
 let S=load();
+/* new design preview: one flag for the whole phone, set in Grown-ups or with ?new=1 / ?new=0 in the address */
+let NEWUI=false;try{const q=new URLSearchParams(location.search).get('new');if(q==='1')localStorage.setItem('haathi-newui','1');else if(q==='0')localStorage.removeItem('haathi-newui');NEWUI=localStorage.getItem('haathi-newui')==='1'}catch(e){}
 function blank(){return {profile:null,chapters:[],intro:[],lastIntroCh:-9,sounds:{},sk:{},minutes:{},settings:{sfx:true,unlock:false,consent:false},said:0,likes:{},fbPrefs:{},device:null,lastSync:0,sentFb:0}}
 function load(){try{const r=localStorage.getItem(KEY);if(r){const o=Object.assign(blank(),JSON.parse(r));o.settings=Object.assign(blank().settings,o.settings);o.likes=o.likes||{};o.fbPrefs=o.fbPrefs||{};return o}}catch(e){}return blank()}
 function loadHindi(){if(window.__hiLoaded||window.__hiLoading||!(S.settings&&S.settings.lang==='hi'))return;window.__hiLoading=1;const sc=document.createElement('script');sc.src='clips-hi.js';sc.onerror=()=>{window.__hiLoading=0};document.head.appendChild(sc)}
-function badge(){const b=$('btn-parent');if(b)b.classList.toggle('has-news',(S.unseen||0)>0)}
+function badge(){['btn-parent','nd-parent'].forEach(id=>{const b=$(id);if(b)b.classList.toggle('has-news',(S.unseen||0)>0)})}
 function renderProgress(){const el=$('p-progress');if(!el)return;const nm=S.profile?S.profile.name:'Your child';
   const modes=['letters','numbers','writing','discover'].map(k=>`<span class="chip">${{letters:'Letters',numbers:'Numbers',writing:'Writing',discover:'Discover'}[k]}: <b>${MODE_NAMES[modeOf(k)]}</b></span>`).join(' ');
   const ch=(S.changes||[]).slice(-12).reverse();
@@ -235,7 +237,7 @@ function recentPenalty(id){let p=0;const last=S.chapters.slice(-4);last.forEach(
 function score(id){return baseScore(id)+Math.max(-.5,Math.min(.5,prefBonus(id)))-recentPenalty(id)}
 function baseScore(id){const s=S.sk[id];if(!s||!s.n)return 1.7+Math.random()*.7;const age=s.last?Math.min(7,daysBetween(s.last,today())):7;return (1-s.p)*1.3+age*.12+Math.random()*.9}
 function why(id){const s=S.sk[id];const nm=SK[id].name;if(likeScore(id)>.4&&s&&s.n)return `Enjoyed: ${nm} (child gave it smiles)`;if(!s||!s.n)return `New game: ${nm}`;if(s.p<.6)return `Extra practice: ${nm} (${Math.round(s.p*100)}% right lately)`;if(s.up&&daysBetween(s.up,today())<=2)return `Levelled up: ${nm}, now ${SK[id].lab(param(id))}`;return `Keeping it fresh: ${nm}`}
-function compose(){
+function compose(){if(NEWUI)return composeAdv();
   const idx=S.chapters.length,reasons=[],nodes=[];
   let newL=null;if(modeOf('letters')<2&&readyForNewLetter(idx)){newL=LET.find(l=>!S.intro.includes(l));if(newL){S.intro.push(newL);S.lastIntroCh=idx;if(newL==='c'&&!S.intro.includes('k')){} }}
   const lg=likeScore('bubbles')+(CFG.weights.bubbles||1)-likeScore('snack')-(CFG.weights.snack||1);const lp=lg>.2?'bubbles':lg<-.2?'snack':rnd(['bubbles','snack']);
@@ -260,7 +262,7 @@ function compose(){
   if(S.chapters.length>40)S.chapters=S.chapters.slice(-40);
   save();
 }
-function curChapter(){let c=S.chapters[S.chapters.length-1];if(!c||c.done){compose();c=S.chapters[S.chapters.length-1]}return c}
+function curChapter(){let c=S.chapters[S.chapters.length-1];if(!c||c.done){compose();c=S.chapters[S.chapters.length-1]}else if(NEWUI&&!c.adv){ensureAdv();c=S.chapters[S.chapters.length-1]}return c}
 function curNodeIdx(c){return c.nodes.findIndex(n=>n.stars==null)}
 
 /* ======================= AUDIO ======================= */
@@ -368,13 +370,13 @@ const ICON={back:'<svg viewBox="0 0 24 24" fill="none" stroke="#1f6b4a" stroke-w
  ear:'<svg viewBox="0 0 24 24" fill="none" stroke="#147a8a" stroke-width="2.6" stroke-linecap="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg>',
  next:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>',
  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>'};
-document.querySelectorAll('[data-back]').forEach(b=>{b.innerHTML=ICON.back;b.onclick=()=>{FX.tap();go('map')}});
+document.querySelectorAll('[data-back]').forEach(b=>{b.innerHTML=ICON.back;b.onclick=()=>{FX.tap();go(NEWUI&&current==='corner'?'lib':'map')}});
 $('play-back').innerHTML=ICON.back;$('st-back').innerHTML=ICON.back;$('play-hear').innerHTML=ICON.ear;
 
 /* ======================= NAV, TIMER, GATE ======================= */
-let current=null;const CHILD=['map','corner','play'];
-function go(name){if(name!=='story'&&typeof stStop==='function'&&window.SR_ACTIVE!==false){try{stStop()}catch(e){}}document.querySelectorAll('.screen').forEach(s=>s.hidden=true);$('s-'+name).hidden=false;current=name;stopVoice();
-  ({start:renderStart,setup:renderSetup,map:renderMap,parent:renderParent}[name]||(()=>{}))()}
+let current=null;const CHILD=['map','corner','play','home','path','lib'];
+function go(name){if(name==='map'&&NEWUI)name='home';{const h=$('nd-hand');if(h)h.hidden=true}if(name!=='story'&&typeof stStop==='function'&&window.SR_ACTIVE!==false){try{stStop()}catch(e){}}document.querySelectorAll('.screen').forEach(s=>s.hidden=true);$('s-'+name).hidden=false;current=name;stopVoice();
+  ({start:renderStart,setup:renderSetup,map:renderMap,parent:renderParent,home:renderHome,path:renderPath,lib:renderLib}[name]||(()=>{}))()}
 let sessSec=0;
 setInterval(()=>{if(document.hidden||!S.profile||!CHILD.includes(current)||!$('bye').hidden||!$('gate').hidden)return;sessSec++;const d=today();S.minutes[d]=(S.minutes[d]||0)+1/60;if(sessSec%15===0)save();if(sessSec>=S.profile.limit*60)bedtime()},1000);
 function bedtime(){save();stopVoice();$('bye-haathi').innerHTML=haathi('sleep');$('bye').hidden=false;$('bye-text').textContent=`Great playing today, ${S.profile.name}. Haathi needs a nap. See you tomorrow!`;say(['P_bye'],null)}
@@ -388,7 +390,7 @@ $('btn-parent').onclick=()=>{FX.tap();openGate(()=>go('parent'))};
 
 /* ======================= START & SETUP ======================= */
 function renderStart(){$('start-haathi').innerHTML=haathi('happy');if(S.profile)$('cap-start').textContent=`Hi ${S.profile.name}! Turn the volume up.`}
-function begin(){unlockAudio();FX.trumpet();if(!S.profile){go('setup');return}go('map');const nu=markDay();setTimeout(()=>say(['P_welcome',200,'P_map_hi'],null).then(()=>{if(nu)say(['P_dress'],`Haathi can now wear: ${nu.name}! Open the sticker book.`)}),600)}
+function begin(){unlockAudio();FX.trumpet();if(!S.profile){go('setup');return}go('map');const nu=markDay();setTimeout(()=>say(['P_welcome',200,NEWUI?'P_nd_home':'P_map_hi'],null).then(()=>{if(nu)say(['P_dress'],`Haathi can now wear: ${nu.name}! Open the sticker book.`)}),600)}
 applyNums();loadHindi();$('btn-start').onclick=begin;$('btn-book').onclick=()=>{unlockAudio();FX.tap();openBook()};$('start-haathi').onclick=begin;
 $('kid-add').onclick=()=>{FX.tap();addKid()};
 {const b=$('btn-who');if(S.profile){const k=kidsIdx();b.hidden=false;b.textContent=`Playing as ${S.profile.name||'child'} (age ${S.profile.age}) · Change child or age`;b.onclick=()=>{FX.tap();openGate(()=>{go('parent');setTimeout(()=>{const p=$('kids-panel');if(p&&p.scrollIntoView)p.scrollIntoView({behavior:'smooth'})},80)})}}}
@@ -396,10 +398,10 @@ let setupAge=4;
 function renderSetup(){const ac=$('agechips');ac.innerHTML='';[3,4,5,6,7].forEach(a=>{const b=document.createElement('button');b.textContent=a;b.setAttribute('aria-pressed',a===setupAge);b.onclick=()=>{setupAge=a;FX.tap();renderSetup()};ac.appendChild(b)})}
 $('btn-setup-done').onclick=()=>{unlockAudio();gc('/new-child/age-'+setupAge,'New child aged '+setupAge);S.profile={name:$('in-name').value.trim()||'friend',age:setupAge,limit:+$('in-limit').value,created:today()};S.settings.consent=$('in-consent').checked;
   placeByAge();
-  save();go('map');setTimeout(()=>{FX.trumpet();say([300,'P_hello',300,'P_map_hi'],null)},400)};
+  save();go('map');setTimeout(()=>{FX.trumpet();say([300,'P_hello',300,NEWUI?'P_nd_home':'P_map_hi'],null)},400)};
 
 /* ======================= MAP ======================= */
-function nodeIcon(n){const t=n.t;if(t.startsWith('d_')&&DSEC[n.sec])return DSEC[n.sec].icon;return ({meet:n.l,bubbles:'○',snack:'🥭',count:'123',numfind:'?',more:'>',add:'+',takeaway:'−',shape:'▲',pattern:'•◦',dice:'⚂',next:'→',bigger:'9>',missing:'_',share:'½',shop:'₹',length:'↔',
+function nodeIcon(n){const t=n.t;if(t.startsWith('d_')&&DSEC[n.sec])return DSEC[n.sec].icon;if(t==='move')return '🤸';if(t==='cards'&&DSEC[n.sec])return DSEC[n.sec].icon;return ({meet:n.l,bubbles:'○',snack:'🥭',count:'123',numfind:'?',more:'>',add:'+',takeaway:'−',shape:'▲',pattern:'•◦',dice:'⚂',next:'→',bigger:'9>',missing:'_',share:'½',shop:'₹',length:'↔',
   wpre:'〰',wshape:'✎□',wletter:'✎'+(n.l||''),wnum:'✎'+(n.n||''),wcap:'✎'+(n.l||'').toUpperCase(),wname:'✎Aa',wword:'✎ab',dots:'⋯',friend:REGIONS[n.r||0].friend[0]})[t]||'?'}
 const WRITE_T=new Set(['dots','slate','maze','tracepic','drawshapes','finishpic','countwrite','joinmatch','colour']);
 const SUBJ=n=>n.t.startsWith('d_')?'discover':LGAMES[n.t]||n.t==='meet'?'letter':n.t==='friend'?'friend':(n.t[0]==='w'||WRITE_T.has(n.t))?'write':'number';
@@ -449,7 +451,7 @@ function playChapterNode(ch,i){const n=ch.nodes[i];syncNode(n);if(LGAMES[n.t])n.
 
 /* ======================= ACTIVITY RUNNER ======================= */
 let RUN=null;
-const ROUNDS={meet:1,friend:1,slate:1,
+const ROUNDS={meet:1,friend:1,slate:1,move:1,
  /* multi-step games: each round is already several taps */
  memory:3,sortsound:3,stones:3,mole:3,rocket:3,order:3,sortcolour:3,share:4,shop:5,hunt:5,fishing:5,buildword:5,beats:6,wfamily:4,wfirst:4,wcopyword:3,wsentence:4,wsurface:3,wdict:4,wlabel:4,wnumword:4,wcapname:4,wfill:4,wplural:4,add2:6,sub2:6,missadd:6,coins:6,measure:6,story:6,fraction:6,nlplace:6,groups:6,barchart:4,calendar:6,crossword:3,wordsearch:3,jumble:6,spell:6,
  /* writing */
@@ -462,17 +464,17 @@ $('play-restart').onclick=()=>{unlockAudio();FX.tap();if(!RUN)return;const n=Obj
 $('p-reload').onclick=()=>{save();location.reload()};
 $('p-reset').onclick=()=>{const b=$('p-reset');if(!b.dataset.sure){b.dataset.sure=1;b.textContent='Tap again to start over (stars, stickers and levels for '+S.profile.name+' will be cleared)';return}
   const keep={profile:S.profile,settings:S.settings,device:S.device};S=Object.assign(blank(),keep);placeByAge();save();location.reload()};
-$('play-back').onclick=()=>{FX.tap();const f=RUN&&RUN.from;RUN=null;f&&f.corner?openCorner(f.corner,f.sec):go('map')};
+$('play-back').onclick=()=>{FX.tap();const f=RUN&&RUN.from;RUN=null;backFrom(f)};
 const TITLES={tens:'Tens and ones',clock:'Telling time',tenmore:'10 more, 10 less',bigsmall:'Big and small letters',sameletter:'Same letter',oddsound:'Odd one out',samesound:'Same first sound?',picletter:'Picture to letter',letterpic:'Letter to picture',fishing:'Letter fishing',nextletter:'Next letter',missingletter:'Missing letter',sortsound:'Sound baskets',memory:'Memory pairs',rhyme:'Rhyme time',buildword:'Build a word',firstmissing:'First letter',hunt:'Letter hunt',mole:'Letter moles',hidden:'Hidden letter',stones:'River stones',shadow:'Letter shadows',
  fewer:'Which has fewer?',smaller:'Smaller number',matchgroup:'Match the number',maketen:'Make ten',beats:'Drum beats',rocket:'Rocket countdown',order:'Numbers in order',frog:'Frog hops',skip:'Skip counting',hiding:'Hiding ladoos',oddshape:'Odd shape out',sortcolour:'Colour baskets',size:'Big and small',heavy:'Heavy and light',queue:'First and last',money:'More money?',double:'Butterfly doubles',countshapes:'Count the shapes',
  maze:'Road maze',tracepic:'Trace a picture',drawshapes:'Draw with shapes',finishpic:'Finish the picture',wrainbow:'Rainbow writing',wheard:'Write what you hear',countwrite:'Count and write',wcopy:'Copy it',wlines:'Straight lines',joinmatch:'Join the pairs',colour:'Colouring',surprise:'Surprise!',
- meet:'Meet a letter',bubbles:'Sound Bubbles',snack:"Haathi's Snack",count:'Count with me',numfind:'Number Balloons',more:'Which has more?',add:'Put them together',takeaway:'Monkey takes away',shape:'Shape Hunt',pattern:'What comes next?',dice:'Quick look',next:'Before and after',bigger:'Bigger number',missing:'Missing number',share:'Share fairly',shop:'Mela shop',length:'Long and short',
+ move:'Move!',cards:'Picture cards',meet:'Meet a letter',bubbles:'Sound Bubbles',snack:"Haathi's Snack",count:'Count with me',numfind:'Number Balloons',more:'Which has more?',add:'Put them together',takeaway:'Monkey takes away',shape:'Shape Hunt',pattern:'What comes next?',dice:'Quick look',next:'Before and after',bigger:'Bigger number',missing:'Missing number',share:'Share fairly',shop:'Mela shop',length:'Long and short',
   wpre:'Draw patterns',wshape:'Draw shapes',wletter:'Write a letter',wcap:'Big letter',wnum:'Write a number',wname:'Write my name',wword:'Write a word',dots:'Dot-to-dot',slate:'Magic slate',friend:'A new friend!'};
 function startRun(n,from){
   let rounds=n.rounds||ROUNDS[n.t]||(((S.profile&&S.profile.age)||4)<=3?5:DEFAULT_ROUNDS);if(SUBJ(n)==='write'&&rounds>2&&((S.fbPrefs.write||3)<=2||likeScore(n.t)<-.4))rounds=Math.max(2,rounds-1);if(n.t==='wname')rounds=Math.min(8,nameChars().length);
   RUN={node:n,from,round:0,rounds,ok:[],prompt:null};
   go('play');$('play-title').textContent=n.title||TITLES[n.t];$('actions').innerHTML='';$('cap').textContent='';$('play-body').innerHTML='';
-  let delay=250;if(from.first){const ch=S.chapters.find(c=>c.id===from.chapter);say(ch&&ch.id%3===0?[REGIONS[ch.region].clip,200,'P_chapter']:['P_chapter'],null);delay=1700}
+  let delay=250;if(from.first&&!NEWUI){const ch=S.chapters.find(c=>c.id===from.chapter);say(ch&&ch.id%3===0?[REGIONS[ch.region].clip,200,'P_chapter']:['P_chapter'],null);delay=1700}
   setTimeout(()=>{if(RUN&&RUN.node===n)nextRound()},delay);
 }
 function stair(ok){const id=RUN.node.skill||RUN.node.t;const sk=SK[id];if(!sk||sk.levels.length<2||id.startsWith('d_'))return;const s=st(id);if(RUN.startLvl==null)RUN.startLvl=s.lvl;
@@ -488,12 +490,13 @@ function roundDone(ok){if(!RUN||RUN._lock===RUN.round)return;RUN._lock=RUN.round
 const learnN=(n,ok)=>{const id=n.skill||(SK[n.t]?n.t:(typeof READ_G!=='undefined'&&READ_G[n.t])?'read':null);if(id)learn(id,ok)};
 function finishRun(){
   const run=RUN,n=run.node;const stars=Math.max(1,Math.round(run.ok.filter(Boolean).length/run.ok.length*3));
-  let nextFn=null;
+  let nextFn=null,chDone=false;
   if(run.from.chapter!=null){const ch=S.chapters.find(c=>c.id===run.from.chapter);if(ch){const nd=ch.nodes[run.from.i];nd.stars=Math.max(nd.stars||0,stars);
-      if(ch.nodes.every(x=>x.stars!=null)&&!ch.done){ch.done=true;compose()}save();
+      if(ch.nodes.every(x=>x.stars!=null)&&!ch.done){ch.done=true;chDone=true;compose()}save();
       const c2=curChapter(),ni=curNodeIdx(c2);nextFn=()=>playChapterNode(c2,ni)}}
+  if(NEWUI){finishND(run,stars,chDone);return}
   const isFriend=n.t==='friend';const box=$('reward-box');
-  const stk=n.t!=='friend'?awardSticker():null;
+  const stk=n.t!=='friend'&&n.t!=='move'?awardSticker():null;
   box.innerHTML=isFriend?`<div class="big">${REGIONS[n.r].friend[0]}</div><h3>New friend!</h3><p>The ${REGIONS[n.r].friend[1]} joins your journey.</p>`:`<div class="stars3">${[0,1,2].map(k=>k<stars?STAR:STAR_OFF).join('')}</div><h3>${stars===3?'Superstar!':stars===2?'Great job!':'Well tried!'}</h3>`;
   if(n.t!=='friend')modeSuggest(n,stars,box);
   if(stk){box.insertAdjacentHTML('beforeend',`<div class="newstk"><span>${stk}</span><b>New sticker!</b></div>`);setTimeout(()=>say(['P_sticker'],null),900)}
@@ -539,7 +542,7 @@ ACT.bubbles=(n)=>{const pool=S.intro.length?S.intro:(n.pool&&n.pool.length?n.poo
   function pick(b,l){if(busy)return;const ok=l===t;rec1(ok);
     if(ok){busy=true;const m=getComputedStyle(b).transform;b.style.transform=m;b.style.animation='none';void b.offsetWidth;b.classList.add('pop');FX.pop();burst(b,18);
       say([350,...(hasRec(l)?['P_that_letter_says','R_'+l]:[W(KEYW(l)[0])]),250,rnd(PRAISE)],`Yes! ${l} for ${KEYW(l)[0]}!`).then(()=>roundDone(!wrong))}
-    else{wrong=true;FX.boing();anim(b,'boing',500);say([rnd(RETRY),300,...sndOf(t)],'Try another bubble!',{slow:true})}}
+    else{wrong=true;FX.boing();anim(b,'boing',500);if(NEWUI&&(pick.m=(pick.m||0)+1)>=2)st.querySelectorAll('.bubble').forEach(x=>{if(x.textContent===t)ndHint(x,true)});say([rnd(RETRY),300,...sndOf(t)],'Try another bubble!',{slow:true})}}
   setTimeout(prompt,300);
 };
 ACT.snack=(n)=>{
@@ -554,7 +557,7 @@ ACT.snack=(n)=>{
     if(ok){busy=true;const hr=h.getBoundingClientRect(),er=el.getBoundingClientRect();el.classList.add('eaten');el.style.transform=`translate(${hr.left+hr.width/2-er.left-er.width/2}px,${hr.top+hr.height*.6-er.top-er.height/2}px) scale(.2)`;
       setTimeout(()=>{FX.chomp();anim(h,'chomp',600);h.innerHTML=haathi('happy')},380);setTimeout(()=>{FX.chime();anim(h,'dance');burst(h,16)},1000);
       say([1100,'P_yum',W(it[0]),...(hasRec(t)?['P_starts_with','R_'+t]:['P_starts_like',W(KEYW(t)[0])]),250,rnd(PRAISE)],`Yum! ${it[0]} starts like ${KEYW(t)[0]}!`).then(()=>roundDone(!wrong))}
-    else{wrong=true;FX.boing();el.style.transform='';anim(el,'wiggle',500);anim(h,'nope',600);el.classList.remove('picked');say(['P_hmm_thats',W(it[0]),300,rnd(RETRY)],`That's ${it[0]}. Try again!`)}}
+    else{wrong=true;FX.boing();el.style.transform='';anim(el,'wiggle',500);anim(h,'nope',600);el.classList.remove('picked');if(NEWUI&&(choose.m=(choose.m||0)+1)>=2)ndHint([...document.querySelectorAll('#cards .pcard')].find(x=>x.getAttribute('aria-label')===target[0]));say(['P_hmm_thats',W(it[0]),300,rnd(RETRY)],`That's ${it[0]}. Try again!`)}}
   function bindDrag(el,it){let sx=0,sy=0,moved=false,id=null;
     el.addEventListener('pointerdown',e=>{if(busy)return;id=e.pointerId;try{el.setPointerCapture(id)}catch(_){}sx=e.clientX;sy=e.clientY;moved=false});
     el.addEventListener('pointermove',e=>{if(e.pointerId!==id)return;const dx=e.clientX-sx,dy=e.clientY-sy;if(!moved&&Math.hypot(dx,dy)>12){moved=true;el.classList.add('drag');FX.swish()}
@@ -569,11 +572,11 @@ ACT.snack=(n)=>{
 
 /* ---- MATHS ---- */
 function layout(k,count,small){const sz=objSz(count,small&&count>20);let html='<div class="objs">';for(let t=0;t<count;t+=10){html+='<div class="tenrow">';for(let f=t;f<Math.min(t+10,count);f+=5){html+='<div class="five">';for(let i=f;i<Math.min(f+5,count);i++)html+=objHTML(k,i,small,sz);html+='</div>'}html+='</div>'}return html+'</div>'}
-function numChoices(ans,max,el,onPick,lo,cap){lo=lo==null?1:lo;let locked=false;const want=nopt();const hi=cap?Math.min(cap,Math.max(max,ans+2)):Math.max(max,ans+2);
+function numChoices(ans,max,el,onPick,lo,cap){lo=lo==null?1:lo;let locked=false,miss=0;const want=nopt();const hi=cap?Math.min(cap,Math.max(max,ans+2)):Math.max(max,ans+2);
   const pv=[];if(ans>=10){pv.push(ans+10,ans-10);const r=+String(ans).split('').reverse().join('');if(String(ans).length===2&&ans%10&&r!==ans)pv.push(r)}
   const set=new Set([ans]);shuffle(pv.filter(v=>v>=lo&&v<=hi&&v!==ans)).slice(0,ans>=13?1:0).forEach(v=>set.add(v));
   shuffle([ans-1,ans+1,ans-2,ans+2,ans+3,ans-3]).forEach(v=>{if(set.size<want&&v>=lo&&v<=hi)set.add(v)});let g=0;while(set.size<want&&g++<60)set.add(ri(lo,hi));
-  shuffle([...set]).forEach(v=>{const b=document.createElement('button');b.className='pcard num';b.textContent=v;b.onclick=()=>{if(locked)return;if(v===ans)locked=true;onPick(b,v)};el.appendChild(b)})}
+  shuffle([...set]).forEach(v=>{const b=document.createElement('button');b.className='pcard num';b.textContent=v;b.onclick=()=>{if(locked)return;if(v===ans)locked=true;else if(NEWUI&&++miss===2)ndHint([...el.children].find(x=>+x.textContent===ans));onPick(b,v)};el.appendChild(b)})}
 async function countAlong(objs){for(let i=0;i<objs.length;i++){anim(objs[i],'dance',500);await say([N(i+1)],String(i+1))}}
 function tapCount(objs,start){let c=start||0;objs.forEach(o=>o.onclick=()=>{if(o.classList.contains('counted'))return;c++;o.classList.add('counted');o.dataset.n=c;FX.tick(c);say([N(c)],String(c))});return ()=>c}
 ACT.count=(n)=>{const max=n.max,count=deck('count'+max,range(max>10?Math.ceil(max*.35):2,max)),thing=rnd(COUNT_THINGS);
@@ -593,7 +596,7 @@ ACT.numfind=(n)=>{const max=n.max,t=deck('nf'+max,range(1,max));const set=new Se
   const prompt=()=>say(['P_find_number',200,N(t)],`Find the number ${t}`);RUN.prompt=prompt;$('bh').onclick=()=>{FX.tap();prompt()};
   let busy=false,wrong=false;const L=once(ok=>learnN(n,ok));
   floatPick(shuffle([...set]),'numb',(b,v)=>{if(busy)return;const ok=v===t;L(ok);
-    if(ok){busy=true;popIt(b);say([N(t),250,rnd(PRAISE)],`Yes! ${t}!`).then(()=>roundDone(!wrong))}else{wrong=true;FX.boing();anim(b,'boing',500);say([N(v),300,'P_find_number',N(t)],`That's ${v}. Find ${t}!`)}});
+    if(ok){busy=true;popIt(b);say([N(t),250,rnd(PRAISE)],`Yes! ${t}!`).then(()=>roundDone(!wrong))}else{wrong=true;FX.boing();anim(b,'boing',500);if(NEWUI&&(RUN._nf=(RUN._nf||0)+1)>=2)body().querySelectorAll('.bubble').forEach(x=>{if(+x.textContent===t)ndHint(x,true)});say([N(v),300,'P_find_number',N(t)],`That's ${v}. Find ${t}!`)}});
   setTimeout(prompt,300)};
 ACT.more=(n)=>{const max=n.max;let a=ri(1,max),b=ri(1,max);while(Math.abs(a-b)<Math.max(1,Math.round(max/5)))b=ri(1,max);
   body().innerHTML=`<div class="plates">${[a,b].map((v,i)=>`<button class="plate" data-p="${i}"><div class="pile">${Array.from({length:v},(_,k)=>objHTML('ladoo',k,0,objSz(v,'plate'))).join('')}</div></button>`).join('')}</div>`;
@@ -829,13 +832,14 @@ const bigShow=h=>`<div class="showcard">${h}</div>`;
 function pickRound(o){
   if(window.__TRACE)window.__TRACE.push({g:RUN&&RUN.node&&RUN.node.t,cap:o.cap,top:(o.top||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim(),items:o.items.map(i=>i.label||String(i.v)),ans:String(o.ans),ansLabel:(o.items.find(i=>i.v===o.ans)||{}).label});
   body().innerHTML=(o.top||'')+`<div class="choices ${o.cls||''}" id="pk"></div>`;
-  RUN.prompt=()=>say(o.say,o.cap);RUN.prompt();
-  let wrong=false,busy=false;const L=once(ok=>{if(o.letter)recordLetter(o.letter,ok,o.items.length,RUN.node.t);learnN(RUN.node,ok)});
+  RUN.prompt=()=>say(o.say,o.cap);const okBtn=()=>$('pk')?[...$('pk').children].find(x=>x._ok):null;let wrong=false,busy=false,miss=0;
+  if(ndFirstTime()){const r=RUN;say(['P_nd_watch',()=>setTimeout(()=>{if(RUN===r&&$('pk')&&!busy){const e=okBtn();if(e){ndHint(e);setTimeout(()=>e.classList.remove('nd-hint'),3200)}}},40),250,...o.say],o.cap)}else RUN.prompt();
+  const L=once(ok=>{if(o.letter)recordLetter(o.letter,ok,o.items.length,RUN.node.t);learnN(RUN.node,ok)});
   o.items.forEach(it=>{const b=document.createElement('button');b.className=o.itemCls||'pcard';b.innerHTML=it.h;b.setAttribute('aria-label',it.label||String(it.v));
     b.onclick=()=>{if(busy)return;const ok=it.v===o.ans;L(ok);
       if(ok){busy=true;b.classList.add('right');FX.chime();burst(b,14);if(o.onRight)o.onRight(b);say(o.right||[rnd(PRAISE)],o.rightCap||'Yes!').then(()=>roundDone(!wrong))}
-      else{wrong=true;FX.boing();anim(b,'wiggle',500);say(o.wrong?o.wrong(it):[rnd(RETRY)],o.wrongCap||'Try again!')}};
-    $('pk').appendChild(b)});
+      else{wrong=true;miss++;FX.boing();anim(b,'wiggle',500);if(NEWUI&&miss>=2){ndHint(okBtn());say(['P_nd_here'],'Here it is. Tap it!')}else say(o.wrong?o.wrong(it):[rnd(RETRY)],o.wrongCap||'Try again!')}};
+    b._ok=it.v===o.ans;$('pk').appendChild(b)});
 }
 function alive(t){return RUN&&RUN.node&&RUN.node.t===t&&document.body.contains(body())}
 
@@ -1163,10 +1167,11 @@ function openDiscover(secId){const b=$('corner-body');b.innerHTML='';
     const p=document.createElement('p');p.className='card-note';p.textContent=`${open.length} ${MODE_NAMES[dm]} topics. Switch Easy, Medium or Hard with the tabs at the top.`;b.appendChild(p);
     say(['P_d_pick'],null);return}
   const s=DSEC[secId];$('corner-title').textContent=s.name;
-  const back=document.createElement('button');back.className='pill-btn small';back.textContent='← All topics';back.onclick=()=>{FX.tap();openDiscover()};b.appendChild(back);
+  const back=document.createElement('button');back.className='pill-btn small';back.textContent=NEWUI?'← My world':'← All topics';back.onclick=()=>{FX.tap();NEWUI?openShelf('world'):openDiscover()};b.appendChild(back);
   const hero=document.createElement('div');hero.className='learncard';hero.style.cssText='flex-direction:row;gap:10px;flex-wrap:wrap;justify-content:center;max-width:640px';
   hero.innerHTML=s.items.slice(0,12).map(i=>`<span style="font-size:34px">${i.e}</span>`).join('');b.appendChild(hero);
   const g=document.createElement('div');g.className='tiles';b.appendChild(g);
+  if(NEWUI&&CARD_DECKS.includes(secId)){const t=document.createElement('button');t.className='tile';t.innerHTML='<div class="ico">🃏</div><span>Picture cards</span>';t.onclick=()=>{unlockAudio();FX.tap();startRun(cardNode(secId,'cards'),{corner:'discover',sec:secId})};g.appendChild(t)}
   dGames(s).forEach(gm=>{const t0=gm.split(':')[0];const t=document.createElement('button');t.className='tile';t.innerHTML=`<div class="ico">${GICON[t0]}</div><span>${gLabel(gm)}</span>`;
     t.onclick=()=>{unlockAudio();FX.tap();startRun(dNode(secId,gm),{corner:'discover',sec:secId})};g.appendChild(t)});
 }
@@ -1457,7 +1462,7 @@ function openBook(){const ov=$('book');const have=S.stickers||[];const dp=daysPl
     <h3 style="margin-top:12px">Haathi's wardrobe</h3><p class="note">Play on more days to unlock new things for Haathi to wear. Tap to put on or take off.</p>
     <div class="wardrobe"><div class="haathi" style="width:130px;height:138px" id="wd-h">${haathi('happy')}</div><div class="wd-items">${DRESS.map(d=>`<button class="wd ${dp>=d.days?'':'lock'} ${S.wear[d.slot]===d.id?'on':''}" data-id="${d.id}"><span>${dp>=d.days?d.e:'🔒'}</span><small>${dp>=d.days?d.name:'Day '+d.days}</small></button>`).join('')}</div></div>
     <button class="big-btn go" id="book-close" style="margin-top:12px">Back</button></div>`;
-  ov.hidden=false;$('book-close').onclick=()=>{FX.tap();ov.hidden=true;renderStart&&renderStart();if(!$('s-map').hidden)renderMap()};
+  ov.hidden=false;$('book-close').onclick=()=>{FX.tap();ov.hidden=true;renderStart&&renderStart();if(!$('s-map').hidden)renderMap();if(!$('s-home').hidden)renderHome()};
   ov.querySelectorAll('.wd').forEach(b=>b.onclick=()=>{const d=DRESS.find(x=>x.id===b.dataset.id);if(dp<d.days){FX.boing();anim(b,'wiggle',500);return}FX.tap();if(S.wear[d.slot]===d.id)delete S.wear[d.slot];else S.wear[d.slot]=d.id;save();openBook()})}
 const MOVES=[['🦘','Jump 5 times!',5],['🤸','Touch your toes 5 times!',5],['🦒','Stretch up high like a giraffe!',5],['🐦','Flap your arms like a bird!',6],['🐘','Stomp like an elephant!',6],['👏','Clap 10 times!',10],['🦩','Hop on one foot 3 times!',3],['🌀','Spin around slowly 3 times!',3]];
 function moveBreak(then){const i=fresh('mv',MOVES.map((_,k)=>k));const [e,t,cnt]=MOVES[i];const ov=$('book');
@@ -1659,7 +1664,8 @@ function cornerNode(id,kind){const pool=S.intro.length?S.intro:['s','a'];
   if(SK[id])return Object.assign(SK[id].node(param(id)),{skill:id});
   return {t:id}}
 function cornerLocked(id){if(S.settings.unlock)return false;if(id==='wname')return !nameChars().length;if(LGAMES[id])return !LGAMES[id]();if(SK[id])return !unlocked(id);return false}
-function openCorner(kind,sec){go('corner');if(kind==='discover'){openDiscover(sec);return}if(kind==='cards'){openCards(sec);return}if(kind==='stories'){openStories();return}const b=$('corner-body');const from={corner:kind};b.innerHTML='';
+function openCorner(kind,sec){if(NEWUI){if(kind==='discover'||kind==='cards'){if(sec){go('corner');openDiscover(sec)}else openShelf('world')}else openShelf(kind==='stories'?'stories':kind==='writing'?'make':'play');return}
+  go('corner');if(kind==='discover'){openDiscover(sec);return}if(kind==='cards'){openCards(sec);return}if(kind==='stories'){openStories();return}const b=$('corner-body');const from={corner:kind};b.innerHTML='';
   const m=modeOf(kind);$('corner-title').textContent=kind==='letters'&&m===2?'Reading':{letters:'Letters',numbers:'Numbers',writing:'Writing'}[kind];
   b.appendChild(modeTabs(kind,()=>openCorner(kind)));
   const all=kind==='letters'?[...CORNER.letters,...Object.keys(READ_G).map(g=>[g,...READ_G[g]])]:CORNER[kind];
@@ -1701,10 +1707,13 @@ function renderParent(){renderKids();renderProgress();S.unseen=0;save();badge();
     const chip=!un?'<span class="chip locked">locked</span>':!s||!s.n?'<span class="chip new">not tried</span>':s.p>=.75?'<span class="chip strong">strong</span>':s.p<.55?'<span class="chip weak">practising</span>':'';
     return `<tr><td>${SK[id].sub}: ${SK[id].name}${chip}</td><td>${SK[id].lab(param(id))}</td><td>${s&&s.n?`<div class="bar"><i style="width:${Math.round(s.p*100)}%"></i></div>${Math.round(s.p*100)}% · ${s.n} tries`:'–'}</td></tr>`}).join('');
   $('p-map').innerHTML=ORDER.map(l=>{const st=S.intro.includes(l)||S.intro.includes(SAME[l])?status(l):'none',lab={none:S.intro.includes(l)?'met':'not yet',prac:'practising',mast:'mastered',due:'review'}[st];return `<div class="scell st-${st}"><div class="l">${l}</div><div class="s">${lab}</div></div>`}).join('');
-  $('ps-name').value=S.profile.name;$('ps-age').value=S.profile.age;$('ps-limit').value=S.profile.limit;$('ps-sfx').checked=S.settings.sfx!==false;$('ps-countnums').checked=S.settings.countNums!==false;$('ps-moves').checked=S.settings.moves!==false;$('ps-automode').checked=S.settings.autoMode!==false;$('ps-lang').value=S.settings.lang||'en';$('ps-unlock').checked=!!S.settings.unlock;$('ps-consent').checked=!!S.settings.consent;renderLikes();
+  $('ps-name').value=S.profile.name;$('ps-age').value=S.profile.age;$('ps-limit').value=S.profile.limit;$('ps-sfx').checked=S.settings.sfx!==false;$('ps-countnums').checked=S.settings.countNums!==false;$('ps-moves').checked=S.settings.moves!==false;$('ps-automode').checked=S.settings.autoMode!==false;$('ps-lang').value=S.settings.lang||'en';$('ps-unlock').checked=!!S.settings.unlock;$('ps-consent').checked=!!S.settings.consent;$('ps-newui').checked=NEWUI;['letters','numbers','writing','discover'].forEach(k=>{$('ps-m-'+k).value=modeOf(k)});renderLikes();
   renderStudio();resetZone();renderFeedback()}
 $('ps-save').addEventListener('click',()=>setTimeout(()=>{kidsIdx();renderKids()},0));
-$('ps-save').onclick=()=>{S.profile.name=$('ps-name').value.trim()||S.profile.name;const oldAge=S.profile.age;S.profile.age=+$('ps-age').value;if(S.profile.age!==oldAge)placeByAge();S.profile.limit=+$('ps-limit').value;S.settings.sfx=$('ps-sfx').checked;S.settings.countNums=$('ps-countnums').checked;S.settings.moves=$('ps-moves').checked;S.settings.autoMode=$('ps-automode').checked;S.settings.lang=$('ps-lang').value;loadHindi();applyNums();S.settings.unlock=$('ps-unlock').checked;S.settings.consent=$('ps-consent').checked;save();$('ps-saved').hidden=false;setTimeout(()=>$('ps-saved').hidden=true,1600)};
+$('ps-save').onclick=()=>{S.profile.name=$('ps-name').value.trim()||S.profile.name;const oldAge=S.profile.age;S.profile.age=+$('ps-age').value;if(S.profile.age!==oldAge)placeByAge();S.profile.limit=+$('ps-limit').value;S.settings.sfx=$('ps-sfx').checked;S.settings.countNums=$('ps-countnums').checked;S.settings.moves=$('ps-moves').checked;S.settings.autoMode=$('ps-automode').checked;S.settings.lang=$('ps-lang').value;loadHindi();applyNums();S.settings.unlock=$('ps-unlock').checked;S.settings.consent=$('ps-consent').checked;
+  ['letters','numbers','writing','discover'].forEach(k=>{const v=+$('ps-m-'+k).value,was=modeOf(k);if(v!==was){setMode(k,v);if(S.tierLog)S.tierLog[k]=[];logChange(k,was,v,'mode',`${{letters:'Letters',numbers:'Numbers',writing:'Writing',discover:'Discover'}[k]} set to ${MODE_NAMES[v]} by a grown-up.`);S.unseen=0}});
+  {const nu=$('ps-newui').checked;if(nu!==NEWUI){NEWUI=nu;try{nu?localStorage.setItem('haathi-newui','1'):localStorage.removeItem('haathi-newui')}catch(e){}}}
+  save();$('ps-saved').hidden=false;setTimeout(()=>$('ps-saved').hidden=true,1600)};
 function resetZone(){const z=$('reset-zone');z.innerHTML='<button class="pill-btn danger" id="p-reset">Reset all progress</button>';
   $('p-reset').onclick=()=>{z.innerHTML='<p>This deletes chapters, stars and skill levels (recordings are kept). It cannot be undone.</p><div class="row" style="justify-content:flex-start"><button class="pill-btn" id="r-no">Keep progress</button><button class="pill-btn danger" id="r-yes">Delete progress</button></div>';
     $('r-no').onclick=resetZone;$('r-yes').onclick=()=>{S=blank();save();sessSec=0;go('setup')}}}
@@ -1772,11 +1781,133 @@ $('btn-install').onclick=async()=>{FX.tap();
   installHelp(`In <b>Chrome</b>: tap the <b>⋮</b> menu (top right), then <b>Install app</b> or <b>Add to Home screen</b>.<br>Using another browser? Open this link in Chrome: ${SHARE_URL}`)};
 refreshInstall();
 
+/* ======================= NEW DESIGN (preview, release 1A) ======================= */
+/* One Play button, a 5-stop daily adventure and a Library with four doors. Off by default: switch it on in Grown-ups,
+   or open the app with ?new=1. The classic map and corners are untouched and read the same saved progress. */
+const ND_ICO={};Object.keys(CORNER).forEach(k=>CORNER[k].forEach(([id,,ico])=>ND_ICO[id]=ico));Object.keys(READ_G).forEach(g=>ND_ICO[g]=READ_G[g][1]);
+function ndIcon(n){if(n.t==='move')return '🤸';if(n.t==='meet')return n.l;if((n.t==='cards'||n.t.startsWith('d_'))&&DSEC[n.sec])return DSEC[n.sec].icon;return ND_ICO[n.skill]||ND_ICO[n.t]||nodeIcon(n)}
+/* the daily adventure: world warm-up, letters or numbers, a movement stop, the other subject, then something to make */
+function composeAdv(carry){
+  const idx=S.chapters.length,reasons=[];
+  let newL=carry||null;
+  if(!newL&&modeOf('letters')<2&&readyForNewLetter(idx)){newL=LET.find(l=>!S.intro.includes(l));if(newL){S.intro.push(newL);S.lastIntroCh=idx}}
+  /* stop 1: picture cards, and every third day a topic game */
+  const dm=modeOf('discover');let warm=null;
+  /* older children (My world on Hard) always get a topic game; picture cards are for the little ones */
+  if(dm>=2||(dm===1?idx%2===1:idx%3===2)){const ds=DSC.sections.filter(x=>inPlay('discover',x.id)).map(x=>x.id).sort((a,b)=>score('d_'+b)-score('d_'+a));if(ds.length){warm=dNode(ds[0]);if((warm.rounds||DEFAULT_ROUNDS)>6)warm.rounds=6;reasons.push('Warm-up topic: '+DSEC[ds[0]].name)}}
+  if(!warm){const decks=CARD_DECKS.filter(id=>DSEC[id]&&id!=='voices'&&tierOf('discover',id)<=dm);const deck=fresh('advdeck',decks.length?decks:CARD_DECKS.filter(id=>DSEC[id]));
+    warm=Object.assign(cardNode(deck,'cards'),{rounds:Math.min(6,DSEC[deck].items.length),_ord:shuffle(DSEC[deck].items.map(i=>i.k)).slice(0,6)});reasons.push('Warm-up: picture cards, '+DSEC[deck].name)}
+  /* letters and numbers: one is stop 2, the other is stop 4, swapping each day */
+  let L;
+  if(newL){L={t:'meet',l:newL};reasons.push(`New letter: ${newL} (${KEYW(newL)[0]})`)}
+  else{L={t:pickLetterGame(),focus:weakestLetter(),pool:S.intro.slice()};reasons.push(READ_G[L.t]?`Reading: ${READ_G[L.t][0]}`:`Letter practice: ${L.focus} (${Math.round(accuracy(L.focus)*100)}% right lately)`)}
+  const maths=Object.keys(SK).filter(id=>SK[id].sub==='Maths'&&inPlay('numbers',id)).sort((a,b)=>score(b)-score(a));
+  const mid=maths[0]||'count';const M=Object.assign(SK[mid].node(param(mid)),{skill:mid});reasons.push(why(mid));
+  /* stop 5: write the letter of the day, or another writing game, turn by turn */
+  let W;const wOther=Object.keys(SK).filter(id=>SK[id].sub==='Writing'&&id!=='wletter'&&inPlay('writing',id)).sort((a,b)=>score(b)-score(a))[0];
+  if(newL||idx%2===0||!wOther){W=modeOf('writing')===2?{t:'wcopyword',skill:'wcopyword'}:{t:'wletter',l:newL||weakestLetter(true),skill:'wletter'};reasons.push(W.l?`Write the letter ${W.l}`:'Copy a word')}
+  else{W=Object.assign(SK[wOther].node(param(wOther)),{skill:wOther});reasons.push(why(wOther))}
+  const first=idx%2===0?[L,M]:[M,L];
+  const nodes=[warm,first[0],{t:'move'},first[1],W];
+  S.chapters.push({id:idx,region:Math.floor(idx/3)%REGIONS.length,nodes:nodes.map(n=>Object.assign(n,{stars:null})),reasons,done:false,date:today(),adv:true});
+  if(S.chapters.length>40)S.chapters=S.chapters.slice(-40);
+  save();
+}
+/* a chapter planned for the classic map becomes a 5-stop adventure the first time the new design opens it */
+function ensureAdv(){const c=S.chapters[S.chapters.length-1];if(!c||c.done||c.adv)return;const meet=c.nodes.find(n=>n.t==='meet'&&n.stars==null);S.chapters.pop();composeAdv(meet&&meet.l)}
+ACT.move=(n)=>{body().innerHTML='';$('cap').textContent='';moveBreak(()=>{if(RUN&&RUN.node===n)roundDone(true)})};
+function ndDots(c){const d=c.nodes.filter(n=>n.stars!=null).length;return c.nodes.map((n,i)=>`<i class="${i<d?'on':''}"></i>`).join('')}
+
+/* ---- home: one choice ---- */
+function renderHome(){if(S.profile)markDay();badge();const c=curChapter();const started=c.nodes.some(n=>n.stars!=null);
+  $('nd-parent').innerHTML=$('btn-parent').innerHTML;$('nd-haathi').innerHTML=haathi('happy');$('nd-dots').innerHTML=ndDots(c);
+  const nm=S.profile&&S.profile.name&&S.profile.name!=='friend'?', '+S.profile.name:'';const h=new Date().getHours();
+  $('nd-bubble').textContent=S.advDone===today()&&!started?`All done for today${nm}! See you tomorrow.`:`${h<12?'Good morning':h<17?'Good afternoon':'Good evening'}${nm}! Shall we play?`}
+$('nd-parent').onclick=()=>{FX.tap();openGate(()=>go('parent'))};
+$('nd-play').onclick=()=>{unlockAudio();FX.tap();go('path')};
+$('nd-lib').onclick=()=>{unlockAudio();FX.tap();go('lib')};
+$('nd-haathi').onclick=()=>{unlockAudio();FX.tap();openBook()};
+
+/* ---- today's adventure: the path ---- */
+function renderPath(){const c=curChapter(),ci=curNodeIdx(c),el=$('nd-path');const ML=[5,33,58,33,5,33,58,33,5];
+  $('nd-path-bubble').textContent=`Stop ${ci+1} of ${c.nodes.length}. Tap the glowing one!`;
+  el.innerHTML=c.nodes.map((nd,i)=>{const done=nd.stars!=null,cur=i===ci,ic=ndIcon(nd);const len=[...ic].length;
+    return `<div class="nd-prow" style="padding-left:${ML[i%ML.length]}%"><button class="nd-node ${done?'done':cur?'cur':''}" data-i="${i}" ${cur?'':'disabled'} aria-label="Stop ${i+1}${done?', done':cur?', tap to play':''}">${done?ICON.check:`<span style="font-size:${len>4?'15':len>2?'21':'clamp(28px,5vh,38px)'}${len>2?'px':''}">${ic}</span>`}</button>${cur?`<span class="nd-mini">${haathi('happy')}</span>`:''}</div>`}).join('');
+  const b=el.querySelector('.nd-node.cur');if(b)b.onclick=()=>{unlockAudio();FX.tap();playChapterNode(c,ci)};
+  requestAnimationFrame(()=>{const R=el.getBoundingClientRect();if(!R.width)return;const pts=[...el.querySelectorAll('.nd-node')].map(x=>{const r=x.getBoundingClientRect();return (r.left+r.width/2-R.left).toFixed(0)+','+(r.top+r.height/2-R.top).toFixed(0)}).join(' ');
+    el.insertAdjacentHTML('afterbegin',`<svg viewBox="0 0 ${R.width.toFixed(0)} ${R.height.toFixed(0)}" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="#9fd3b0" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1 18"/></svg>`)});
+  setTimeout(()=>{if(current==='path')say(['P_map_hi'],null)},350)}
+$('nd-path-home').onclick=()=>{FX.tap();go('home')};
+
+/* ---- library: four picture doors ---- */
+function renderLib(){setTimeout(()=>{if(current==='lib')say(['P_nd_lib'],null)},300)}
+$('nd-lib-home').onclick=()=>{FX.tap();go('home')};
+document.querySelectorAll('[data-door]').forEach(b=>b.onclick=()=>{unlockAudio();FX.tap();openShelf(b.dataset.door,true)});
+let ND_PAGE={};
+function ndPlays(id){return (S.plays&&S.plays[id])||0}
+/* a shelf shows 8 picture tiles at a time: up to 4 the child has played most and 4 not tried yet; the round arrow brings the next 8 */
+function openShelf(kind,speak){go('corner');const b=$('corner-body');b.innerHTML='';
+  if(speak)setTimeout(()=>{if(current==='corner')say(['P_nd_'+kind],null)},250);
+  if(kind==='stories'){openStories();return}
+  $('corner-title').textContent={play:'Play',make:'Make',world:'My world'}[kind];
+  let items=[];
+  if(kind==='world'){const dm=modeOf('discover');const ids=DSC.sections.filter(s=>tierOf('discover',s.id)===dm).map(s=>s.id);DSC.sections.forEach(s=>{if(tierOf('discover',s.id)<dm&&!ids.includes(s.id))ids.push(s.id)});CARD_DECKS.forEach(id=>{if(DSEC[id]&&!ids.includes(id))ids.push(id)});
+    items=ids.map(id=>({id:'d_'+id,ico:DSEC[id].icon,label:DSEC[id].name,n:(S.sk['d_'+id]&&S.sk['d_'+id].n)||0,run:()=>{say(['SEC_'+id],null);openDiscover(id)}}))}
+  else{const kinds=kind==='make'?['writing']:['letters','numbers'];
+    kinds.forEach(k=>{const m=modeOf(k);const all=k==='letters'?[...CORNER.letters,...Object.keys(READ_G).map(g=>[g,...READ_G[g]])]:CORNER[k];
+      all.filter(([id])=>tierOf(k,id)===m&&!cornerLocked(id)).forEach(([id,label,ico])=>items.push({id,ico,label,n:ndPlays(id),col:COL_OF[k],run:()=>startRun(cornerNode(id,k),{corner:k})}))})}
+  const fav=items.filter(x=>x.n>0).sort((a,c)=>c.n-a.n),nw=items.filter(x=>x.n===0);
+  const pages=Math.max(1,Math.ceil(items.length/8));const p=(ND_PAGE[kind]||0)%pages;
+  let show=[...fav.slice(p*4,p*4+4).map(x=>Object.assign(x,{tag:'❤️'})),...nw.slice(p*4,p*4+4).map(x=>Object.assign(x,{tag:'✨'}))];
+  if(show.length<8){const rest=items.filter(x=>!show.includes(x));const off=(p*8)%Math.max(1,rest.length);for(let i=0;i<rest.length&&show.length<8;i++)show.push(Object.assign(rest[(off+i)%rest.length],{tag:rest[(off+i)%rest.length].n?'❤️':'✨'}))}
+  const g=document.createElement('div');g.className='tiles nd-shelf';b.appendChild(g);
+  show.forEach(x=>{const t=document.createElement('button');t.className='tile nd';const len=[...x.ico].length;
+    t.innerHTML=`<div class="ico" style="${x.col?'color:'+x.col+';':''}font-size:${len>3?22:len>1&&x.col?30:44}px">${x.ico}</div><span>${x.label}</span><i class="nd-tag" aria-hidden="true">${x.tag}</i>`;
+    t.onclick=()=>{unlockAudio();FX.tap();x.run()};g.appendChild(t)});
+  if(pages>1){const m=document.createElement('button');m.className='nd-more';m.setAttribute('aria-label','More');m.textContent='🔄';m.onclick=()=>{unlockAudio();FX.tap();ND_PAGE[kind]=p+1;openShelf(kind)};b.appendChild(m);
+    b.insertAdjacentHTML('beforeend',`<p class="card-note">${p+1} of ${pages}. ❤️ played before, ✨ not tried yet. Levels are set in Grown-ups.</p>`)}
+}
+/* where the back arrow of a game leads */
+function backFrom(f){f=f||{};
+  if(!NEWUI){f.corner?openCorner(f.corner,f.sec):go('map');return}
+  if(f.chapter!=null){go('path');return}
+  if(f.corner==='discover'||f.corner==='cards'){if(f.sec){go('corner');openDiscover(f.sec)}else openShelf('world');return}
+  if(f.corner==='stories'){openShelf('stories');return}
+  if(f.corner){openShelf(f.corner==='writing'?'make':'play');return}
+  go('home')}
+
+/* ---- after a game: one cheer, one button. Stars are still counted for the engine and for Grown-ups, but the child sees a path filling up ---- */
+function finishND(run,stars,chDone){const n=run.node,box=$('reward-box'),adv=run.from.chapter!=null;
+  S.plays=S.plays||{};S.plays[n.t]=(S.plays[n.t]||0)+1;
+  /* meeting a letter is not a test, so it does not push Easy/Medium/Hard up */
+  if(n.t!=='move'&&n.t!=='friend'&&n.t!=='meet')modeSuggest(n,stars,document.createElement('div'));
+  if(chDone){S.advDone=today();S.advCount=(S.advCount||0)+1}
+  save();sync(false);RUN=null;
+  if(n.t==='move'&&!chDone){go('path');return}
+  const ch=adv?S.chapters.find(c=>c.id===run.from.chapter):null;const stk=chDone?awardSticker():null;
+  box.innerHTML=chDone?`<div class="nd-fin" aria-hidden="true">🎉</div><div class="nd-stk">${stk}</div><h3>New sticker!</h3><div class="haathi" style="width:120px;height:128px">${haathi('happy')}</div><p class="note">Tap Haathi on the home screen to open the sticker book.</p>`
+    :`<div class="haathi" style="width:150px;height:160px">${haathi('happy')}</div><h3>${stars===3?'Superstar!':stars===2?'Great job!':'Well tried!'}</h3>${ch?`<div class="nd-dots big">${ndDots(ch)}</div>`:''}`;
+  if(n.t!=='move'){const fq=document.createElement('div');fq.innerHTML='<div class="faces"><button data-f="up" aria-label="Loved it">😀</button><button data-f="mid" aria-label="Okay">😐</button><button data-f="down" aria-label="Did not like">🙁</button></div>';
+    fq.querySelectorAll('button').forEach(b=>b.onclick=()=>{fq.querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');FX.tap();const L=S.likes[n.t]||(S.likes[n.t]={up:0,mid:0,down:0});if(fq.dataset.v)L[fq.dataset.v]--;L[b.dataset.f]++;fq.dataset.v=b.dataset.f;save()});box.appendChild(fq)}
+  const row=document.createElement('div');row.className='row';
+  const mk=(cls,html,label,fn)=>{const x=document.createElement('button');x.className='big-btn '+cls+' nd-big';x.innerHTML=html;x.setAttribute('aria-label',label);x.onclick=()=>{FX.tap();$('reward').hidden=true;fn()};row.appendChild(x)};
+  if(chDone)mk('go','🏠','Home',()=>{go('home');say(['P_nd_seeyou'],null)});
+  else if(adv)mk('go',ICON.next.replace('currentColor','#fff'),'Next stop',()=>go('path'));
+  else{mk('soft',ICON.back,'Back',()=>backFrom(run.from));mk('go','↻','Play again',()=>startRun(n,run.from))}
+  box.appendChild(row);$('reward').hidden=false;confetti();FX.fanfare();
+  say(chDone?[500,'P_nd_done']:[500,rnd(PRAISE_EN)],null)}
+
+/* ---- help: after two misses the right answer glows and a hand points at it; the first time a game is met, the hand shows the first answer ---- */
+function ndHand(el,ms){if(!el||!document.body.contains(el))return;let h=$('nd-hand');if(!h){h=document.createElement('div');h.id='nd-hand';h.textContent='👆';h.setAttribute('aria-hidden','true');document.body.appendChild(h)}
+  const r=el.getBoundingClientRect();h.hidden=false;h.style.left=(r.left+r.width/2-14)+'px';h.style.top=(r.top+r.height*.5)+'px';h.classList.add('ndtap');clearTimeout(ndHand.t);ndHand.t=setTimeout(()=>{h.hidden=true},ms||3200)}
+function ndHint(el,float){if(!el)return;el.classList.add(float?'nd-hintb':'nd-hint');if(!float)ndHand(el)}
+function ndFirstTime(){if(!NEWUI||!RUN||RUN.round!==0)return false;const t=RUN.node.t;S.demo=S.demo||{};if(S.demo[t])return false;S.demo[t]=1;save();return true}
+
 /* ======================= BOOT ======================= */
 if(S.profile&&S.placed!==3)placeByAge();
 document.addEventListener('visibilitychange',()=>{if(document.hidden){save();stopVoice();sync(false);document.querySelectorAll('canvas').forEach(c=>c.dispatchEvent(new PointerEvent('pointercancel')))}else{if(actx&&actx.state!=='running')try{actx.resume()}catch(e){}}});
 window.addEventListener('pageshow',()=>{if(actx&&actx.state!=='running')try{actx.resume()}catch(e){}});
 document.addEventListener('pointerdown',()=>{if(actx&&actx.state!=='running')actx.resume()},{passive:true});
-window.__haathi={placeByAge:()=>placeByAge(),SK,LS,CS,DIG,PREP,DOTPICS,S:()=>S,compose,learn,startRun,sceneHTML,openStory};
+window.__haathi={newUI:v=>{if(v!=null)NEWUI=!!v;return NEWUI},composeAdv,go,ACT,roundDone:ok=>roundDone(ok),RUN:()=>RUN,curChapter,placeByAge:()=>placeByAge(),SK,LS,CS,DIG,PREP,DOTPICS,S:()=>S,compose,learn,startRun,sceneHTML,openStory};
 go('start');
 })();

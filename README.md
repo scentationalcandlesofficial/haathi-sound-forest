@@ -41,3 +41,10 @@ Starting levels inside each game are set from the child's age, then adapt during
 - Writing follows typical pre-writing milestones (cross about 4 years, square about 4.5, triangle about 5): age 3 traces with full guides only; harder copying and writing from sound open at 5.
 - Age 3 games are 5 questions long; ages 4+ are 8.
 - Reading uses Dolch-style sight words and decodable 3 to 5 letter words; reading games never say the word before the child answers.
+
+## New design preview (release 1A)
+A redesigned child experience ships switched off. Turn it on in Grown-ups > Settings > "Try the new design (preview)", or open the app with `?new=1` (and `?new=0` to go back). It reads the same saved progress as the classic design.
+- **Home:** one Play button, a Library door and the Grown-ups button. Tapping Haathi opens the sticker book.
+- **Daily adventure:** 5 stops picked by the engine: a picture-card or topic warm-up, letters or numbers, a movement stop, the other subject, then writing. One sticker at the end, not one per game.
+- **Library:** four picture doors (Play, My world, Stories, Make). Shelves show 8 tiles at a time and have no Easy/Medium/Hard tabs; levels follow the engine and can be set per area in Grown-ups.
+- **Help:** in choose-the-answer games the hand shows the first answer the first time a game is met, and after two misses the right answer glows.

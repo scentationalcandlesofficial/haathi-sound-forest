@@ -430,6 +430,52 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 .orderrow i{font-style:normal;color:var(--ink-soft);font-size:20px}
 .oslot{min-width:clamp(70px,18vw,104px);min-height:clamp(70px,18vw,96px);border-radius:16px;border:3px dashed var(--leaf-2);background:#fff;display:grid;place-items:center;padding:4px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ---- new design (preview): home, path, library, help hand ---- */
+.nd-top{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%}
+.nd-door{width:78px;height:78px;border-radius:22px;background:var(--leaf);font-size:40px;display:grid;place-items:center;box-shadow:0 5px 0 #154b34;flex:none}
+.nd-door:active,.nd-play:active,.nd-doorbig:active,.nd-node.cur:active,.nd-more:active{transform:translateY(3px)}
+.nd-bubble{background:#fff;border-radius:22px;padding:12px 16px;font-family:var(--f-display);font-weight:800;font-size:clamp(20px,5.4vw,26px);line-height:1.2;text-align:center;color:var(--ink);box-shadow:0 4px 0 var(--shadow);width:100%;text-wrap:balance}
+.nd-bubble.small{flex:1;min-width:0;width:auto;text-align:left;font-size:clamp(16px,4.4vw,21px);padding:10px 14px}
+.nd-home{align-items:center;overflow:hidden}
+.nd-home .nd-top,.nd-home .nd-bubble{max-width:560px}
+.haathi.nd-haathi{flex:1;min-height:100px;max-height:300px;width:min(250px,58vw);height:auto}
+.nd-play{width:min(44vw,180px);aspect-ratio:1;border-radius:50%;background:var(--mango);box-shadow:0 8px 0 var(--mango-deep);display:grid;place-items:center;animation:pulse 2.2s ease-in-out infinite;flex:none}
+.nd-play svg{width:46%;height:46%;margin-left:6%}
+.nd-dots{display:flex;gap:10px;justify-content:center;min-height:16px;flex:none}
+.nd-dots i{width:14px;height:14px;border-radius:50%;background:#fff;border:2px solid var(--mango-deep)}
+.nd-dots i.on{background:var(--mango)}
+.nd-dots.big i{width:20px;height:20px}
+.nd-hills{height:54px;width:100vw;flex:none;margin-bottom:-10px;background:radial-gradient(120% 140% at 20% 130%,var(--moss) 60%,transparent 61%),radial-gradient(120% 150% at 85% 140%,#a9d8b4 60%,transparent 61%)}
+.nd-talk{display:flex;align-items:center;gap:10px;min-height:56px}
+.nd-path{flex:1;min-height:0;position:relative;display:flex;flex-direction:column;max-width:560px;width:100%;margin:0 auto}
+.nd-path>svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.nd-prow{flex:1;min-height:0;display:flex;align-items:center;gap:8px;position:relative}
+.nd-node{width:clamp(62px,12.5vh,90px);aspect-ratio:1;border-radius:50%;background:#fff;border:4px dashed #8fbf9d;display:grid;place-items:center;font-family:var(--f-display);font-weight:800;color:var(--ink);flex:none;line-height:1}
+.nd-node.done{border:0;background:var(--leaf);color:#fff;opacity:1}
+.nd-node.done svg{width:52%;height:52%}
+.nd-node.cur{border:5px solid var(--mango-deep);background:var(--mango);box-shadow:0 6px 0 var(--mango-deep);animation:pulse 1.8s ease-in-out infinite}
+.nd-node:disabled{cursor:default}
+.nd-mini{width:clamp(56px,11vh,76px);aspect-ratio:236/250;flex:none}.nd-mini svg{width:100%;height:100%;display:block}
+.nd-doors{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:12px;max-width:640px;width:100%;margin:0 auto}
+.nd-doorbig{border-radius:28px;font-size:clamp(56px,17vw,96px);display:grid;place-items:center;box-shadow:0 6px 0 rgba(0,0,0,.16);line-height:1}
+.nd-doorbig.d1{background:#f6a821}.nd-doorbig.d2{background:#8fd0de}.nd-doorbig.d3{background:#f3d27a}.nd-doorbig.d4{background:#f2b8c6}
+.tile.nd{position:relative}
+.nd-tag{position:absolute;right:8px;top:6px;font-size:17px;font-style:normal}
+.nd-more{align-self:center;width:72px;height:72px;border-radius:50%;background:#fff;font-size:34px;box-shadow:0 5px 0 var(--shadow);flex:none}
+.nd-levels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.nd-levels label{display:flex;flex-direction:column;gap:2px;font-size:14px}
+.nd-stk{font-size:84px;line-height:1;animation:pulse 1.6s ease-in-out infinite}
+.nd-fin{font-size:38px;line-height:1}
+.big-btn.nd-big{min-width:96px;min-height:64px;justify-content:center;font-size:30px}
+.big-btn.nd-big svg{width:34px;height:34px}
+.nd-hint{outline:6px solid var(--mango);outline-offset:2px;animation:ndglow .9s ease-in-out infinite!important}
+.nd-hintb{box-shadow:0 0 0 8px var(--mango),0 0 0 14px rgba(246,168,33,.35)!important}
+@keyframes ndglow{50%{outline-color:var(--mango-deep);transform:scale(1.05)}}
+#nd-hand{position:fixed;z-index:60;font-size:54px;pointer-events:none;line-height:1}
+#nd-hand.ndtap{animation:ndtap 1.2s ease-in-out infinite}
+@keyframes ndtap{0%,100%{transform:translate(26px,34px)}50%{transform:translate(0,0) scale(.9)}}
+@media (prefers-reduced-motion:reduce){.nd-play,.nd-node.cur,.nd-stk,.nd-hint,#nd-hand.ndtap{animation:none!important}}
 </style>
 
 </head>
@@ -477,6 +523,30 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
     <button class="corner" data-corner="discover"><b>🌍</b><span>Discover</span></button>
     <button class="corner" data-corner="cards"><b>🃏</b><span>Cards</span></button>
     <button class="corner" data-corner="stories"><b>🌙</b><span>Stories</span></button>
+  </div>
+</section>
+
+<section class="screen nd-home" id="s-home" hidden>
+  <div class="nd-top"><button class="pill-btn small" id="nd-parent" aria-label="Grown-ups settings" style="gap:6px;white-space:nowrap"></button><button class="nd-door" id="nd-lib" aria-label="Library">📚</button></div>
+  <div class="nd-bubble" id="nd-bubble"></div>
+  <button class="haathi nd-haathi" id="nd-haathi" aria-label="Haathi. Open the sticker book"></button>
+  <button class="nd-play" id="nd-play" aria-label="Play today's adventure"><svg viewBox="0 0 24 24" fill="#3b2400"><path d="M7 4.5v15l13-7.5z"/></svg></button>
+  <div class="nd-dots" id="nd-dots" aria-hidden="true"></div>
+  <div class="nd-hills" aria-hidden="true"></div>
+</section>
+
+<section class="screen" id="s-path" hidden>
+  <div class="nd-talk"><button class="round" id="nd-path-home" aria-label="Home">🏠</button><div class="nd-bubble small" id="nd-path-bubble"></div></div>
+  <div class="nd-path" id="nd-path"></div>
+</section>
+
+<section class="screen" id="s-lib" hidden>
+  <div class="nd-talk"><button class="round" id="nd-lib-home" aria-label="Home">🏠</button><div class="nd-bubble small">Library. Pick a door!</div></div>
+  <div class="nd-doors">
+    <button class="nd-doorbig d1" data-door="play" aria-label="Play: letter and number games">🎲</button>
+    <button class="nd-doorbig d2" data-door="world" aria-label="My world: picture cards and topics">🌍</button>
+    <button class="nd-doorbig d3" data-door="stories" aria-label="Stories">📖</button>
+    <button class="nd-doorbig d4" data-door="make" aria-label="Make: tracing, writing and drawing">🎨</button>
   </div>
 </section>
 
@@ -552,6 +622,9 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
       <label class="check"><input type="checkbox" id="ps-moves"> Movement breaks after every 3 games</label>
       <label class="check"><input type="checkbox" id="ps-automode"> Move between Easy, Medium and Hard automatically (you are told each time)</label>
       <label class="check"><input type="checkbox" id="ps-consent"> Share anonymous play data to help improve the game</label>
+      <div class="field"><label>Level for each area (the app also moves these on its own)</label>
+        <div class="nd-levels"><label>Letters<select id="ps-m-letters"><option value="0">Easy</option><option value="1">Medium</option><option value="2">Hard</option></select></label><label>Numbers<select id="ps-m-numbers"><option value="0">Easy</option><option value="1">Medium</option><option value="2">Hard</option></select></label><label>Writing<select id="ps-m-writing"><option value="0">Easy</option><option value="1">Medium</option><option value="2">Hard</option></select></label><label>My world<select id="ps-m-discover"><option value="0">Easy</option><option value="1">Medium</option><option value="2">Hard</option></select></label></div></div>
+      <label class="check" style="background:#fff3df;border-radius:14px;padding:8px 10px"><input type="checkbox" id="ps-newui"> <span><b>Try the new design (preview).</b> One Play button, a 5-stop daily adventure and a Library with four doors. Progress is shared with the classic design, so you can switch back any time.</span></label>
       <label class="check"><input type="checkbox" id="ps-unlock"> Unlock every game in the corners (for grown-ups trying it)</label>
       <button class="pill-btn primary" id="ps-save" style="align-self:flex-start">Save settings</button>
       <div class="row" style="justify-content:flex-start;gap:8px;margin-top:8px"><button class="pill-btn" id="p-reload">↻ Reload the app</button><button class="pill-btn" id="p-reset">Start over for this child</button></div>
