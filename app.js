@@ -58,7 +58,9 @@ function renderProgress(){const el=$('p-progress');if(!el)return;const nm=S.prof
   el.innerHTML=`<p>${modes}</p><h4>Recent changes</h4>${ch.length?`<ul class="why">${ch.map(c=>`<li><small>${c.d.slice(5)}</small> ${c.kind==='mode'?'🔀 ':''}${c.txt}</li>`).join('')}</ul>`:'<p class="note">No changes yet. Levels move after a few games.</p>'}
     <h4>Skills played recently</h4>${rows?`<div style="overflow-x:auto"><table class="eng-table"><tr><th>Skill</th><th>Now</th><th>Last change</th><th>Right first try</th></tr>${rows}</table></div>`:'<p class="note">Play a few games first.</p>'}`}
 function applyNums(){document.body.classList.toggle('nonum',S.settings&&S.settings.countNums===false)}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+/* once a child switch has begun, nothing may write the old child's progress over the new one while the page reloads */
+let FROZEN=false;
+function save(){if(FROZEN)return;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 /* ---- several children on one phone: the active child lives in KEY, the others are parked under KEY::id ---- */
 const KIDS_KEY='haathi-kids-v1';
 function kidsIdx(){let k=null;try{k=JSON.parse(localStorage.getItem(KIDS_KEY)||'null')}catch(e){}
@@ -67,8 +69,8 @@ function kidsIdx(){let k=null;try{k=JSON.parse(localStorage.getItem(KIDS_KEY)||'
   try{localStorage.setItem(KIDS_KEY,JSON.stringify(k))}catch(e){}return k}
 function parkActive(k){if(k.active&&S.profile){save();try{localStorage.setItem(KEY+'::'+k.active,JSON.stringify(S))}catch(e){}}}
 function switchKid(id){const k=kidsIdx();if(id===k.active)return;parkActive(k);let st=null;try{st=localStorage.getItem(KEY+'::'+id)}catch(e){}
-  if(!st)return;try{localStorage.setItem(KEY,st);k.active=id;localStorage.setItem(KIDS_KEY,JSON.stringify(k))}catch(e){}location.reload()}
-function addKid(){const k=kidsIdx();parkActive(k);try{localStorage.removeItem(KEY);k.active=null;localStorage.setItem(KIDS_KEY,JSON.stringify(k))}catch(e){}location.reload()}
+  if(!st)return;FROZEN=true;try{localStorage.setItem(KEY,st);k.active=id;localStorage.setItem(KIDS_KEY,JSON.stringify(k))}catch(e){}location.reload()}
+function addKid(){const k=kidsIdx();parkActive(k);FROZEN=true;try{localStorage.removeItem(KEY);k.active=null;localStorage.setItem(KIDS_KEY,JSON.stringify(k))}catch(e){}location.reload()}
 function removeKid(id){const k=kidsIdx();if(id===k.active)return;k.list=k.list.filter(x=>x.id!==id);try{localStorage.removeItem(KEY+'::'+id);localStorage.setItem(KIDS_KEY,JSON.stringify(k))}catch(e){}renderKids()}
 function renderKids(){const el=$('kids-list');if(!el)return;const k=kidsIdx();el.innerHTML='';
   k.list.forEach(c=>{const r=document.createElement('div');r.className='kidrow'+(c.id===k.active?' on':'');r.innerHTML=`<b>${(c.name||'Child').replace(/</g,'')} · age ${c.age}</b>`;
@@ -392,7 +394,7 @@ $('gate-ok').onclick=gateTry;$('gate-a').onkeydown=e=>{if(e.key==='Enter')gateTr
 $('btn-parent').onclick=()=>{FX.tap();openGate(()=>go('parent'))};
 
 /* ======================= START & SETUP ======================= */
-function renderStart(){$('start-haathi').innerHTML=haathi('happy');if(S.profile)$('cap-start').textContent=`Hi ${S.profile.name}! Turn the volume up.`}
+function renderStart(){r2Who();$('start-haathi').innerHTML=haathi('happy');if(S.profile)$('cap-start').textContent=`Hi ${S.profile.name}! Turn the volume up.`}
 function begin(){unlockAudio();FX.trumpet();if(!S.profile){go('setup');return}go('map');const nu=markDay();setTimeout(()=>say(['P_welcome',200,NEWUI?'P_nd_home':'P_map_hi'],null).then(()=>{if(nu)say(['P_dress'],`Haathi can now wear: ${nu.name}! Open the sticker book.`)}),600)}
 applyNums();loadHindi();$('btn-start').onclick=begin;$('btn-book').onclick=()=>{unlockAudio();FX.tap();openBook()};$('start-haathi').onclick=begin;
 $('kid-add').onclick=()=>{FX.tap();addKid()};
@@ -450,7 +452,7 @@ function scenery(id,W,y,h){let s='';for(let i=0;i<6;i++){const x=(i%2?W*.9:W*.1)
   else s+=`<path d="M${x-30} ${yy+18}L${x} ${yy-24}L${x+30} ${yy+18}Z" fill="#9fb7cf"/><path d="M${x-10} ${yy-10}L${x} ${yy-24}L${x+10} ${yy-10}Z" fill="#fff"/>`}return s}
 $('btn-go').onclick=()=>{unlockAudio();FX.tap();const c=curChapter();playChapterNode(c,curNodeIdx(c))};
 document.querySelectorAll('[data-corner]').forEach(b=>b.onclick=()=>{unlockAudio();FX.tap();openCorner(b.dataset.corner)});
-function playChapterNode(ch,i){const n=ch.nodes[i];syncNode(n);if(LGAMES[n.t])n.pool=S.intro.slice();const first=i===0&&n.stars==null;startRun(n,{chapter:ch.id,i,first})}
+function playChapterNode(ch,i){const n=ch.nodes[i];if(NEWUI&&i===0&&n.stars==null)gc('/adv/start','Adventure started');syncNode(n);if(LGAMES[n.t])n.pool=S.intro.slice();const first=i===0&&n.stars==null;startRun(n,{chapter:ch.id,i,first})}
 
 /* ======================= ACTIVITY RUNNER ======================= */
 let RUN=null;
@@ -473,8 +475,8 @@ const TITLES={tens:'Tens and ones',clock:'Telling time',tenmore:'10 more, 10 les
  maze:'Road maze',tracepic:'Trace a picture',drawshapes:'Draw with shapes',finishpic:'Finish the picture',wrainbow:'Rainbow writing',wheard:'Write what you hear',countwrite:'Count and write',wcopy:'Copy it',wlines:'Straight lines',joinmatch:'Join the pairs',colour:'Colouring',surprise:'Surprise!',
  move:'Move!',cards:'Picture cards',meet:'Meet a letter',bubbles:'Sound Bubbles',snack:"Haathi's Snack",count:'Count with me',numfind:'Number Balloons',more:'Which has more?',add:'Put them together',takeaway:'Monkey takes away',shape:'Shape Hunt',pattern:'What comes next?',dice:'Quick look',next:'Before and after',bigger:'Bigger number',missing:'Missing number',share:'Share fairly',shop:'Mela shop',length:'Long and short',
   wpre:'Draw patterns',wshape:'Draw shapes',wletter:'Write a letter',wcap:'Big letter',wnum:'Write a number',wname:'Write my name',wword:'Write a word',dots:'Dot-to-dot',slate:'Magic slate',friend:'A new friend!'};
-function startRun(n,from){
-  let rounds=n.rounds||ROUNDS[n.t]||(((S.profile&&S.profile.age)||4)<=3?5:DEFAULT_ROUNDS);if(SUBJ(n)==='write'&&rounds>2&&((S.fbPrefs.write||3)<=2||likeScore(n.t)<-.4))rounds=Math.max(2,rounds-1);if(n.t==='wname')rounds=Math.min(8,nameChars().length);
+function startRun(n,from){if(NEWUI)r2Prep(n,from);
+  let rounds=n.rounds||ROUNDS[n.t]||(((S.profile&&S.profile.age)||4)<=3?5:DEFAULT_ROUNDS);if(SUBJ(n)==='write'&&rounds>2&&((S.fbPrefs.write||3)<=2||likeScore(n.t)<-.4))rounds=Math.max(2,rounds-1);if(n.t==='wname')rounds=Math.min(8,nameChars().length);if(n.merge&&MERGE[n.merge]&&!MERGE[n.merge].run)rounds=Math.max(rounds,MERGE[n.merge].subs.length);if(NEWUI&&n.pid)gc('/g/'+n.pid+'/start','Game started: '+n.pid);
   RUN={node:n,from,round:0,rounds,ok:[],prompt:null};
   go('play');$('play-title').textContent=n.title||TITLES[n.t];$('actions').innerHTML='';$('cap').textContent='';$('play-body').innerHTML='';
   let delay=250;if(from.first&&!NEWUI){const ch=S.chapters.find(c=>c.id===from.chapter);say(ch&&ch.id%3===0?[REGIONS[ch.region].clip,200,'P_chapter']:['P_chapter'],null);delay=1700}
@@ -488,7 +490,7 @@ function stair(ok){const id=RUN.node.skill||RUN.node.t;const sk=SK[id];if(!sk||s
 function syncNode(n){const id=n.skill||n.t;const sk=SK[id];if(!sk||sk.levels.length<2||id.startsWith('d_'))return null;const f=sk.node(param(id));let changed=false;
   ['max','set','lvl'].forEach(k=>{if(f[k]!==undefined&&JSON.stringify(f[k])!==JSON.stringify(n[k])){n[k]=f[k];changed=true}});return changed}
 function nextRound(){if(!RUN)return;setRounds();$('actions').innerHTML='';const ch=syncNode(RUN.node);
-  if(ch&&RUN.stairMsg==='up'){FX.sparkle();const id=RUN.node.skill||RUN.node.t;$('cap').textContent='⭐ A bit harder now: '+SK[id].lab(param(id))}RUN.stairMsg=null;ACT[RUN.node.t](RUN.node,RUN.round)}
+  if(ch&&RUN.stairMsg==='up'){FX.sparkle();const id=RUN.node.skill||RUN.node.t;$('cap').textContent='⭐ A bit harder now: '+SK[id].lab(param(id))}RUN.stairMsg=null;if(RUN.node.merge)mergeRound(RUN.node,RUN.round);ACT[RUN.node.t](RUN.node,RUN.round)}
 function roundDone(ok){if(!RUN||RUN._lock===RUN.round)return;RUN._lock=RUN.round;RUN.ok.push(!!ok);stair(ok);RUN.round++;setRounds();if(RUN.round>=RUN.rounds)finishRun();else{const r=RUN;setTimeout(()=>{if(RUN===r)nextRound()},600)}}
 const learnN=(n,ok)=>{const id=n.skill||(SK[n.t]?n.t:(typeof READ_G!=='undefined'&&READ_G[n.t])?'read':null);if(id)learn(id,ok)};
 function finishRun(){
@@ -530,7 +532,7 @@ ACT.meet=(n)=>{const l=n.l,[w,pic]=KEYW(l);
 function sayTurn(l,w){sayTurn.on=true;
   const turn=()=>say(hasRec(l)?['P_say_with_me',300,'R_'+l,500,'R_'+l,500,'P_your_turn']:['P_say_first',300,W(w),500,'P_your_turn'],hasRec(l)?`Say it with me: ${SHOW[l]}! Your turn!`:`Say the first sound of "${w}" together. Your turn!`);
   RUN.prompt=turn;turn();
-  actions([['soft','Again',turn],['star','Said it!',()=>{S.said=(S.said||0)+1;save();burst($('actions'),16);FX.chime();say(['P_great_saying'],'Wonderful saying!').then(()=>roundDone(true))}],['soft','Skip',()=>roundDone(true)]]);
+  actions([['soft','Again',turn],...sayItAct(hasRec(l)?['R_'+l]:[W(w)],w),['star','Said it!',()=>{S.said=(S.said||0)+1;save();burst($('actions'),16);FX.chime();say(['P_great_saying'],'Wonderful saying!').then(()=>roundDone(true))}],['soft','Skip',()=>roundDone(true)]]);
 }
 ACT.bubbles=(n)=>{const pool=S.intro.length?S.intro:(n.pool&&n.pool.length?n.pool:['s']);
   const weak=n.focus&&pool.includes(n.focus)&&rec(n.focus).att.length>=2&&accuracy(n.focus)<.7;const t=weak&&Math.random()<.25?n.focus:deck('bub',pool);const cw=rnd(WORDS[t]);
@@ -1520,7 +1522,7 @@ ACT.cards=(n,round)=>{const sc=DSEC[n.sec];if(!n._ord)n._ord=shuffle(sc.items.ma
   let x0=null,moved=false;c.onpointerdown=e=>{x0=e.clientX;moved=false};c.onpointermove=e=>{if(x0!=null&&Math.abs(e.clientX-x0)>12){moved=true;c.style.transform=`translateX(${e.clientX-x0}px) rotate(${(e.clientX-x0)/20}deg)`}};
   c.onpointerup=c.onpointercancel=e=>{const dx=x0==null?0:e.clientX-x0;x0=null;c.style.transform='';if(Math.abs(dx)>60)next()};
   c.onclick=()=>{if(moved)return;FX.tap();anim(c,'bumpn',300);say([DN(k),...(snd?[300,'SND_'+k]:[])],it.n)};
-  actions([['soft','Hear again',()=>RUN.prompt()],['go','Next card',next,ICON.next]])};
+  actions([['soft','Hear again',()=>RUN.prompt()],...sayItAct([DN(k)],it.n),['go','Next card',next,ICON.next]])};
 function cardNode(id,g){const sc=DSEC[id];const n={sec:id,skill:'d_'+id,title:sc.name};
   if(g==='cards')return Object.assign(n,{t:'cards',rounds:Math.min(12,sc.items.length),title:sc.name+': Picture cards'});
   return Object.assign(dNode(id,g),{title:sc.name+': '+{find:'Find the card',memory:'Memory cards',sound:'Whose voice?'}[g]})}
@@ -1710,10 +1712,11 @@ function renderParent(){renderKids();renderProgress();S.unseen=0;save();badge();
     const chip=!un?'<span class="chip locked">locked</span>':!s||!s.n?'<span class="chip new">not tried</span>':s.p>=.75?'<span class="chip strong">strong</span>':s.p<.55?'<span class="chip weak">practising</span>':'';
     return `<tr><td>${SK[id].sub}: ${SK[id].name}${chip}</td><td>${SK[id].lab(param(id))}</td><td>${s&&s.n?`<div class="bar"><i style="width:${Math.round(s.p*100)}%"></i></div>${Math.round(s.p*100)}% · ${s.n} tries`:'–'}</td></tr>`}).join('');
   $('p-map').innerHTML=ORDER.map(l=>{const st=S.intro.includes(l)||S.intro.includes(SAME[l])?status(l):'none',lab={none:S.intro.includes(l)?'met':'not yet',prac:'practising',mast:'mastered',due:'review'}[st];return `<div class="scell st-${st}"><div class="l">${l}</div><div class="s">${lab}</div></div>`}).join('');
-  $('ps-name').value=S.profile.name;$('ps-age').value=S.profile.age;$('ps-limit').value=S.profile.limit;$('ps-sfx').checked=S.settings.sfx!==false;$('ps-countnums').checked=S.settings.countNums!==false;$('ps-moves').checked=S.settings.moves!==false;$('ps-automode').checked=S.settings.autoMode!==false;$('ps-lang').value=S.settings.lang||'en';$('ps-unlock').checked=!!S.settings.unlock;$('ps-consent').checked=!!S.settings.consent;{const nn=$('nd-note');if(nn){nn.hidden=!ndNote();$('nd-note-ok').onclick=()=>{try{localStorage.setItem('haathi-nd-note','seen')}catch(e){}nn.hidden=true;badge()}}}['letters','numbers','writing','discover'].forEach(k=>{$('ps-m-'+k).value=modeOf(k)});renderLikes();
+  $('ps-name').value=S.profile.name;$('ps-age').value=S.profile.age;$('ps-limit').value=S.profile.limit;$('ps-sfx').checked=S.settings.sfx!==false;$('ps-countnums').checked=S.settings.countNums!==false;$('ps-moves').checked=S.settings.moves!==false;$('ps-automode').checked=S.settings.autoMode!==false;$('ps-lang').value=S.settings.lang||'en';$('ps-unlock').checked=!!S.settings.unlock;$('ps-consent').checked=!!S.settings.consent;$('ps-mic').checked=!!S.settings.mic;$('ps-tilt').checked=S.settings.tilt!==false;{const nn=$('nd-note');if(nn){nn.hidden=!ndNote();$('nd-note-ok').onclick=()=>{try{localStorage.setItem('haathi-nd-note','seen')}catch(e){}nn.hidden=true;badge()}}}['letters','numbers','writing','discover'].forEach(k=>{$('ps-m-'+k).value=modeOf(k)});renderLikes();
   renderStudio();resetZone();renderFeedback()}
 $('ps-save').addEventListener('click',()=>setTimeout(()=>{kidsIdx();renderKids()},0));
-$('ps-save').onclick=()=>{S.profile.name=$('ps-name').value.trim()||S.profile.name;const oldAge=S.profile.age;S.profile.age=+$('ps-age').value;if(S.profile.age!==oldAge)placeByAge();S.profile.limit=+$('ps-limit').value;S.settings.sfx=$('ps-sfx').checked;S.settings.countNums=$('ps-countnums').checked;S.settings.moves=$('ps-moves').checked;S.settings.autoMode=$('ps-automode').checked;S.settings.lang=$('ps-lang').value;loadHindi();applyNums();S.settings.unlock=$('ps-unlock').checked;S.settings.consent=$('ps-consent').checked;
+$('ps-save').onclick=()=>{S.profile.name=$('ps-name').value.trim()||S.profile.name;const oldAge=S.profile.age;S.profile.age=+$('ps-age').value;if(S.profile.age!==oldAge)placeByAge();S.profile.limit=+$('ps-limit').value;S.settings.sfx=$('ps-sfx').checked;S.settings.countNums=$('ps-countnums').checked;S.settings.moves=$('ps-moves').checked;S.settings.autoMode=$('ps-automode').checked;S.settings.lang=$('ps-lang').value;loadHindi();applyNums();S.settings.unlock=$('ps-unlock').checked;S.settings.consent=$('ps-consent').checked;S.settings.tilt=$('ps-tilt').checked;
+  {const want=$('ps-mic').checked;if(want&&!S.settings.mic&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){navigator.mediaDevices.getUserMedia({audio:true}).then(st=>{st.getTracks().forEach(t=>t.stop());S.settings.mic=true;save()}).catch(()=>{S.settings.mic=false;save();const c=$('ps-mic');if(c)c.checked=false})}else S.settings.mic=want&&!!S.settings.mic}
   ['letters','numbers','writing','discover'].forEach(k=>{const v=+$('ps-m-'+k).value,was=modeOf(k);if(v!==was){setMode(k,v);if(S.tierLog)S.tierLog[k]=[];logChange(k,was,v,'mode',`${{letters:'Letters',numbers:'Numbers',writing:'Writing',discover:'Discover'}[k]} set to ${MODE_NAMES[v]} by a grown-up.`);S.unseen=0}});
   save();$('ps-saved').hidden=false;setTimeout(()=>$('ps-saved').hidden=true,1600)};
 function resetZone(){const z=$('reset-zone');z.innerHTML='<button class="pill-btn danger" id="p-reset">Reset all progress</button>';
@@ -1787,7 +1790,7 @@ refreshInstall();
 /* One Play button, a 5-stop daily adventure and a Library with four doors. Off by default: switch it on in Grown-ups,
    or open the app with ?new=1. The classic map and corners are untouched and read the same saved progress. */
 const ND_ICO={};Object.keys(CORNER).forEach(k=>CORNER[k].forEach(([id,,ico])=>ND_ICO[id]=ico));Object.keys(READ_G).forEach(g=>ND_ICO[g]=READ_G[g][1]);
-function ndIcon(n){if(n.t==='move')return '🤸';if(n.t==='meet')return n.l;if((n.t==='cards'||n.t.startsWith('d_'))&&DSEC[n.sec])return DSEC[n.sec].icon;return ND_ICO[n.skill]||ND_ICO[n.t]||nodeIcon(n)}
+function ndIcon(n){if(n.t==='move')return '🤸';{const r=r2Icon(n);if(r)return r}if(n.t==='meet')return n.l;if((n.t==='cards'||n.t.startsWith('d_'))&&DSEC[n.sec])return DSEC[n.sec].icon;return ND_ICO[n.skill]||ND_ICO[n.t]||nodeIcon(n)}
 /* the daily adventure: world warm-up, letters or numbers, a movement stop, the other subject, then something to make */
 function composeAdv(carry){
   const idx=S.chapters.length,reasons=[];
@@ -1804,7 +1807,8 @@ function composeAdv(carry){
   if(newL){L={t:'meet',l:newL};reasons.push(`New letter: ${newL} (${KEYW(newL)[0]})`)}
   else{L={t:pickLetterGame(),focus:weakestLetter(),pool:S.intro.slice()};reasons.push(READ_G[L.t]?`Reading: ${READ_G[L.t][0]}`:`Letter practice: ${L.focus} (${Math.round(accuracy(L.focus)*100)}% right lately)`)}
   const maths=Object.keys(SK).filter(id=>SK[id].sub==='Maths'&&inPlay('numbers',id)).sort((a,b)=>score(b)-score(a));
-  const mid=maths[0]||'count';const M=Object.assign(SK[mid].node(param(mid)),{skill:mid});reasons.push(why(mid));
+  const mid=maths[0]||'count';let M=Object.assign(SK[mid].node(param(mid)),{skill:mid});
+  if(modeOf('numbers')<=1&&idx%4===1){M={t:modeOf('numbers')?'race20':'race'};reasons.push('Number path race: a board game for number order')}else reasons.push(why(mid));
   /* stop 5: write the letter of the day, or another writing game, turn by turn */
   let W;const wOther=Object.keys(SK).filter(id=>SK[id].sub==='Writing'&&id!=='wletter'&&inPlay('writing',id)).sort((a,b)=>score(b)-score(a))[0];
   if(newL||idx%2===0||!wOther){W=modeOf('writing')===2?{t:'wcopyword',skill:'wcopyword'}:{t:'wletter',l:newL||weakestLetter(true),skill:'wletter'};reasons.push(W.l?`Write the letter ${W.l}`:'Copy a word')}
@@ -1856,12 +1860,13 @@ function openShelf(kind,speak){go('corner');const b=$('corner-body');b.innerHTML
   if(kind==='world'){const dm=modeOf('discover');const ids=DSC.sections.filter(s=>tierOf('discover',s.id)===dm).map(s=>s.id);DSC.sections.forEach(s=>{if(tierOf('discover',s.id)<dm&&!ids.includes(s.id))ids.push(s.id)});CARD_DECKS.forEach(id=>{if(DSEC[id]&&!ids.includes(id))ids.push(id)});
     items=ids.map(id=>({id:'d_'+id,ico:DSEC[id].icon,label:DSEC[id].name,n:(S.sk['d_'+id]&&S.sk['d_'+id].n)||0,run:()=>{say(['SEC_'+id],null);openDiscover(id)}}))}
   else{const kinds=kind==='make'?['writing']:['letters','numbers'];
-    kinds.forEach(k=>{const m=modeOf(k);const all=k==='letters'?[...CORNER.letters,...Object.keys(READ_G).map(g=>[g,...READ_G[g]])]:CORNER[k];
-      all.filter(([id])=>tierOf(k,id)===m&&!cornerLocked(id)).forEach(([id,label,ico])=>items.push({id,ico,label,n:ndPlays(id),col:COL_OF[k],run:()=>startRun(cornerNode(id,k),{corner:k})}))})}
+    const seenTile={};kinds.forEach(k=>{const m=modeOf(k);const all=k==='letters'?[...CORNER.letters,...Object.keys(READ_G).map(g=>[g,...READ_G[g]])]:CORNER[k];
+      all.filter(([id])=>tierOf(k,id)===m&&!cornerLocked(id)).forEach(([id,label,ico])=>{const t=r2Tile(id,label,ico);if(seenTile[t.key])return;seenTile[t.key]=1;items.push({id:t.key,ico:t.ico,label:t.label,n:ndPlays(t.key),col:COL_OF[k],run:()=>startRun(cornerNode(id,k),{corner:k})})})})}
   const fav=items.filter(x=>x.n>0).sort((a,c)=>c.n-a.n),nw=items.filter(x=>x.n===0);
   const pages=Math.max(1,Math.ceil(items.length/8));const p=(ND_PAGE[kind]||0)%pages;
-  let show=[...fav.slice(p*4,p*4+4).map(x=>Object.assign(x,{tag:'❤️'})),...nw.slice(p*4,p*4+4).map(x=>Object.assign(x,{tag:'✨'}))];
-  if(show.length<8){const rest=items.filter(x=>!show.includes(x));const off=(p*8)%Math.max(1,rest.length);for(let i=0;i<rest.length&&show.length<8;i++)show.push(Object.assign(rest[(off+i)%rest.length],{tag:rest[(off+i)%rest.length].n?'❤️':'✨'}))}
+  /* every page has up to four favourites and four new games; every game sits on exactly one page */
+  const fq=fav.slice(),nq=nw.slice(),pg=[];for(let i=0;i<pages;i++){const s=[...fq.splice(0,4),...nq.splice(0,4)];while(s.length<8&&(fq.length||nq.length))s.push(fq.length?fq.shift():nq.shift());pg.push(s)}
+  const show=pg[p].map(x=>Object.assign(x,{tag:x.n?'❤️':'✨'}));
   const g=document.createElement('div');g.className='tiles nd-shelf';b.appendChild(g);
   show.forEach(x=>{const t=document.createElement('button');t.className='tile nd';const len=[...x.ico].length;
     t.innerHTML=`<div class="ico" style="${x.col?'color:'+x.col+';':''}font-size:${len>3?22:len>1&&x.col?30:44}px">${x.ico}</div><span>${x.label}</span><i class="nd-tag" aria-hidden="true">${x.tag}</i>`;
@@ -1880,24 +1885,27 @@ function backFrom(f){f=f||{};
 
 /* ---- after a game: one cheer, one button. Stars are still counted for the engine and for Grown-ups, but the child sees a path filling up ---- */
 function finishND(run,stars,chDone){const n=run.node,box=$('reward-box'),adv=run.from.chapter!=null;
-  S.plays=S.plays||{};S.plays[n.t]=(S.plays[n.t]||0)+1;
-  /* meeting a letter is not a test, so it does not push Easy/Medium/Hard up */
-  if(n.t!=='move'&&n.t!=='friend'&&n.t!=='meet')modeSuggest(n,stars,document.createElement('div'));
+  const pid=n.pid||n.t;S.plays=S.plays||{};S.plays[pid]=(S.plays[pid]||0)+1;gc('/g/'+pid+'/done','Game finished: '+pid);if(chDone)gc('/adv/done','Adventure finished');
+  /* meeting a letter and the board game are not tests, so they do not push Easy/Medium/Hard up */
+  if(n.t!=='move'&&n.t!=='friend'&&n.t!=='meet'&&n.t!=='race'&&n.t!=='race20')modeSuggest(n,stars,document.createElement('div'));
   if(chDone){S.advDone=today();S.advCount=(S.advCount||0)+1}
   save();sync(false);RUN=null;
   if(n.t==='move'&&!chDone){go('path');return}
   const ch=adv?S.chapters.find(c=>c.id===run.from.chapter):null;const stk=chDone?awardSticker():null;
   box.innerHTML=chDone?`<div class="nd-fin" aria-hidden="true">🎉</div><div class="nd-stk">${stk}</div><h3>New sticker!</h3><div class="haathi" style="width:120px;height:128px">${haathi('happy')}</div><p class="note">Tap Haathi on the home screen to open the sticker book.</p>`
     :`<div class="haathi" style="width:150px;height:160px">${haathi('happy')}</div><h3>${stars===3?'Superstar!':stars===2?'Great job!':'Well tried!'}</h3>${ch?`<div class="nd-dots big">${ndDots(ch)}</div>`:''}`;
-  if(n.t!=='move'){const fq=document.createElement('div');fq.innerHTML='<div class="faces"><button data-f="up" aria-label="Loved it">😀</button><button data-f="mid" aria-label="Okay">😐</button><button data-f="down" aria-label="Did not like">🙁</button></div>';
-    fq.querySelectorAll('button').forEach(b=>b.onclick=()=>{fq.querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');FX.tap();const L=S.likes[n.t]||(S.likes[n.t]={up:0,mid:0,down:0});if(fq.dataset.v)L[fq.dataset.v]--;L[b.dataset.f]++;fq.dataset.v=b.dataset.f;save()});box.appendChild(fq)}
+  /* in an adventure the child is asked once, at the end, which stop was the best; free play keeps the three faces */
+  if(chDone&&ch){const bq=document.createElement('div');bq.className='nd-best';bq.innerHTML='<p class="faces-q">Which stop did you like best?</p><div class="faces">'+ch.nodes.map((x,i)=>x.t==='move'?'':`<button data-i="${i}" aria-label="Stop ${i+1}">${ndIcon(x)}</button>`).join('')+'</div>';
+    bq.querySelectorAll('button').forEach(b=>b.onclick=()=>{if(bq.dataset.v!=null)return;bq.dataset.v=b.dataset.i;b.classList.add('on');FX.tap();likeIds(ch.nodes[+b.dataset.i]).forEach(id=>{const L=S.likes[id]||(S.likes[id]={up:0,mid:0,down:0});L.up++});save()});box.appendChild(bq)}
+  if(n.t!=='move'&&!adv){const fq=document.createElement('div');fq.innerHTML='<div class="faces"><button data-f="up" aria-label="Loved it">😀</button><button data-f="mid" aria-label="Okay">😐</button><button data-f="down" aria-label="Did not like">🙁</button></div>';
+    fq.querySelectorAll('button').forEach(b=>b.onclick=()=>{fq.querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');FX.tap();likeIds(n).forEach(id=>{const L=S.likes[id]||(S.likes[id]={up:0,mid:0,down:0});if(fq.dataset.v)L[fq.dataset.v]--;L[b.dataset.f]++});fq.dataset.v=b.dataset.f;save()});box.appendChild(fq)}
   const row=document.createElement('div');row.className='row';
   const mk=(cls,html,label,fn)=>{const x=document.createElement('button');x.className='big-btn '+cls+' nd-big';x.innerHTML=html;x.setAttribute('aria-label',label);x.onclick=()=>{FX.tap();$('reward').hidden=true;fn()};row.appendChild(x)};
   if(chDone)mk('go','🏠','Home',()=>{go('home');say(['P_nd_seeyou'],null)});
   else if(adv)mk('go',ICON.next.replace('currentColor','#fff'),'Next stop',()=>go('path'));
   else{mk('soft',ICON.back,'Back',()=>backFrom(run.from));mk('go','↻','Play again',()=>startRun(n,run.from))}
   box.appendChild(row);$('reward').hidden=false;confetti();FX.fanfare();
-  say(chDone?[500,'P_nd_done']:[500,rnd(PRAISE_EN)],null)}
+  say(chDone?[500,'P_nd_done',700,'P_nd_best']:[500,rnd(PRAISE_EN)],null)}
 
 /* ---- help: after two misses the right answer glows and a hand points at it; the first time a game is met, the hand shows the first answer ---- */
 function ndHand(el,ms){if(!el||!document.body.contains(el))return;let h=$('nd-hand');if(!h){h=document.createElement('div');h.id='nd-hand';h.textContent='👆';h.setAttribute('aria-hidden','true');document.body.appendChild(h)}
@@ -1905,11 +1913,164 @@ function ndHand(el,ms){if(!el||!document.body.contains(el))return;let h=$('nd-ha
 function ndHint(el,float){if(!el)return;el.classList.add(float?'nd-hintb':'nd-hint');if(!float)ndHand(el)}
 function ndFirstTime(){if(!NEWUI||!RUN||RUN.round!==0)return false;const t=RUN.node.t;S.demo=S.demo||{};if(S.demo[t])return false;S.demo[t]=1;save();return true}
 
+/* ======================= RELEASE 2: merged games, tile games, three new games ======================= */
+/* Look-alike games fold into one game that mixes its questions. The old games stay in the code as the question makers. */
+const MERGE={
+ piclet:{t:'Picture and letter',ico:'🐍s',subs:['picletter','letterpic']},
+ twins:{t:'Letter twins',ico:'Aa',subs:['bigsmall','sameletter']},
+ detective:{t:'Letter detective',ico:'🔎',subs:['shadow','hidden']},
+ abctrain:{t:'Alphabet train',ico:'🚂',subs:['nextletter','missingletter']},
+ readmatch:{t:'Read and match',ico:'📖',subs:['readpic','picword']},
+ countall:{t:'Count with me',ico:'123',subs:['count','countshapes']},
+ morefewer:{t:'More or fewer?',ico:'<>',subs:['more','fewer']},
+ compare:{t:'Compare it',ico:'⚖️',subs:['size','heavy','length']},
+ bigsmallnum:{t:'Bigger or smaller',ico:'9>4',subs:['bigger','smaller']},
+ neighbours:{t:'Number neighbours',ico:'4_6',subs:['next','missing']},
+ hops:{t:'Skip-count hops',ico:'🐸',subs:['frog','skip']},
+ mela:{t:'Mela shop',ico:'₹',subs:['shop','money']},
+ tenssums:{t:'Tens sums',ico:'±10',subs:['add2','sub2']},
+ strokes:{t:'First strokes',ico:'〰',run:1,subs:['wlines','wpre']},
+ shapesdraw:{t:'Shapes',ico:'□',run:1,subs:['wshape','drawshapes']},
+ letters3:{t:'Small letters',ico:'✎a',run:1,subs:['wletter','wrainbow','wsurface','wcopy']},
+ hearwrite:{t:'Hear it, write it',ico:'👂✎',subs:['wheard','wfirst']}
+};
+const MERGE_OF={};Object.keys(MERGE).forEach(g=>MERGE[g].subs.forEach(s=>MERGE_OF[s]=g));
+/* five finger-writing games become tile games */
+const REPL={wcopyword:['wtiles','copy','Build the word','🔡'],wnumword:['wtiles','num','Number words','3=three'],wplural:['wtiles','plural','One and many','cats'],wsentence:['sentbuild','','Sentence builder','🧩'],wcapname:['sentbuild','','Sentence builder','🧩']};
+const kindOfId=id=>TIER.letters[id]!=null?'letters':TIER.numbers[id]!=null?'numbers':'writing';
+TIER.letters.roll=0;LGAMES.roll=()=>true;CORNER.letters.push(['roll','Roll the ladoo','🟠']);
+TIER.numbers.race=0;TIER.numbers.race20=1;CORNER.numbers.push(['race','Number path race','🎲'],['race20','Number path to 20','🎲20']);
+Object.assign(ROUNDS,{wtiles:4,sentbuild:3,race:1,race20:1,roll:5});
+Object.assign(TITLES,{wtiles:'Build the word',sentbuild:'Sentence builder',race:'Number path race',race20:'Number path to 20',roll:'Roll the ladoo'});
+Object.assign(ND_ICO,{roll:'🟠',race:'🎲',race20:'🎲',wtiles:'🔡',sentbuild:'🧩'});
+function r2Tile(id,label,ico){const g=MERGE_OF[id];if(g)return {key:g,label:MERGE[g].t,ico:MERGE[g].ico};if(REPL[id])return {key:REPL[id][0]==='sentbuild'?'sentbuild':id,label:REPL[id][2],ico:REPL[id][3]};return {key:id,label,ico}}
+function r2Icon(n){const g=n.merge||MERGE_OF[n.t];if(g&&MERGE[g])return MERGE[g].ico;if(REPL[n.t])return REPL[n.t][3];if(n.t==='wtiles')return n.skill&&REPL[n.skill]?REPL[n.skill][3]:'🔡';return null}
+/* called when a game starts: swap in the tile game, or mark the game as part of a merged one */
+const mergeSubs=g=>{const subs=g.subs.filter(s=>{const k=kindOfId(s);return tierOf(k,s)<=modeOf(k)&&!cornerLocked(s)});return subs.length?subs:[g.subs[0]]};
+function r2Prep(n,from){
+  if(REPL[n.t]){const r=REPL[n.t];n.pid=r[0]==='sentbuild'?'sentbuild':n.t;n.skill=n.skill||n.t;n.variant=r[1];n.title=r[2];n.t=r[0];delete n.rounds}
+  if(MERGE_OF[n.t]&&!n.merge){n.merge=MERGE_OF[n.t];n._first=n.t}
+  if(n.merge){const g=MERGE[n.merge];
+    /* writing games that fade their help over three rounds stay whole: from the shelf the tile plays a different one each time; an adventure keeps the one it chose */
+    if(g.run&&from&&from.chapter==null){const subs=mergeSubs(g),sub=subs[ndPlays(n.merge)%subs.length];if(sub!==n.t){const keep={merge:n.merge,_first:n._first};Object.keys(n).forEach(k=>delete n[k]);Object.assign(n,cornerNode(sub,kindOfId(sub)),keep)}}
+    n.title=g.t;n.pid=n.merge}
+  if(!n.pid)n.pid=n.t}
+/* each round of a merged game takes the next kind of question, at the child's current level for that kind */
+function mergeRound(n,round){const g=MERGE[n.merge];if(!g||g.run)return;const subs=mergeSubs(g);
+  let i=subs.indexOf(n._first);if(i<0)i=0;const sub=subs[(round+i)%subs.length];
+  if(round===0&&sub===n.t)return;
+  const keep={merge:n.merge,_first:n._first,title:n.title,stars:n.stars,pid:n.pid};Object.keys(n).forEach(k=>delete n[k]);Object.assign(n,cornerNode(sub,kindOfId(sub)),keep);RUN.startLvl=null;RUN.c2=0}
+const likeIds=x=>x.merge&&MERGE[x.merge]?MERGE[x.merge].subs:[x.skill&&REPL[x.skill]?x.skill:x.t];
+
+/* ---- word tiles: tap the letters in order. Used for copying a word, number words and plurals ---- */
+function tileWord(o){const w=o.w,pre=o.pre||0;let pos=pre,wrong=false,miss=0;
+  if(window.__TRACE)window.__TRACE.push({g:'wtiles',cap:o.cap,items:o.tiles.slice(),ans:w});
+  body().innerHTML=`${o.header?`<div class="tw-head">${o.header}</div>`:''}<div class="slots tw">${[...w].map((c,i)=>`<span class="slot">${i<pre?c:''}</span>`).join('')}</div><div class="tiles2" id="tl"></div>`;
+  o.tiles.forEach(c=>{const b=document.createElement('button');b.className='ltile'+(c.length>1?' wt':'');b.textContent=c;
+    b.onclick=()=>{if(b.disabled||pos>=w.length)return;
+      if(w.startsWith(c,pos)){b.disabled=true;b.classList.remove('nd-hint');b.classList.add('used');const sl=body().querySelectorAll('.slot');[...c].forEach((ch,k)=>{sl[pos+k].textContent=ch});pos+=c.length;FX.tick(pos);
+        if(pos>=w.length){FX.chime();burst(body().querySelector('.slots'),16);o.onDone(!wrong)}}
+      else{wrong=true;miss++;FX.boing();anim(b,'wiggle',500);if(NEWUI&&miss>=2)ndHint([...$('tl').children].find(x=>!x.disabled&&w.startsWith(x.textContent,pos)));say(['P_listen_again',...(o.again||[])],'Try another tile.')}};
+    $('tl').appendChild(b)});
+  RUN.prompt=()=>say(o.intro,o.cap);RUN.prompt()}
+ACT.wtiles=(n)=>{const v=n.variant||'copy';const L=once(ok=>learnN(n,ok));const extra=(w,k)=>others(ALPHA.filter(c=>!w.includes(c)),'',k);
+  if(v==='num'){const num=deck('nw',range(1,10)),w=NUMW[num];
+    tileWord({w,header:bigShow(numH(num)),tiles:shuffle([...w,...extra(w,2)]),intro:['P_hw_numword',300,N(num),300,'P_tile_build'],again:[N(num)],cap:`Build the word for ${num}`,onDone:ok=>{L(ok);say([N(num),250,rnd(PRAISE)],`${num}: ${w}`).then(()=>roundDone(ok))}});return}
+  if(v==='plural'){const w=deck('pl',PLURAL),p=w+'s',full=lv('wplural')>=1;
+    tileWord({w:p,pre:full?0:w.length,header:`<div style="display:flex;gap:18px;align-items:center;justify-content:center;font-family:var(--f-letter);font-weight:700;font-size:clamp(20px,5.6vw,28px)"><div style="text-align:center"><div style="font-size:1.8em">${RB[w]}</div>one ${w}</div><div style="text-align:center"><div style="font-size:1.8em">${RB[w]}${RB[w]}</div>two ?</div></div>`,
+      tiles:full?shuffle([...p,...extra(p,2)]):shuffle(['s','es','ing']),intro:['P_hw_plural',300,W(w)],again:[W(w)],cap:`One ${w}, two ...? ${full?'Build the word.':'Tap the ending.'}`,onDone:ok=>{L(ok);say(['W_'+p,250,rnd(PRAISE)],`two ${p}!`).then(()=>roundDone(ok))}});return}
+  const pool=ageR()>=6?RWORDS.filter(x=>x.length<=(lv('read')>=1?5:4)):Object.keys(CVCE);const w=deck('cw'+pool.length,pool);
+  tileWord({w,header:`<div style="display:flex;align-items:center;gap:12px;justify-content:center"><span style="font-size:clamp(40px,11vw,60px)">${RB[w]||CVCE[w]||''}</span>${wordH(w,'clamp(32px,9vw,48px)')}</div>`,tiles:shuffle([...w,...extra(w,2)]),intro:['P_copy_word',300,W(w),300,'P_tile_build'],again:[W(w)],cap:`Build the word "${w}"`,onDone:ok=>{L(ok);say([W(w)],w+'!').then(()=>roundDone(ok))}})};
+
+/* ---- sentence builder: word tiles in order, then the capital letter, then the full stop ---- */
+ACT.sentbuild=(n)=>{const si=deck('sb',CSENT.map((_,i)=>i)),words=CSENT[si].split(' '),low=words.map((x,i)=>i===0&&x!=='I'?x.toLowerCase():x);const L=once(ok=>learnN(n,ok));let pos=0,wrong=false,miss=0,step=0;
+  if(window.__TRACE)window.__TRACE.push({g:'sentbuild',cap:CSENT[si],items:low.slice(),ans:CSENT[si]+'.'});
+  body().innerHTML=`<button class="pill-btn hearbtn" id="bh" style="position:static;transform:none">${ICON.ear} Hear it</button><div class="slots sb" id="sbs"></div><div class="tiles2" id="tl"></div>`;
+  const slots=$('sbs');const hear=()=>say(['CSN_'+si],'Listen, then put the words in order.');$('bh').onclick=()=>{FX.tap();hear()};
+  shuffle(low.map(x=>x)).forEach(x=>{const b=document.createElement('button');b.className='ltile wt';b.textContent=x;
+    b.onclick=()=>{if(b.disabled||step)return;
+      if(x===low[pos]){b.disabled=true;b.classList.remove('nd-hint');b.classList.add('used');const s=document.createElement('button');s.className='ltile wt placed';s.textContent=x;slots.appendChild(s);pos++;FX.tick(pos);if(pos===low.length)capStep()}
+      else{wrong=true;miss++;FX.boing();anim(b,'wiggle',500);if(NEWUI&&miss>=2)ndHint([...$('tl').children].find(y=>!y.disabled&&y.textContent===low[pos]));say(['P_listen_again','CSN_'+si],'Listen again.')}};
+    $('tl').appendChild(b)});
+  function capStep(){step=1;const first=slots.firstChild;$('tl').innerHTML='';if(low[0]===words[0]){stopStep();return}
+    say(['P_sb_cap'],'A sentence starts with a big letter. Tap the first word.');if(NEWUI)ndHint(first);
+    first.onclick=()=>{if(step!==1)return;first.textContent=words[0];first.classList.remove('nd-hint');FX.chime();stopStep()};
+    [...slots.children].slice(1).forEach(o=>{o.onclick=()=>{if(step===1){wrong=true;FX.boing();anim(o,'wiggle',500)}}})}
+  function stopStep(){step=2;say(['P_sb_stop'],'Now add the full stop.');
+    ['.','?',','].forEach(c=>{const b=document.createElement('button');b.className='ltile';b.textContent=c;b.setAttribute('aria-label',c==='.'?'full stop':c==='?'?'question mark':'comma');
+      b.onclick=()=>{if(step!==2)return;if(c==='.'){step=3;const s=document.createElement('span');s.className='ltile wt placed';s.textContent='.';slots.appendChild(s);b.disabled=true;FX.chime();burst(slots,16);L(!wrong);say([300,'CSN_'+si,250,rnd(PRAISE)],CSENT[si]+'.').then(()=>roundDone(!wrong))}
+        else{wrong=true;FX.boing();anim(b,'wiggle',500)}};$('tl').appendChild(b)})}
+  RUN.prompt=hear;say(['P_sb_order',300,'CSN_'+si],'Listen, then put the words in order.')};
+
+/* ---- number path race: a numbered board game against Haathi. Moving and saying the numbers is the point; nobody is marked down for losing ---- */
+ACT.race=(n)=>{const max=n.max||10,spinMax=max>10?3:2;let me=0,h=0,busy=false,over=false;
+  body().innerHTML=`<div class="rc-wrap"><div class="rc-col${max>10?' big':''}"><div class="rc-starts"><span id="rc-s0">⭐</span><span id="rc-s1">🐘</span></div><div class="rc-board${max>10?' big':''}" id="rcb">${range(1,max).map(v=>`<div class="rc-sq${v===max?' end':''}" data-n="${v}"><b>${v}</b></div>`).join('')}</div></div><button class="rc-spin" id="rcs" aria-label="Spin">?</button></div>`;
+  const sq=v=>body().querySelector(`.rc-sq[data-n="${v}"]`);const live=()=>RUN&&RUN.node===n&&document.body.contains($('rcb'));
+  const place=()=>{body().querySelectorAll('.rc-tok').forEach(x=>x.remove());$('rc-s0').style.visibility=me?'hidden':'visible';$('rc-s1').style.visibility=h?'hidden':'visible';
+    if(me)sq(me).insertAdjacentHTML('beforeend','<span class="rc-tok" aria-label="You">⭐</span>');if(h)sq(h).insertAdjacentHTML('beforeend','<span class="rc-tok h" aria-label="Haathi">🐘</span>')};
+  const move=async(who,steps)=>{for(let k=0;k<steps;k++){if(!live())return;if((who?h:me)>=max)break;if(who)h++;else me++;const v=who?h:me;place();anim(sq(v),'bumpn',300);FX.tick(v);await sayRaw([N(v)],String(v));await sleep(220)}};
+  const spinTo=v=>{const b=$('rcs');b.textContent=v;anim(b,'rcturn',600)};
+  const end=win=>{over=true;if(win){FX.fanfare&&FX.chime();burst($('rcb'),18)}sayRaw([win?'P_race_win':'P_race_lose'],win?'You got there first! You win!':'I got there first this time. Well played!').then(()=>{if(live())roundDone(true)})};
+  $('rcs').onclick=async()=>{if(busy||over)return;busy=true;$('rcs').disabled=true;const v=ri(1,spinMax);spinTo(v);await sleep(650);await move(0,v);if(!live())return;if(me>=max){end(true);return}
+    await sayRaw(['P_race_me'],'My turn!');if(!live())return;const hv=Math.random()<.6?1:ri(1,spinMax);spinTo(hv);await sleep(650);await move(1,hv);if(!live())return;if(h>=max){end(false);return}
+    busy=false;$('rcs').disabled=false;say(['P_race_you'],'Your turn! Tap the spinner.')};
+  if(window.__TRACE)window.__TRACE.push({g:'race',cap:'First to '+max+' wins',items:['spin 1 to '+spinMax],ans:'reach '+max});
+  RUN.prompt=()=>say(['P_race_start'],'First to the end wins! Tap the spinner.');RUN.prompt();place()};
+ACT.race20=n=>ACT.race(Object.assign(n,{max:20}));
+
+/* ---- roll the ladoo: tilt the phone (or hold a finger on the tray) to roll the ladoo to the right letter ---- */
+ACT.roll=(n)=>{const pool=S.intro.length?S.intro:(n.pool&&n.pool.length?n.pool:['s']);const t=deck('roll',pool);const cw=rnd(WORDS[t]);
+  const opts=shuffle([t,...shuffle(LET.filter(x=>x!==t&&SAME[t]!==x)).slice(0,2)]);
+  if(window.__TRACE)window.__TRACE.push({g:'roll',cap:'Roll the ladoo to '+t,items:opts.slice(),ans:t});
+  const canTilt=S.settings.tilt!==false&&ageR()>=4&&typeof DeviceOrientationEvent!=='undefined';const ask=canTilt&&typeof DeviceOrientationEvent.requestPermission==='function';
+  body().innerHTML=`<div class="rl-tray" id="rlt">${opts.map((l,k)=>`<div class="rl-plate" data-v="${l}" style="left:calc(${(k*33.3+16.6).toFixed(1)}% - var(--rp)/2)">${l}</div>`).join('')}<div class="rl-ball" id="rlb"></div>${hasRec(t)?'':`<div class="cue rl-cue"><span class="em">${cw[1]}</span>${cw[0]}</div>`}${ask?'<button class="pill-btn small rl-tilt" id="rlp">📱 Tilt</button>':''}</div>`;
+  const tray=$('rlt'),ball=$('rlb');const prompt=()=>say(hasRec(t)?['P_roll_ask',300,'R_'+t,400,'R_'+t]:['P_roll_ask_word',300,W(cw[0])],hasRec(t)?`Roll the ladoo to ${SHOW[t]}`:`Roll the ladoo to the first sound in "${cw[0]}"`);RUN.prompt=prompt;
+  const rec1=once(ok=>recordLetter(t,ok,3,'roll'));let wrong=false,miss=0,locked=false,touched=false;
+  const R=tray.getBoundingClientRect();let x=R.width/2-23,y=R.height*.56,vx=0,vy=0,tx=null,ty=null,gx=0,gy=0;
+  const pt=e=>{const b=tray.getBoundingClientRect();tx=e.clientX-b.left;ty=e.clientY-b.top;touched=true};
+  tray.onpointerdown=e=>{if(e.target.id==='rlp')return;pt(e);try{tray.setPointerCapture(e.pointerId)}catch(_){}};tray.onpointermove=e=>{if(tx!==null)pt(e)};tray.onpointerup=tray.onpointercancel=()=>{tx=ty=null};
+  const ori=e=>{if(e.gamma==null||e.beta==null)return;touched=true;gx=Math.max(-1,Math.min(1,e.gamma/28));gy=Math.max(-1,Math.min(1,(e.beta-35)/28))};
+  if(canTilt){window.addEventListener('deviceorientation',ori);if(ask)$('rlp').onclick=()=>{try{DeviceOrientationEvent.requestPermission().then(()=>{const b=$('rlp');if(b)b.remove()}).catch(()=>{})}catch(_){}}}
+  const stop=()=>window.removeEventListener('deviceorientation',ori);
+  const plates=[...tray.querySelectorAll('.rl-plate')];
+  const loop=()=>{if(!RUN||RUN.node!==n||!document.body.contains(ball)){stop();return}
+    if(!locked){let ax=gx*.5,ay=gy*.5;if(tx!==null){const dx=tx-(x+23),dy=ty-(y+23),d=Math.hypot(dx,dy)||1;ax+=dx/d*.45;ay+=dy/d*.45}
+      vx=(vx+ax)*.94;vy=(vy+ay)*.94;x+=vx;y+=vy;const W2=tray.clientWidth-46,H2=tray.clientHeight-46;
+      if(x<0){x=0;vx=-vx*.4}if(x>W2){x=W2;vx=-vx*.4}if(y<0){y=0;vy=-vy*.4}if(y>H2){y=H2;vy=-vy*.4}
+      ball.style.transform=`translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`;
+      for(const p of plates){const cx=p.offsetLeft+p.offsetWidth/2,cy=p.offsetTop+p.offsetHeight/2;if(Math.hypot(cx-(x+23),cy-(y+23))<p.offsetWidth*.39){
+        if(p.dataset.v===t){locked=true;rec1(!wrong);p.classList.add('right');FX.chime();burst(p,16);stop();say([...(hasRec(t)?['P_that_letter_says','R_'+t]:[W(KEYW(t)[0])]),250,rnd(PRAISE)],`Yes! ${t} for ${KEYW(t)[0]}!`).then(()=>roundDone(!wrong))}
+        else if(!p._hit){p._hit=1;wrong=true;miss++;rec1(false);FX.boing();anim(p,'wiggle',500);vy=4;vx=-vx;y+=26;setTimeout(()=>{p._hit=0},700);if(NEWUI&&miss>=2)plates.forEach(q=>{if(q.dataset.v===t)q.classList.add('nd-hintb')});say([rnd(RETRY),300,...sndOf(t)],'Try another plate!',{slow:true})}
+        break}}}
+    requestAnimationFrame(loop)};
+  ball.style.transform=`translate(${x}px,${y}px)`;requestAnimationFrame(loop);setTimeout(prompt,300);
+  if(RUN.round===0){const r=RUN;setTimeout(()=>{if(RUN===r&&RUN.node===n&&!touched&&document.body.contains(ball))say(['P_roll_hint'],'Hold your finger where the ladoo should go.')},7000)}};
+
+/* ---- say it, hear it: the child says the word and hears Haathi, then their own voice. Played once and thrown away; never stored or sent ---- */
+const micOn=()=>!!(S.settings&&S.settings.mic)&&!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia&&window.MediaRecorder);
+let sayRec=null;
+async function sayIt(model,capText){if(sayRec)return;stopVoice();let stream;
+  try{stream=await navigator.mediaDevices.getUserMedia({audio:true})}catch(e){S.settings.mic=false;save();if($('cap'))$('cap').textContent='The microphone is off. A grown-up can switch it on in Grown-ups.';return}
+  const chunks=[];let rec;try{rec=new MediaRecorder(stream)}catch(e){stream.getTracks().forEach(t=>t.stop());return}
+  sayRec=rec;const ov=document.createElement('div');ov.id='sayit';ov.innerHTML='<button class="si-btn" aria-label="Stop recording">🎤</button><p>Say it now!</p>';document.body.appendChild(ov);
+  const stop=()=>{try{if(rec.state==='recording')rec.stop()}catch(e){}};ov.querySelector('button').onclick=stop;const tm=setTimeout(stop,3500);
+  rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
+  rec.onstop=async()=>{clearTimeout(tm);stream.getTracks().forEach(t=>t.stop());ov.remove();sayRec=null;const url=URL.createObjectURL(new Blob(chunks,{type:rec.mimeType||'audio/webm'}));
+    await sayRaw(['P_sayit_listen',250,...model],capText||null);try{const a=new Audio(url);a.onended=()=>URL.revokeObjectURL(url);await a.play()}catch(e){URL.revokeObjectURL(url)}};
+  try{rec.start()}catch(e){stop();ov.remove();sayRec=null}}
+const sayItAct=(model,cap)=>micOn()?[['star','🎤 Say it',()=>sayIt(model,cap)]]:[];
+
+/* ---- start screen: Haathi and one button. Sharing and installing live in Grown-ups. Two or more children pick their name ---- */
+function r2Who(){const b=$('btn-who');if(!b)return;b.hidden=true;const k=kidsIdx();let row=$('who-row');if(!row){row=document.createElement('div');row.id='who-row';row.className='who-row';b.parentNode.insertBefore(row,b)}row.innerHTML='';
+  if(k.list.length<2)return;k.list.forEach(c=>{const nm=(c.name||'Child').replace(/</g,'');const x=document.createElement('button');x.className='whob'+(c.id===k.active?' on':'');x.innerHTML=`<b>${nm.slice(0,1).toUpperCase()}</b><span>${nm}</span>`;x.setAttribute('aria-label','Play as '+nm);
+    x.onclick=()=>{FX.tap();if(c.id===k.active)begin();else switchKid(c.id)};row.appendChild(x)})}
+{const sp=$('btn-share')&&$('btn-share').closest('.panel');if(sp&&$('btn-install')){sp.appendChild($('btn-install'));sp.appendChild($('install-help'))}const ss=$('btn-share-start');if(ss)ss.hidden=true}
+
 /* ======================= BOOT ======================= */
 if(S.profile&&S.placed!==3)placeByAge();
 document.addEventListener('visibilitychange',()=>{if(document.hidden){save();stopVoice();sync(false);document.querySelectorAll('canvas').forEach(c=>c.dispatchEvent(new PointerEvent('pointercancel')))}else{if(actx&&actx.state!=='running')try{actx.resume()}catch(e){}}});
 window.addEventListener('pageshow',()=>{if(actx&&actx.state!=='running')try{actx.resume()}catch(e){}});
 document.addEventListener('pointerdown',()=>{if(actx&&actx.state!=='running')actx.resume()},{passive:true});
-window.__haathi={newUI:v=>{if(v!=null)NEWUI=!!v;return NEWUI},composeAdv,go,ACT,roundDone:ok=>roundDone(ok),RUN:()=>RUN,curChapter,placeByAge:()=>placeByAge(),SK,LS,CS,DIG,PREP,DOTPICS,S:()=>S,compose,learn,startRun,sceneHTML,openStory};
+window.__haathi={MERGE,REPL,mergeRound,micOn,cornerNode,cornerLocked,tierOf:id=>tierOf(kindOfId(id),id),newUI:v=>{if(v!=null)NEWUI=!!v;return NEWUI},composeAdv,go,ACT,roundDone:ok=>roundDone(ok),RUN:()=>RUN,curChapter,placeByAge:()=>placeByAge(),SK,LS,CS,DIG,PREP,DOTPICS,S:()=>S,compose,learn,startRun,sceneHTML,openStory};
 go('start');
 })();

@@ -479,6 +479,37 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 #nd-hand.ndtap{animation:ndtap 1.2s ease-in-out infinite}
 @keyframes ndtap{0%,100%{transform:translate(26px,34px)}50%{transform:translate(0,0) scale(.9)}}
 #reward-box{max-height:100%;overflow-y:auto}
+/* release 2: tile games, board game, roll the ladoo, say it, start screen */
+.slots.tw{gap:6px;flex-wrap:nowrap}.slots.tw .slot{width:clamp(38px,11.5vw,64px);border-width:3px;font-size:clamp(26px,7.4vw,42px)}
+.slots.sb{flex-wrap:wrap;justify-content:center;gap:8px;min-height:66px;width:100%;background:#fff;border-radius:20px;padding:10px;box-shadow:0 4px 0 var(--shadow)}
+.ltile.wt{width:auto;aspect-ratio:auto;min-width:54px;height:clamp(50px,13vw,62px);padding:0 12px;font-size:clamp(24px,6.6vw,34px)}
+.ltile.placed{background:#dff1e5;color:var(--leaf);box-shadow:0 4px 0 var(--leaf-2)}
+.rc-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;width:100%}
+.rc-col{display:flex;flex-direction:column;align-items:center;width:100%;max-width:440px}
+.rc-starts{display:flex;justify-content:space-around;width:100%;max-width:420px;font-size:30px;min-height:38px}
+.tw-head{display:flex;justify-content:center}
+.pill-btn.hearbtn{white-space:nowrap;min-height:48px}
+.rc-board{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;width:100%;max-width:440px;background:#fff8ea;border:3px solid #b98a56;border-radius:20px;padding:10px}
+.rc-sq{aspect-ratio:1;border-radius:12px;background:#fff;border:2px solid var(--shadow);position:relative;text-align:left;padding:1px 6px;font-family:var(--f-display);font-weight:800;font-size:clamp(15px,4.4vw,20px);color:var(--ink)}
+.rc-board.big .rc-sq{aspect-ratio:1.25;font-size:clamp(13px,3.8vw,17px)}
+.rc-sq.end{background:#f3d27a}
+.rc-tok{position:absolute;right:1px;bottom:-2px;font-size:clamp(20px,6vw,28px);line-height:1.1}.rc-tok.h{right:auto;left:1px}
+.rc-board.big .rc-tok{font-size:clamp(16px,4.6vw,22px)}
+.rc-spin{width:clamp(92px,26vw,128px);aspect-ratio:1;border-radius:50%;background:var(--mango);box-shadow:0 7px 0 var(--mango-deep);font-family:var(--f-display);font-weight:800;font-size:clamp(40px,12vw,58px);color:#3b2400;flex:none}
+.rc-spin:disabled{opacity:.55}.rc-spin.rcturn{animation:rcturn .6s linear}@keyframes rcturn{to{transform:rotate(360deg)}}
+.rl-tray{position:relative;width:100%;max-width:520px;height:clamp(250px,56vh,470px);border-radius:24px;background:#fff8ea;border:3px solid #b98a56;overflow:hidden;touch-action:none;--rp:clamp(58px,21vw,82px)}
+.rl-plate{position:absolute;top:12px;width:var(--rp);height:var(--rp);border-radius:50%;background:#fff;border:4px solid var(--shadow);display:grid;place-items:center;font-family:var(--f-letter);font-weight:700;font-size:calc(var(--rp)*.54);color:var(--peacock)}
+.rl-plate.right{border-color:var(--leaf);background:#dff1e5}
+.rl-ball{position:absolute;left:0;top:0;width:46px;height:46px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffd68a,#e8912b 70%);box-shadow:0 3px 0 rgba(0,0,0,.18);will-change:transform;z-index:2}
+.rl-cue{position:absolute;left:10px;bottom:10px;white-space:nowrap}.rl-tilt{position:absolute;right:8px;bottom:8px}
+#sayit{position:fixed;inset:0;z-index:65;background:rgba(23,51,38,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+#sayit p{font-family:var(--f-display);font-weight:800;font-size:28px;color:#fff;margin:0}
+.si-btn{width:150px;height:150px;border-radius:50%;background:#e8557a;box-shadow:0 8px 0 #9b2f4a;font-size:70px;animation:pulse .8s ease-in-out infinite}
+.nd-best .faces{flex-wrap:wrap;gap:8px}
+.nd-best .faces button{width:clamp(52px,17vw,64px);height:clamp(52px,17vw,64px)}.nd-best .faces button{font-size:24px;font-family:var(--f-display);font-weight:800;color:var(--ink)}.nd-best .faces button.on{background:var(--mango);box-shadow:0 4px 0 var(--mango-deep)}
+.who-row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.whob{display:flex;flex-direction:column;align-items:center;gap:2px;background:#fff;border-radius:20px;padding:8px 14px;box-shadow:0 5px 0 var(--shadow);min-width:84px;font-family:var(--f-display);font-weight:700}
+.whob b{width:48px;height:48px;border-radius:50%;background:var(--peacock);color:#fff;display:grid;place-items:center;font-size:26px}.whob.on{box-shadow:0 5px 0 var(--mango-deep);background:#fff3df}.whob.on b{background:var(--mango-deep)}
 /* narrow phones: the round dots stack 4 to a row so the game title keeps whole words */
 @media (max-width:480px){.rounds{max-width:76px}#play-title{min-width:72px;overflow-wrap:normal;font-size:15px;line-height:1.08}}
 @media (max-height:700px){#reward-box{gap:8px;padding:16px}#reward-box .haathi{width:84px!important;height:90px!important}#reward-box .nd-stk{font-size:60px}#reward-box .nd-fin,#reward-box .note{display:none}}
@@ -493,6 +524,13 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
   .nd-prow:nth-child(odd){padding-bottom:16vh}.nd-prow:nth-child(even){padding-top:16vh}
   .nd-node{width:clamp(56px,20vh,84px)}.nd-mini{width:clamp(40px,14vh,60px)}
   #reward-box{padding:10px 14px;gap:6px 14px;flex-direction:row;flex-wrap:wrap;justify-content:center;max-width:600px}#reward-box h3{width:100%;margin:0}#reward-box .haathi{width:70px!important;height:74px!important}#reward-box .nd-stk{font-size:54px}
+  /* the new games on a sideways phone */
+  .tw-head{zoom:.56}.slots.tw .slot{width:clamp(34px,13vh,50px);font-size:clamp(22px,8vh,32px)}
+  #tl .ltile{width:clamp(44px,15vh,58px);font-size:clamp(26px,9vh,36px)}#tl .ltile.wt{width:auto;height:clamp(40px,13vh,50px);font-size:clamp(20px,7vh,28px)}
+  .slots.sb{min-height:52px;padding:6px 10px}.slots.sb .ltile.wt{height:clamp(36px,12vh,46px);font-size:clamp(18px,6.4vh,26px)}
+  .rc-wrap{flex-direction:row;justify-content:center;gap:22px}.rc-col{max-width:min(300px,48vw)}.rc-col.big{max-width:min(520px,62vw)}.rc-board.big{grid-template-columns:repeat(10,minmax(0,1fr))}
+  .rc-starts{min-height:30px;font-size:24px}.rc-spin{width:min(108px,30vh);font-size:min(46px,13vh)}
+  .rl-tray{height:clamp(170px,50vh,300px);--rp:66px}.rl-plate{top:8px}
   .movebox{max-height:100%;overflow-y:auto;gap:4px;padding:10px 16px}.movebox .mv-e{font-size:46px;line-height:1}.movebox .mv-n{font-size:40px;min-height:46px;line-height:1}.movebox h3{margin:0}
 }
 @media (prefers-reduced-motion:reduce){.nd-play,.nd-node.cur,.nd-stk,.nd-hint,#nd-hand.ndtap{animation:none!important}}
@@ -522,7 +560,7 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
     <div class="field"><label for="in-limit">Play time per session</label>
       <select id="in-limit"><option value="10">10 minutes</option><option value="15" selected>15 minutes</option><option value="20">20 minutes</option></select></div>
     <label class="check" style="align-items:flex-start"><input type="checkbox" id="in-consent"> <span>Help improve the game: share anonymous play data and likes (age, scores, which games are enjoyed). No names, photos or recordings. You can turn this off any time in Grown-ups.</span></label>
-    <p class="note">The game counts visits anonymously (how many families, which age group) so we know how far it has spread. No names, no cookies, nothing about your child beyond age.</p>
+    <p class="note">The game counts visits anonymously (how many families, which age group, and which games are played and finished) so we know how far it has spread and which games work. No names, no cookies, nothing about your child beyond age.</p>
     <button class="pill-btn primary" id="btn-setup-done" style="align-self:center;font-size:22px;padding:12px 28px">Start the journey</button>
   </div>
 </section>
@@ -648,6 +686,8 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
       <label class="check"><input type="checkbox" id="ps-moves"> Movement breaks after every 3 games</label>
       <label class="check"><input type="checkbox" id="ps-automode"> Move between Easy, Medium and Hard automatically (you are told each time)</label>
       <label class="check"><input type="checkbox" id="ps-consent"> Share anonymous play data to help improve the game</label>
+      <label class="check"><input type="checkbox" id="ps-mic"> <span><b>Say it, hear it.</b> Let my child record a word and hear it back after Haathi. The recording is played once and thrown away. It is never saved or sent.</span></label>
+      <label class="check"><input type="checkbox" id="ps-tilt"> Tilt the phone in Roll the ladoo (from age 4; a finger always works too)</label>
       <div class="field"><label>Level for each area (the app also moves these on its own)</label>
         <div class="nd-levels"><label>Letters<select id="ps-m-letters"><option value="0">Easy</option><option value="1">Medium</option><option value="2">Hard</option></select></label><label>Numbers<select id="ps-m-numbers"><option value="0">Easy</option><option value="1">Medium</option><option value="2">Hard</option></select></label><label>Writing<select id="ps-m-writing"><option value="0">Easy</option><option value="1">Medium</option><option value="2">Hard</option></select></label><label>My world<select id="ps-m-discover"><option value="0">Easy</option><option value="1">Medium</option><option value="2">Hard</option></select></label></div></div>
 

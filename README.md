@@ -42,13 +42,25 @@ Starting levels inside each game are set from the child's age, then adapt during
 - Age 3 games are 5 questions long; ages 4+ are 8.
 - Reading uses Dolch-style sight words and decodable 3 to 5 letter words; reading games never say the word before the child answers.
 
-## The new design (release 1A, live)
+## The new design (release 1A)
 The redesigned child experience is the app. The old journey map is no longer offered to families.
 - **Home:** one Play button, a Library door and the Grown-ups button. Tapping Haathi opens the sticker book.
 - **Daily adventure:** 5 stops picked by the engine: a picture-card or topic warm-up, letters or numbers, a movement stop, the other subject, then writing. One sticker at the end, not one per game.
 - **Library:** four picture doors (Play, My world, Stories, Make). Shelves show 8 tiles at a time and have no Easy/Medium/Hard tabs; levels follow the engine and can be set per area in Grown-ups.
 - **Help:** in choose-the-answer games the hand shows the first answer the first time a game is met, and after two misses the right answer glows.
 - Families who used the old design keep all progress and see a one-time note in Grown-ups.
+
+## Release 2 (Steps A and B of the full review)
+- **Merged games:** 37 look-alike games are now 17. Letter and number merges mix their question types round by round (for example Picture and letter, Count with me, Bigger or smaller). The three writing merges that fade their help over three rounds (First strokes, Shapes, Small letters) stay whole and play a different one each time the tile is opened; an adventure keeps the one the engine chose.
+- **Tile games instead of finger writing:** Build the word, Number words, One and many, and Sentence builder (word order, then the capital letter, then the full stop) replace five trace-over games.
+- **New games:** Number path race and Number path to 20 (a board game against Haathi; losing never lowers stars or levels), Roll the ladoo (steer with a held finger, or by tilting the phone from age 4), Say it, hear it (a microphone button in Meet a letter and on picture cards).
+- **Best stop:** the three faces are asked only in free play. An adventure ends with one question: which stop did you like best?
+- **Start screen:** Haathi and one button. Share and Install moved into Grown-ups. With two or more children the start screen shows a name button for each child.
+- **Grown-ups, Settings:** two new switches. "Say it, hear it" is off until a grown-up turns it on and the phone grants the microphone. The recording is played back once and discarded; it is never saved or sent. "Tilt the phone" is on by default and a finger always works.
+- **Anonymous counts:** game started, game finished, adventure started and adventure finished are counted by game id only (no name, no age, no device id), through the same counter as before. Nothing is sent when the phone is offline.
+- **Fixes found while testing:** every game and topic is now reachable from its shelf (the old paging could hide some once many games had been played); adding or switching a child no longer copies the previous child's progress over the new one.
+
+Not built yet from the review: the 15 "Improve" changes to existing games, and Steps C to F.
 
 ### Backup of the old app
 The last version before the redesign is kept as the branch `classic-backup-2026-11-12` in this repository. To put it back on the main link: `git checkout origin/classic-backup-2026-11-12 -- .`, commit and push. As an emergency fallback on a single phone, opening the app with `?new=0` shows the old map again and `?new=1` returns to the new design.
