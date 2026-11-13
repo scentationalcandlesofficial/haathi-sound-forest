@@ -60,7 +60,22 @@ The redesigned child experience is the app. The old journey map is no longer off
 - **Anonymous counts:** game started, game finished, adventure started and adventure finished are counted by game id only (no name, no age, no device id), through the same counter as before. Nothing is sent when the phone is offline.
 - **Fixes found while testing:** every game and topic is now reachable from its shelf (the old paging could hide some once many games had been played); adding or switching a child no longer copies the previous child's progress over the new one.
 
-Not built yet from the review: the 15 "Improve" changes to existing games, and Steps C to F.
+## Release 3 (the "Improve" changes of the full review)
+Four of the 15 were already covered by release 2 (Meet a letter say-it, Count with me, Mela shop, Small letters). The other eleven:
+- **Sound baskets, Colour baskets:** the picture or shape can be dragged into a basket. Tapping the basket still works.
+- **Numbers in order:** the numbers go into a line of slots, by dragging or tapping.
+- **Rhyme time:** by ear. Haathi names every picture, and the written words (with the shared ending marked) appear only after the answer. Ten word families instead of three.
+- **Sight words:** with the microphone switched on in Grown-ups, the child can say the word and hear it back before moving on.
+- **Number line:** Haathi slides along the line (finger, or tilt plus a "Here!" button). Tapping a spot still works.
+- **Equal groups:** from age 7 every second round is a times-table fact (2, 5 and 10) without pictures. The skip-count row appears after a miss.
+- **Story sums:** at the picture level the child can act the story out by moving the things (drag, tap, or tap the pile). A badge counts along.
+- **Magic slate:** chalk, an eight-way rangoli brush, four stamps and three shapes.
+- **Label the picture, Write the missing word:** tiles first, then the word is written once. Three rounds instead of four.
+- After two misses the right answer glows in these games too.
+
+Also in this release: a game that is taller than the screen can now be scrolled instead of being cut off, and a late "tap done" prompt no longer speaks over the next game.
+
+Not built yet from the review: Steps C to F.
 
 ### Backup of the old app
 The last version before the redesign is kept as the branch `classic-backup-2026-11-12` in this repository. To put it back on the main link: `git checkout origin/classic-backup-2026-11-12 -- .`, commit and push. As an emergency fallback on a single phone, opening the app with `?new=0` shows the old map again and `?new=1` returns to the new design.

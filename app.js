@@ -772,7 +772,7 @@ function writeGlyph(strokes,o){
     strokes.forEach((st,i)=>{x.fillStyle='#2f8a5f';x.beginPath();x.arc(ox+st[0][0]*sc,oy+st[0][1]*sc,Math.max(9,sc*4),0,7);x.fill();x.fillStyle='#fff';x.font=`800 ${Math.max(11,sc*5)}px "Baloo 2",sans-serif`;x.textAlign='center';x.textBaseline='middle';x.fillText(i+1,ox+st[0][0]*sc,oy+st[0][1]*sc)})}
   const demo=()=>{if(!document.body.contains(c))return;if(k<path.length){x.fillStyle='rgba(138,92,194,.85)';x.beginPath();x.arc(path[k][0],path[k][1],sc*3,0,7);x.fill();k+=2;requestAnimationFrame(demo)}
     else setTimeout(()=>{if(!document.body.contains(c))return;guide();ready=true;say(['P_follow_dot',300,'P_tap_done'],"Your turn! Tap \"I'm done\" when you finish.")},400)};
-  const start=()=>{k=0;ready=false;drawn=false;hit=path.map(()=>false);ink=0;inkGood=0;guide();say(o.intro,o.cap);if(o.mode==='full'){setTimeout(demo,900);setTimeout(()=>{if(!ready&&document.body.contains(c)){k=path.length;guide();ready=true}},9000)}else{ready=true;setTimeout(()=>say(['P_tap_done'],o.cap),2200)}};
+  const start=()=>{k=0;ready=false;drawn=false;hit=path.map(()=>false);ink=0;inkGood=0;guide();say(o.intro,o.cap);if(o.mode==='full'){setTimeout(demo,900);setTimeout(()=>{if(!ready&&document.body.contains(c)){k=path.length;guide();ready=true}},9000)}else{ready=true;setTimeout(()=>{if(document.body.contains(c))say(['P_tap_done'],o.cap)},2200)}};
   RUN.prompt=start;start();
   c.addEventListener('contextrestored',()=>{x.setTransform(dpr,0,0,dpr,0,0);guide();ready=true});
   const pos=e=>{const r=c.getBoundingClientRect();return[(e.clientX-r.left)*(Wd/r.width),(e.clientY-r.top)*(Hd/r.height)]};
@@ -842,7 +842,7 @@ function pickRound(o){
   const L=once(ok=>{if(o.letter)recordLetter(o.letter,ok,o.items.length,RUN.node.t);learnN(RUN.node,ok)});
   o.items.forEach(it=>{const b=document.createElement('button');b.className=o.itemCls||'pcard';b.innerHTML=it.h;b.setAttribute('aria-label',it.label||String(it.v));
     b.onclick=()=>{if(busy)return;const ok=it.v===o.ans;L(ok);
-      if(ok){busy=true;b.classList.add('right');FX.chime();burst(b,14);if(o.onRight)o.onRight(b);say(o.right||[rnd(PRAISE)],o.rightCap||'Yes!').then(()=>roundDone(!wrong))}
+      if(ok){busy=true;b.classList.add('right');FX.chime();burst(b,14);if(o.onRight)o.onRight(b);const r0=RUN;say(o.right||[rnd(PRAISE)],o.rightCap||'Yes!').then(()=>{if(o.after&&RUN===r0)o.after(()=>roundDone(!wrong));else roundDone(!wrong)})}
       else{wrong=true;miss++;FX.boing();anim(b,'wiggle',500);if(NEWUI&&miss>=2){ndHint(okBtn());say(['P_nd_here'],'Here it is. Tap it!')}else say(o.wrong?o.wrong(it):[rnd(RETRY)],o.wrongCap||'Try again!')}};
     b._ok=it.v===o.ans;$('pk').appendChild(b)});
 }
@@ -1336,7 +1336,7 @@ ACT.evenodd=(n)=>{const max=n.max;const v=deck('eo'+max,range(2,max));const even
     ans:even?1:0,say:[abstract?'P_eo_num':'P_eo',300,N(v)],cap:abstract?`Is ${v} even or odd?`:`${v} ${th.label}. Can everyone find a partner? Even or odd?`,right:[N(v),300,even?'P_even':'P_odd'],rightCap:even?`${v} is even. Everyone has a partner!`:`${v} is odd. One is left without a partner!`,wrong:()=>['P_count_again']})};
 /* equal groups: the start of tables (2, 5, 10) */
 ACT.groups=(n)=>{const tb=rnd([2,5,10]),g=ri(2,n.max),ans=tb*g;const th=rnd(COUNT_THINGS);const one=tb===10?blocksHTML(10):`<div class="pile">${Array.from({length:tb},(_,i)=>objHTML(th.k,i,0,objSz(tb,true))).join('')}</div>`;
-  body().innerHTML=`<div class="gplates">${Array.from({length:g},()=>`<div class="gplate">${one}</div>`).join('')}</div><div class="eqn"><span>${g} groups of ${tb}</span>=<span>?</span></div><div class="choices" id="nc"></div>`;
+  body().innerHTML=`<div class="gplates${g>=4?' many':''}">${Array.from({length:g},()=>`<div class="gplate">${one}</div>`).join('')}</div><div class="eqn"><span>${g} groups of ${tb}</span>=<span>?</span></div><div class="choices" id="nc"></div>`;
   RUN.prompt=()=>say([N(g),'P_groups_of',N(tb),300,'P_altogether'],`${g} groups of ${tb}. How many altogether?`);RUN.prompt();let wrong=false;const L=once(ok=>learnN(n,ok));
   numChoices(ans,ans+tb,$('nc'),(b,v)=>{const ok=v===ans;L(ok);if(ok){b.classList.add('right');[...body().querySelectorAll('.eqn span')].pop().textContent=ans;FX.chime();say([N(g),'P_groups_of',N(tb),'P_makes',N(ans)],`${g} × ${tb} = ${ans}`).then(()=>roundDone(!wrong))}
     else{wrong=true;FX.boing();anim(b,'wiggle',500);say(['P_skip_hint'],`Count in ${tb}s: `+Array.from({length:g},(_,i)=>(i+1)*tb).join(', '))}},tb)};
@@ -2065,6 +2065,166 @@ function r2Who(){const b=$('btn-who');if(!b)return;b.hidden=true;const k=kidsIdx
   if(k.list.length<2)return;k.list.forEach(c=>{const nm=(c.name||'Child').replace(/</g,'');const x=document.createElement('button');x.className='whob'+(c.id===k.active?' on':'');x.innerHTML=`<b>${nm.slice(0,1).toUpperCase()}</b><span>${nm}</span>`;x.setAttribute('aria-label','Play as '+nm);
     x.onclick=()=>{FX.tap();if(c.id===k.active)begin();else switchKid(c.id)};row.appendChild(x)})}
 {const sp=$('btn-share')&&$('btn-share').closest('.panel');if(sp&&$('btn-install')){sp.appendChild($('btn-install'));sp.appendChild($('install-help'))}const ss=$('btn-share-start');if(ss)ss.hidden=true}
+
+/* ======================= RELEASE 3: the "Improve" changes of the full review ======================= */
+/* A press that moves more than 10 px becomes a drag; anything shorter stays a tap, so every game here works both ways. */
+function dragTo(el,sel,onDrop){let st=null,drag=false;el.style.touchAction='none';el.classList.add('dragme');
+  const reset=()=>{st=null;drag=false;el.classList.remove('dragging');el.style.transform=''};
+  el.addEventListener('pointerdown',e=>{if(el.disabled)return;st=[e.clientX,e.clientY];drag=false;try{el.setPointerCapture(e.pointerId)}catch(_){}});
+  el.addEventListener('pointermove',e=>{if(!st)return;const dx=e.clientX-st[0],dy=e.clientY-st[1];if(!drag&&Math.hypot(dx,dy)<10)return;drag=true;el.classList.add('dragging');el.style.transform=`translate(${dx}px,${dy}px) scale(1.08)`});
+  el.addEventListener('pointerup',e=>{if(!st)return;const was=drag;reset();if(!was)return;el._dragged=Date.now();
+    const pe=el.style.pointerEvents;el.style.pointerEvents='none';const hit=document.elementFromPoint(e.clientX,e.clientY);el.style.pointerEvents=pe;onDrop(hit&&hit.closest?hit.closest(sel):null)});
+  el.addEventListener('pointercancel',reset)}
+const justDragged=el=>!!el._dragged&&Date.now()-el._dragged<400;
+
+/* ---- Sound baskets and Colour baskets: drag the thing into the basket, or tap the basket ---- */
+ACT.sortsound=()=>{let pool=LP().filter(l=>WORDS[l].length>=2);if(pool.length<2)pool=['s','m','t','p'];const a=fresh('sort',pool);const b=rnd(pool.filter(x=>x!==a&&SAME[a]!==x));
+  const pics=shuffle([...shuffle(WORDS[a]).slice(0,2).map(w=>[w,a]),...shuffle(WORDS[b]).slice(0,2).map(w=>[w,b])]);let k=0,wrong=false,tried=false,miss=0;
+  body().innerHTML=`<div class="pic" id="sp"></div><div class="baskets">${[a,b].map(l=>`<button class="basket" data-l="${l}"><b>${l}</b><span>🧺</span><i></i></button>`).join('')}</div>`;
+  const bks=()=>[...body().querySelectorAll('.basket')];
+  const show=()=>{const p=$('sp');if(!p)return;tried=false;miss=0;p.textContent=pics[k][0][1];p.dataset.l=pics[k][1];anim(p,'dance',500);say([W(pics[k][0][0])],pics[k][0][0])};
+  RUN.prompt=()=>say(['P_sort_sound'],'Drag or tap: put each picture in the basket that starts the same way!').then(()=>{if(alive('sortsound')&&k<pics.length)show()});RUN.prompt();
+  const put=bk=>{if(k>=pics.length)return;const [w,l]=pics[k];const ok=bk.dataset.l===l;if(!tried){tried=true;recordLetter(l,ok,2,'sortsound')}
+    if(ok){bks().forEach(x=>x.classList.remove('nd-hint'));FX.chime();bk.querySelector('i').textContent+=w[1];k++;
+      if(k>=pics.length){$('sp').textContent='';burst(bk,14);learnN(RUN.node,!wrong);say([rnd(PRAISE)],'All sorted!').then(()=>roundDone(!wrong))}else show()}
+    else{wrong=true;miss++;FX.boing();anim(bk,'wiggle',500);if(NEWUI&&miss>=2)ndHint(bks().find(x=>x.dataset.l===l));say(['P_listen_again',W(w[0])],'Listen again: '+w[0])}};
+  bks().forEach(bk=>bk.onclick=()=>put(bk));dragTo($('sp'),'.basket',bk=>{if(bk)put(bk)})};
+ACT.sortcolour=(n)=>{const CL=[['red','#e2563f'],['blue','#147a8a'],['yellow','#f6a821'],['green','#2f8a5f'],['purple','#8a5cc2']];const two=shuffle(CL).slice(0,2);const ks=Object.keys(SHAPES);
+  const items=shuffle([0,1,2,3,4,5].map(i=>({c:two[i%2],k:rnd(ks)})));let k=0,wrong=false,miss=0;
+  body().innerHTML=`<div class="shape" id="cur" style="width:120px"></div><div class="baskets">${two.map(c=>`<button class="basket" data-c="${c[0]}" style="border-color:${c[1]}"><b style="background:${c[1]};color:#fff">${c[0]}</b><span>🧺</span><i></i></button>`).join('')}</div>`;
+  const bks=()=>[...body().querySelectorAll('.basket')];
+  const show=()=>{const e=$('cur');if(!e)return;miss=0;e.innerHTML=shapeSVG(items[k].k,items[k].c[1]);e.dataset.c=items[k].c[0]};show();
+  RUN.prompt=()=>say(['P_sort_colour'],'Drag or tap: put each one in the basket with the same colour!');RUN.prompt();
+  const put=bk=>{if(k>=items.length)return;
+    if(bk.dataset.c===items[k].c[0]){bks().forEach(x=>x.classList.remove('nd-hint'));FX.chime();bk.querySelector('i').innerHTML+=`<span style="display:inline-block;width:22px;height:22px">${shapeSVG(items[k].k,items[k].c[1])}</span>`;k++;
+      if(k>=items.length){$('cur').innerHTML='';learnN(n,!wrong);burst(bk,14);say([rnd(PRAISE)],'All sorted!').then(()=>roundDone(!wrong))}else show()}
+    else{wrong=true;miss++;FX.boing();anim(bk,'wiggle',500);if(NEWUI&&miss>=2)ndHint(bks().find(x=>x.dataset.c===items[k].c[0]))}};
+  bks().forEach(bk=>bk.onclick=()=>put(bk));dragTo($('cur'),'.basket',bk=>{if(bk)put(bk)})};
+
+/* ---- Numbers in order: the numbers go into a line, by dragging or tapping ---- */
+ACT.order=(n)=>{const top=n.max;let nxt=1,wrong=false,miss=0;const nums=shuffle(range(1,top));
+  if(window.__TRACE)window.__TRACE.push({g:'order',cap:'numbers in a line',items:nums.slice(),ans:String(top)});
+  body().innerHTML=`<div class="oline${top>10?' many':''}" id="ol">${range(1,top).map(()=>'<span class="ol-s"></span>').join('')}</div><div class="numgrid${top>10?' many':''}" id="ng"></div>`;
+  nums.forEach(v=>{const b=document.createElement('button');b.className='pcard num small';b.textContent=v;b.dataset.v=v;
+    const pick=()=>{if(b.classList.contains('gone')||nxt>top)return;
+      if(v===nxt){miss=0;[...$('ng').children].forEach(x=>x.classList.remove('nd-hint'));const sl=$('ol').children[v-1];sl.textContent=v;sl.classList.add('in');anim(sl,'dance',400);b.classList.add('gone');b.disabled=true;FX.tick(v);say([N(v)],String(v));nxt++;
+        if(nxt>top){learnN(n,!wrong);FX.fanfare();say([500,'P_well_counted'],'Great counting!').then(()=>roundDone(!wrong))}}
+      else{wrong=true;miss++;FX.boing();anim(b,'wiggle',500);if(NEWUI&&miss>=2)ndHint([...$('ng').children].find(x=>+x.dataset.v===nxt));say(['P_rocket_hint',N(nxt)],`Find ${nxt}`)}};
+    b.onclick=()=>{if(justDragged(b))return;pick()};dragTo(b,'#ol',t=>{if(t)pick()});$('ng').appendChild(b)});
+  RUN.prompt=()=>say(['P_order_line'],'Put the numbers in a line. Drag them or tap them. Start at 1!');RUN.prompt()};
+
+/* ---- Rhyme time by ear: Haathi names every picture; the written words come only after the answer ---- */
+const RPIC=Object.assign({},CVCE,{pen:'🖊️',hen:'🐔',bug:'🐛',mug:'☕',hug:'🤗',cap:'🧢',fox:'🦊',box:'📦',king:'🤴',ring:'💍',ball:'⚽',wall:'🧱',cake:'🎂',lake:'🏞️'});
+const RHY2=[['cat','hat','bat','rat'],['dog','log'],['nut','hut'],['pen','hen','ten'],['bug','mug','hug'],['cap','map'],['fox','box'],['king','ring'],['ball','wall'],['cake','lake']];
+ACT.rhyme=()=>{const fam=fresh('rhy',RHY2);const [t,ans]=shuffle(fam).slice(0,2);const rime=w=>w.slice(1);
+  const items=shuffle([ans,...shuffle(Object.keys(RPIC).filter(w=>rime(w)!==rime(t))).slice(0,nopt()-1)]);
+  const bump=k=>()=>{const e=$('pk')&&$('pk').children[k];if(e)anim(e,'dance',600)};
+  const word=w=>`<span class="rw">${picH(RPIC[w])}<b>${w[0]}<u>${rime(w)}</u></b></span>`;
+  pickRound({top:bigShow(picH(RPIC[t])),items:items.map(w=>({h:picH(RPIC[w]),v:w,label:w})),ans,
+    say:['P_rhyme',W(t),400,...items.flatMap((w,k)=>[bump(k),W(w),350])],cap:'Listen. Which one rhymes?',
+    onRight:()=>{const sc=body().querySelector('.showcard');if(sc)sc.innerHTML=`<div class="rhy-words">${word(t)}${word(ans)}</div>`},
+    right:[W(t),W(ans),250,'P_rhymes_yes'],rightCap:`${t}, ${ans}. They rhyme!`,wrong:it=>[W(it.v),W(t),300,'P_listen_again']})};
+
+/* ---- Sight words: with the microphone switched on, the child says the word and hears it back ---- */
+ACT.sight=()=>{const t=deck('sw',SIGHT);const sim=SIGHT.filter(x=>x!==t).sort((a,b)=>(Math.abs(a.length-t.length)-(a[0]===t[0]?1:0))-(Math.abs(b.length-t.length)-(b[0]===t[0]?1:0)));
+  const opts=shuffle([t,...shuffle(sim.slice(0,6)).slice(0,nopt()-1)]);
+  pickRound({items:opts.map(w=>({h:wordH(w),v:w,label:w})),ans:t,say:['P_r_sight',300,'SW_'+t],cap:'Find the word you hear.',right:['SW_'+t,250,rnd(PRAISE)],rightCap:`Yes! "${t}"`,wrong:it=>['SW_'+it.v,300,'P_listen_again','SW_'+t],
+    after:micOn()?next=>{body().innerHTML=bigShow(wordH(t,'clamp(44px,13vw,72px)'));RUN.prompt=()=>say(['P_sayit_go'],'Tap the red button and say it!');RUN.prompt();
+      actions([...sayItAct(['SW_'+t],t),['go','Next',()=>{actions([]);next()},ICON.next]])}:null})};
+
+/* ---- Number line: slide Haathi along the line (finger or tilt), or tap the spot ---- */
+ACT.nlplace=(n)=>{const M=n.max,step=M>20?10:1;const marks=[];for(let v=0;v<=M;v+=step)marks.push(v);const lab=v=>v===0||v===M||(M<=10?v%5===0:M<=20?v%5===0:v%50===0);
+  const t=fresh('nl'+M,marks.filter(v=>!lab(v)));let wrong=false,miss=0,done=false;const L=once(ok=>learnN(n,ok));const last=marks.length-1;
+  if(window.__TRACE)window.__TRACE.push({g:'nlplace',cap:'number line',items:marks.slice(),ans:String(t)});
+  const canTilt=S.settings.tilt!==false&&ageR()>=4&&typeof DeviceOrientationEvent!=='undefined';const ask=canTilt&&typeof DeviceOrientationEvent.requestPermission==='function';
+  body().innerHTML=`<div class="showcard">${numH(t)}</div><div class="nline nl2" id="nl"><div class="nl-bar"></div><button class="nl-h" id="nlh" aria-label="Slide Haathi along the line">🐘</button></div><div class="nl-x" id="nlx">${ask?'<button class="pill-btn small" id="nlp">📱 Tilt</button>':''}</div>`;
+  const H=$('nlh');let pos=0,dragging=false,sx=0,movedPx=0,g=0,tiltSeen=false;
+  const ori=e=>{if(e.gamma==null)return;g=Math.max(-1,Math.min(1,e.gamma/26));if(!tiltSeen&&Math.abs(e.gamma)>.01){tiltSeen=true;const x=$('nlx');if(x&&!$('nlq')){const b=document.createElement('button');b.className='big-btn go';b.id='nlq';b.textContent='Here!';b.onclick=()=>{FX.tap();judge(Math.round(pos*last))};x.appendChild(b)}}};
+  const stop=()=>window.removeEventListener('deviceorientation',ori);
+  const ticks=marks.map((v,i)=>{const b=document.createElement('button');b.className='nl-tick';b.dataset.v=v;b.style.left=(6+i/last*88)+'%';b.innerHTML=`<i></i><span>${lab(v)?v:''}</span>`;b.setAttribute('aria-label','spot '+i);b.onclick=()=>judge(i);$('nl').appendChild(b);return b});
+  const place=p=>{pos=Math.max(0,Math.min(1,p));H.style.left=(6+pos*88)+'%';const i=Math.round(pos*last);ticks.forEach((x,k)=>x.classList.toggle('near',k===i));return i};
+  function judge(i){if(done)return;const b=ticks[i],v=marks[i];place(i/last);const ok=v===t;L(ok);
+    if(ok){done=true;stop();ticks.forEach(x=>x.classList.remove('nd-hint'));b.classList.add('right');b.querySelector('span').textContent=v;FX.chime();burst(b,12);say([N(t),250,rnd(PRAISE)],`${t} goes here!`).then(()=>roundDone(!wrong))}
+    else{wrong=true;miss++;FX.boing();anim(b,'wiggle',500);b.querySelector('span').textContent=v;b.classList.add('miss');if(NEWUI&&miss>=2)ndHint(ticks[marks.indexOf(t)]);say([N(v),300,'P_try_again_nl'],`That spot is ${v}. Try again!`)}}
+  const at=e=>{const r=$('nl').getBoundingClientRect();return((e.clientX-r.left)/r.width-.06)/.88};
+  H.onpointerdown=e=>{if(done)return;dragging=true;sx=e.clientX;movedPx=0;try{H.setPointerCapture(e.pointerId)}catch(_){}H.classList.add('dragging')};
+  H.onpointermove=e=>{if(!dragging)return;movedPx=Math.max(movedPx,Math.abs(e.clientX-sx));if(movedPx>6)place(at(e))};
+  H.onpointerup=e=>{if(!dragging)return;dragging=false;H.classList.remove('dragging');if(movedPx>6)judge(place(at(e)))};
+  H.onpointercancel=()=>{dragging=false;H.classList.remove('dragging')};
+  if(canTilt){window.addEventListener('deviceorientation',ori);if(ask)$('nlp').onclick=()=>{try{DeviceOrientationEvent.requestPermission().then(()=>{const b=$('nlp');if(b)b.remove()}).catch(()=>{})}catch(_){}};
+    let lt=0;const loop=ts=>{if(!RUN||RUN.node!==n||!document.body.contains(H)){stop();return}const dt=Math.min(.05,(ts-lt)/1000||0);lt=ts;if(tiltSeen&&!dragging&&!done&&Math.abs(g)>.08)place(pos+g*.55*dt);requestAnimationFrame(loop)};requestAnimationFrame(loop)}
+  place(0);RUN.prompt=()=>say(['P_nl_slide',300,N(t)],`Where does ${t} go? Slide Haathi there, or tap the spot.`);RUN.prompt()};
+
+/* ---- Equal groups: from age 7 every second round is a times-table fact without pictures ---- */
+const groupsPic=ACT.groups;
+ACT.groups=(n,round)=>{if(!(ageR()>=7&&round%2===1))return groupsPic(n,round);
+  const tb=rnd([2,5,10]),g=fresh('tt'+tb,range(1,n.max<=3?5:10)),ans=tb*g;let wrong=false;const L=once(ok=>learnN(n,ok));
+  if(window.__TRACE)window.__TRACE.push({g:'groups',cap:`${g} × ${tb}`,items:[g,tb],ans:String(ans)});
+  body().innerHTML=`<div class="eqn tt"><span>${g}</span>×<span>${tb}</span>=<span id="tta">?</span></div><div class="ttrow" id="ttr">${range(1,g).map(i=>`<span class="cell">${i*tb}</span>`).join('')}</div><div class="choices" id="nc"></div>`;
+  RUN.prompt=()=>say([N(g),'P_times',N(tb)],`${g} × ${tb} = ?`);RUN.prompt();
+  numChoices(ans,ans+tb,$('nc'),(b,v)=>{const ok=v===ans;L(ok);
+    if(ok){b.classList.add('right');$('tta').textContent=ans;$('ttr').classList.add('show');FX.chime();say([N(g),'P_times',N(tb),'P_makes',N(ans)],`${g} × ${tb} = ${ans}`).then(()=>roundDone(!wrong))}
+    else{wrong=true;FX.boing();anim(b,'wiggle',500);$('ttr').classList.add('show');say(['P_skip_hint'],`Count in ${tb}s: `+range(1,g).map(i=>i*tb).join(', '))}},tb)};
+
+/* ---- Story sums: with pictures, the child can act the story out by moving the things (drag or tap) ---- */
+ACT.story=(n)=>{const i=deck('sty',STORIES.map((_,k)=>k));const [t,e,a,op,b]=STORIES[i];const ans=op==='+'?a+b:a-b;let wrong=false,moved=0;const L=once(ok=>learnN(n,ok));
+  const sz=a+b>14?'s5':'s4',pic=lv('story')<1,plus=op==='+';
+  if(window.__TRACE)window.__TRACE.push({g:'story',cap:t,items:[a,op,b],ans:String(ans)});
+  const mv=k=>`<button class="mv" data-k="${k}">${objHTML(e,k,0,sz)}</button>`,st=k=>objHTML(e,k,0,sz);
+  const badge=`<div class="act-n" id="an">${a}</div>`;const pics=!pic?'':plus?`<div class="eqn act"><div class="grp" id="ga">${badge}${range(0,a-1).map(st).join('')}</div><div class="grp from" id="gb">${range(a,a+b-1).map(mv).join('')}</div></div>`
+    :`<div class="eqn act"><div class="grp" id="ga">${badge}${range(0,a-1).map(mv).join('')}</div><div class="grp away" id="gb"></div></div>`;
+  body().innerHTML=`<div class="card-note" style="font-size:clamp(18px,4.8vw,24px);max-width:560px"><b>${t}</b></div>${pics}<div class="choices" id="nc"></div>`;
+  const left=()=>[...body().querySelectorAll('.mv:not(.done)')];
+  if(pic){const go=m=>{if(!m||m.classList.contains('done'))return;if(moved>=b){anim(m,'wiggle',400);FX.boing();return}
+      moved++;m.classList.add('done');m.classList.remove('nd-hint');m.disabled=true;$(plus?'ga':'gb').appendChild(m);const now=plus?a+moved:a-moved;$('an').textContent=now;anim($('an'),'dance',400);FX.tick(moved);say([N(now)],String(now))};
+    left().forEach(m=>{m.onclick=ev=>{ev.stopPropagation();if(justDragged(m))return;go(m)};dragTo(m,plus?'#ga':'#gb',t2=>{if(t2)go(m)})});
+    /* small fingers: tapping the pile itself moves the next one */
+    $(plus?'gb':'ga').onclick=()=>go(left()[0])}
+  RUN.prompt=()=>say(['STY_'+i,...(pic&&RUN.round===0?[300,'P_story_act']:[])],t);RUN.prompt();
+  numChoices(ans,Math.max(a,ans)+3,$('nc'),(bt,v)=>{const ok=v===ans;L(ok);if(ok){bt.classList.add('right');FX.chime();say([N(ans),250,rnd(PRAISE)],`${a} ${plus?'+':'−'} ${b} = ${ans}`).then(()=>roundDone(!wrong))}
+    else{wrong=true;FX.boing();anim(bt,'wiggle',500);if(pic&&moved<b)ndHint(left()[0],true);say(['P_story_hint'],plus?'More means add. Put them together.':'Away or left means take away.')}},0)};
+
+/* ---- Magic slate grows into a small Make sandbox: chalk, rangoli, stamps and shapes ---- */
+ACT.slate=()=>{const cols=['#ffffff','#ffe066','#ff9ac1','#9be89b','#8fd3ff'];let col=cols[0],tool='draw';
+  const TOOLS=[['draw','✏️','Draw'],['rangoli','✨','Rangoli'],['s⭐','⭐','Star stamp'],['s🌸','🌸','Flower stamp'],['s🐘','🐘','Elephant stamp'],['s🦋','🦋','Butterfly stamp'],['hcircle','◯','Circle'],['hsquare','▢','Square'],['htri','△','Triangle']];
+  body().innerHTML=`<div class="slatebar" id="sb"></div><div class="slatebar tools" id="st"></div><div class="lw-wrap slate"><canvas id="lw"></canvas></div>`;
+  $('sb').innerHTML=cols.map((cc,i)=>`<button class="chalk ${i?'':'on'}" style="background:${cc}" data-c="${cc}" aria-label="chalk colour"></button>`).join('');
+  $('st').innerHTML=TOOLS.map(([id,ic,lab],i)=>`<button class="stool ${i?'':'on'}" data-t="${id}" aria-label="${lab}">${ic}</button>`).join('');
+  const c=$('lw'),wrap=c.parentElement,dpr=Math.min(2,devicePixelRatio||1);const Wd=Math.max(220,Math.min(wrap.clientWidth-8,640)),Hd=Math.max(180,Math.min(wrap.clientHeight-8,480));
+  c.style.width=Wd+'px';c.style.height=Hd+'px';c.width=Wd*dpr;c.height=Hd*dpr;const x=c.getContext('2d');if(!x)return;x.setTransform(dpr,0,0,dpr,0,0);const cx=Wd/2,cy=Hd/2;
+  $('sb').querySelectorAll('.chalk').forEach(b=>b.onclick=()=>{col=b.dataset.c;$('sb').querySelectorAll('.chalk').forEach(z=>z.classList.remove('on'));b.classList.add('on');FX.tap()});
+  $('st').querySelectorAll('.stool').forEach(b=>b.onclick=()=>{tool=b.dataset.t;$('st').querySelectorAll('.stool').forEach(z=>z.classList.remove('on'));b.classList.add('on');FX.tap();
+    if(tool==='rangoli'){x.globalAlpha=1;x.fillStyle=col;x.beginPath();x.arc(cx,cy,4,0,Math.PI*2);x.fill();say(['P_rangoli'],'Rangoli! Draw a line and watch it bloom all around.')}});
+  const seg=(p,q)=>{x.strokeStyle=col;x.lineCap='round';x.globalAlpha=.9;
+    if(tool!=='rangoli'){x.lineWidth=7;x.beginPath();x.moveTo(p[0],p[1]);x.lineTo(q[0],q[1]);x.stroke();return}
+    x.lineWidth=4;for(let k=0;k<8;k++){const an=k*Math.PI/4,c2=Math.cos(an),s2=Math.sin(an);for(const m of [1,-1]){const f=pt=>{const dx=(pt[0]-cx)*m,dy=pt[1]-cy;return[cx+dx*c2-dy*s2,cy+dx*s2+dy*c2]};const p2=f(p),q2=f(q);x.beginPath();x.moveTo(p2[0],p2[1]);x.lineTo(q2[0],q2[1]);x.stroke()}}};
+  const stampAt=p=>{x.globalAlpha=1;if(tool[0]==='s'){x.font='48px serif';x.textAlign='center';x.textBaseline='middle';x.fillText(tool.slice(1),p[0],p[1])}
+    else{const r=30;x.strokeStyle=col;x.lineWidth=6;x.lineJoin='round';x.beginPath();if(tool==='hcircle')x.arc(p[0],p[1],r,0,Math.PI*2);else if(tool==='hsquare')x.rect(p[0]-r,p[1]-r,r*2,r*2);else{x.moveTo(p[0],p[1]-r);x.lineTo(p[0]+r,p[1]+r*.8);x.lineTo(p[0]-r,p[1]+r*.8);x.closePath()}x.stroke()}FX.tick(1)};
+  let down=false,last=null;const pos=e=>{const r=c.getBoundingClientRect();return[(e.clientX-r.left)*(Wd/r.width),(e.clientY-r.top)*(Hd/r.height)]};
+  c.onpointerdown=e=>{try{c.setPointerCapture(e.pointerId)}catch(_){}if(tool==='draw'||tool==='rangoli'){down=true;last=pos(e)}else stampAt(pos(e))};
+  c.onpointermove=e=>{if(!down)return;const p=pos(e);seg(last,p);last=p};c.onpointerup=c.onpointercancel=()=>{down=false};
+  window.__slate={tool:()=>tool};
+  RUN.prompt=()=>say(['P_slate'],'Draw anything you like on your slate!');RUN.prompt();
+  actions([['soft','Wipe clean',()=>{x.clearRect(0,0,Wd,Hd);FX.swish()}],['go',"I'm done",()=>roundDone(true),ICON.check]])};
+
+/* ---- Label the picture and Write the missing word: tiles first, then the word is written once ---- */
+const writeOnce=(n,w,header,ok1,capDone)=>writeGlyph(wordGlyph(w),{w:56*w.length+20,mode:'own',header,intro:['P_now_write'],cap:`Now write it once: ${w}`,lines:true,
+  done:ok=>{learnN(n,ok&&ok1);say([W(w),250,rnd(PRAISE)],capDone).then(()=>roundDone(ok&&ok1))}});
+ACT.wlabel=(n)=>{const pool=RWORDS.filter(w=>w.length<=(lv('read')>=1?5:4));const w=deck('wl'+pool.length,pool);const r=RUN;
+  tileWord({w,header:`<span style="font-size:clamp(50px,14vw,76px);line-height:1">${RB[w]}</span>`,tiles:shuffle([...w,...others(ALPHA.filter(c=>!w.includes(c)),'',2)]),intro:['P_label_tiles'],again:[W(w)],cap:'What is this? Build its name with the tiles.',
+    onDone:ok1=>say([400,W(w)],w).then(()=>{if(RUN!==r||!alive('wlabel'))return;writeOnce(n,w,`<div class="wo-head"><span style="font-size:clamp(34px,9vw,50px);line-height:1">${RB[w]}</span>${wordH(w,'clamp(30px,8vw,44px)')}</div>`,ok1,w+'!')})})};
+ACT.wfill=(n)=>{const pool=RWORDS.filter(x=>x.length<=4&&!/^[aeiou]/.test(x));const w=deck('wfl',pool);const s0=rnd(FILLS);const r=RUN;let wrong=false,miss=0,busy=false;
+  const opts=shuffle([w,...shuffle(pool.filter(x=>x!==w&&x[0]!==w[0])).slice(0,2)]);
+  if(window.__TRACE)window.__TRACE.push({g:'wfill',cap:`${s0} ___.`,items:opts.slice(),ans:w});
+  const head=f=>`<div class="wf-s">${s0} <u>${f||'&nbsp;?&nbsp;'}</u>. <span style="font-size:1.4em">${RB[w]}</span></div>`;
+  body().innerHTML=head()+`<div class="tiles2" id="tl"></div>`;
+  opts.forEach(o=>{const b=document.createElement('button');b.className='ltile wt';b.textContent=o;
+    b.onclick=()=>{if(busy)return;if(o===w){busy=true;[...$('tl').children].forEach(x=>x.classList.remove('nd-hint'));b.classList.add('used');body().querySelector('.wf-s u').textContent=w;FX.chime();
+        say([W(w)],`${s0} ${w}.`).then(()=>{if(RUN!==r||!alive('wfill'))return;writeOnce(n,w,head(w),!wrong,`${s0} ${w}.`)})}
+      else{wrong=true;miss++;FX.boing();anim(b,'wiggle',500);if(NEWUI&&miss>=2)ndHint([...$('tl').children].find(x=>x.textContent===w));say([W(o),300,'P_listen_again'],'Try another word.')}};
+    $('tl').appendChild(b)});
+  RUN.prompt=()=>say(['P_fill_tile'],`${s0} ___. Which word is missing? Tap it.`);RUN.prompt()};
+Object.assign(ROUNDS,{wlabel:3,wfill:3});
 
 /* ======================= BOOT ======================= */
 if(S.profile&&S.placed!==3)placeByAge();
