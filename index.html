@@ -433,6 +433,7 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 
 /* ---- new design (preview): home, path, library, help hand ---- */
 .nd-top{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%}
+#nd-parent{min-height:46px}
 .nd-door{width:78px;height:78px;border-radius:22px;background:var(--leaf);font-size:40px;display:grid;place-items:center;box-shadow:0 5px 0 #154b34;flex:none}
 .nd-door:active,.nd-play:active,.nd-doorbig:active,.nd-node.cur:active,.nd-more:active{transform:translateY(3px)}
 .nd-bubble{background:#fff;border-radius:22px;padding:12px 16px;font-family:var(--f-display);font-weight:800;font-size:clamp(20px,5.4vw,26px);line-height:1.2;text-align:center;color:var(--ink);box-shadow:0 4px 0 var(--shadow);width:100%;text-wrap:balance}
@@ -446,7 +447,7 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 .nd-dots i{width:14px;height:14px;border-radius:50%;background:#fff;border:2px solid var(--mango-deep)}
 .nd-dots i.on{background:var(--mango)}
 .nd-dots.big i{width:20px;height:20px}
-.nd-hills{height:54px;width:100vw;flex:none;margin-bottom:-10px;background:radial-gradient(120% 140% at 20% 130%,var(--moss) 60%,transparent 61%),radial-gradient(120% 150% at 85% 140%,#a9d8b4 60%,transparent 61%)}
+.nd-hills{height:54px;width:100vw;flex:none;margin-top:auto;margin-bottom:-10px;background:radial-gradient(120% 140% at 20% 130%,var(--moss) 60%,transparent 61%),radial-gradient(120% 150% at 85% 140%,#a9d8b4 60%,transparent 61%)}
 .nd-talk{display:flex;align-items:center;gap:10px;min-height:56px}
 .nd-path{flex:1;min-height:0;position:relative;display:flex;flex-direction:column;max-width:560px;width:100%;margin:0 auto}
 .nd-path>svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
@@ -461,6 +462,8 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 .nd-doorbig{border-radius:28px;font-size:clamp(56px,17vw,96px);display:grid;place-items:center;box-shadow:0 6px 0 rgba(0,0,0,.16);line-height:1}
 .nd-doorbig.d1{background:#f6a821}.nd-doorbig.d2{background:#8fd0de}.nd-doorbig.d3{background:#f3d27a}.nd-doorbig.d4{background:#f2b8c6}
 .tile.nd{position:relative}
+.tiles.nd-shelf{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (min-width:620px){.tiles.nd-shelf{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .nd-tag{position:absolute;right:8px;top:6px;font-size:17px;font-style:normal}
 .nd-more{align-self:center;width:72px;height:72px;border-radius:50%;background:#fff;font-size:34px;box-shadow:0 5px 0 var(--shadow);flex:none}
 .nd-levels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
@@ -475,6 +478,23 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 #nd-hand{position:fixed;z-index:60;font-size:54px;pointer-events:none;line-height:1}
 #nd-hand.ndtap{animation:ndtap 1.2s ease-in-out infinite}
 @keyframes ndtap{0%,100%{transform:translate(26px,34px)}50%{transform:translate(0,0) scale(.9)}}
+#reward-box{max-height:100%;overflow-y:auto}
+/* narrow phones: the round dots stack 4 to a row so the game title keeps whole words */
+@media (max-width:480px){.rounds{max-width:76px}#play-title{min-width:72px;overflow-wrap:normal;font-size:15px;line-height:1.08}}
+@media (max-height:700px){#reward-box{gap:8px;padding:16px}#reward-box .haathi{width:84px!important;height:90px!important}#reward-box .nd-stk{font-size:60px}#reward-box .nd-fin,#reward-box .note{display:none}}
+/* a phone held sideways: Haathi and the greeting on the left, Play on the right; the path runs left to right */
+@media (orientation:landscape) and (max-height:540px){
+  .nd-home{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto auto minmax(0,1fr) auto;grid-template-areas:"top top" "bubble play" "haathi play" "haathi dots";gap:6px 14px;justify-items:center;align-items:center}
+  .nd-home .nd-top{grid-area:top}.nd-home .nd-bubble{grid-area:bubble;font-size:18px;padding:8px 12px}
+  .haathi.nd-haathi{grid-area:haathi;height:100%;width:auto;aspect-ratio:236/250;min-height:0;max-height:none}
+  .nd-play{grid-area:play;width:min(46vh,180px)}.nd-dots{grid-area:dots}.nd-hills{display:none}
+  .nd-path{flex-direction:row;max-width:none}
+  .nd-prow{flex-direction:column;justify-content:center;padding-left:0!important}
+  .nd-prow:nth-child(odd){padding-bottom:16vh}.nd-prow:nth-child(even){padding-top:16vh}
+  .nd-node{width:clamp(56px,20vh,84px)}.nd-mini{width:clamp(40px,14vh,60px)}
+  #reward-box{padding:10px 14px;gap:6px 14px;flex-direction:row;flex-wrap:wrap;justify-content:center;max-width:600px}#reward-box h3{width:100%;margin:0}#reward-box .haathi{width:70px!important;height:74px!important}#reward-box .nd-stk{font-size:54px}
+  .movebox{max-height:100%;overflow-y:auto;gap:4px;padding:10px 16px}.movebox .mv-e{font-size:46px;line-height:1}.movebox .mv-n{font-size:40px;min-height:46px;line-height:1}.movebox h3{margin:0}
+}
 @media (prefers-reduced-motion:reduce){.nd-play,.nd-node.cur,.nd-stk,.nd-hint,#nd-hand.ndtap{animation:none!important}}
 </style>
 
@@ -573,6 +593,12 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 <section class="screen parent" id="s-parent" hidden>
   <div class="topbar"><button class="round" data-back aria-label="Back to map"></button><h2>Grown-ups</h2></div>
   <div class="p-grid">
+    <div class="panel" style="grid-column:1/-1;border:3px solid var(--mango)" id="nd-note" hidden><h3>The app has a new look</h3>
+      <p>The home screen now has one big Play button. It starts a short daily adventure of 5 stops chosen for your child: a warm-up, letters, a movement break, numbers and writing. One sticker is earned at the end.</p>
+      <p>Every game, picture card, topic and story is still here, in the Library (the green book button on the home screen). Your child's progress, stickers and levels are unchanged.</p>
+      <p>Easy, Medium and Hard are no longer shown to the child. The app moves them on its own, and you can set them under Settings on this page.</p>
+      <button class="pill-btn primary" id="nd-note-ok" style="align-self:flex-start">Got it</button>
+    </div>
     <div class="panel" style="grid-column:1/-1" id="kids-panel"><h3>Children on this phone</h3>
       <p class="note">Each child has their own age, level and progress. Tap "Play as" to switch, or add another child (for example an older sibling).</p>
       <div id="kids-list" class="kids"></div>
@@ -624,7 +650,7 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
       <label class="check"><input type="checkbox" id="ps-consent"> Share anonymous play data to help improve the game</label>
       <div class="field"><label>Level for each area (the app also moves these on its own)</label>
         <div class="nd-levels"><label>Letters<select id="ps-m-letters"><option value="0">Easy</option><option value="1">Medium</option><option value="2">Hard</option></select></label><label>Numbers<select id="ps-m-numbers"><option value="0">Easy</option><option value="1">Medium</option><option value="2">Hard</option></select></label><label>Writing<select id="ps-m-writing"><option value="0">Easy</option><option value="1">Medium</option><option value="2">Hard</option></select></label><label>My world<select id="ps-m-discover"><option value="0">Easy</option><option value="1">Medium</option><option value="2">Hard</option></select></label></div></div>
-      <label class="check" style="background:#fff3df;border-radius:14px;padding:8px 10px"><input type="checkbox" id="ps-newui"> <span><b>Try the new design (preview).</b> One Play button, a 5-stop daily adventure and a Library with four doors. Progress is shared with the classic design, so you can switch back any time.</span></label>
+
       <label class="check"><input type="checkbox" id="ps-unlock"> Unlock every game in the corners (for grown-ups trying it)</label>
       <button class="pill-btn primary" id="ps-save" style="align-self:flex-start">Save settings</button>
       <div class="row" style="justify-content:flex-start;gap:8px;margin-top:8px"><button class="pill-btn" id="p-reload">↻ Reload the app</button><button class="pill-btn" id="p-reset">Start over for this child</button></div>

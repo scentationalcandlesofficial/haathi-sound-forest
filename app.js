@@ -40,12 +40,15 @@ const SHOP_ITEMS=[['🍎','apple'],['🎈','balloon'],['🍦','ice cream'],['�
 /* ======================= STORE ======================= */
 const KEY='haathi-journey-v3';
 let S=load();
-/* new design preview: one flag for the whole phone, set in Grown-ups or with ?new=1 / ?new=0 in the address */
-let NEWUI=false;try{const q=new URLSearchParams(location.search).get('new');if(q==='1')localStorage.setItem('haathi-newui','1');else if(q==='0')localStorage.removeItem('haathi-newui');NEWUI=localStorage.getItem('haathi-newui')==='1'}catch(e){}
+/* the new design is the app. The old map is kept in the code only as an emergency fallback: ?new=0 in the address shows it on this phone, ?new=1 returns. */
+let NEWUI=true;try{const q=new URLSearchParams(location.search).get('new');if(q==='0')localStorage.setItem('haathi-newui','0');else if(q==='1')localStorage.removeItem('haathi-newui');NEWUI=localStorage.getItem('haathi-newui')!=='0'}catch(e){}
+/* families who used the old design get one note in Grown-ups about what changed */
+if(S.profile&&NEWUI){try{if(!localStorage.getItem('haathi-nd-note')){localStorage.setItem('haathi-nd-note',(S.chapters&&S.chapters.some(c=>!c.adv))?'show':'seen')}}catch(e){}}else if(!S.profile){try{localStorage.setItem('haathi-nd-note','seen')}catch(e){}}
+const ndNote=()=>{try{return localStorage.getItem('haathi-nd-note')==='show'}catch(e){return false}};
 function blank(){return {profile:null,chapters:[],intro:[],lastIntroCh:-9,sounds:{},sk:{},minutes:{},settings:{sfx:true,unlock:false,consent:false},said:0,likes:{},fbPrefs:{},device:null,lastSync:0,sentFb:0}}
 function load(){try{const r=localStorage.getItem(KEY);if(r){const o=Object.assign(blank(),JSON.parse(r));o.settings=Object.assign(blank().settings,o.settings);o.likes=o.likes||{};o.fbPrefs=o.fbPrefs||{};return o}}catch(e){}return blank()}
 function loadHindi(){if(window.__hiLoaded||window.__hiLoading||!(S.settings&&S.settings.lang==='hi'))return;window.__hiLoading=1;const sc=document.createElement('script');sc.src='clips-hi.js';sc.onerror=()=>{window.__hiLoading=0};document.head.appendChild(sc)}
-function badge(){['btn-parent','nd-parent'].forEach(id=>{const b=$(id);if(b)b.classList.toggle('has-news',(S.unseen||0)>0)})}
+function badge(){['btn-parent','nd-parent'].forEach(id=>{const b=$(id);if(b)b.classList.toggle('has-news',(S.unseen||0)>0||ndNote())})}
 function renderProgress(){const el=$('p-progress');if(!el)return;const nm=S.profile?S.profile.name:'Your child';
   const modes=['letters','numbers','writing','discover'].map(k=>`<span class="chip">${{letters:'Letters',numbers:'Numbers',writing:'Writing',discover:'Discover'}[k]}: <b>${MODE_NAMES[modeOf(k)]}</b></span>`).join(' ');
   const ch=(S.changes||[]).slice(-12).reverse();
@@ -1707,12 +1710,11 @@ function renderParent(){renderKids();renderProgress();S.unseen=0;save();badge();
     const chip=!un?'<span class="chip locked">locked</span>':!s||!s.n?'<span class="chip new">not tried</span>':s.p>=.75?'<span class="chip strong">strong</span>':s.p<.55?'<span class="chip weak">practising</span>':'';
     return `<tr><td>${SK[id].sub}: ${SK[id].name}${chip}</td><td>${SK[id].lab(param(id))}</td><td>${s&&s.n?`<div class="bar"><i style="width:${Math.round(s.p*100)}%"></i></div>${Math.round(s.p*100)}% · ${s.n} tries`:'–'}</td></tr>`}).join('');
   $('p-map').innerHTML=ORDER.map(l=>{const st=S.intro.includes(l)||S.intro.includes(SAME[l])?status(l):'none',lab={none:S.intro.includes(l)?'met':'not yet',prac:'practising',mast:'mastered',due:'review'}[st];return `<div class="scell st-${st}"><div class="l">${l}</div><div class="s">${lab}</div></div>`}).join('');
-  $('ps-name').value=S.profile.name;$('ps-age').value=S.profile.age;$('ps-limit').value=S.profile.limit;$('ps-sfx').checked=S.settings.sfx!==false;$('ps-countnums').checked=S.settings.countNums!==false;$('ps-moves').checked=S.settings.moves!==false;$('ps-automode').checked=S.settings.autoMode!==false;$('ps-lang').value=S.settings.lang||'en';$('ps-unlock').checked=!!S.settings.unlock;$('ps-consent').checked=!!S.settings.consent;$('ps-newui').checked=NEWUI;['letters','numbers','writing','discover'].forEach(k=>{$('ps-m-'+k).value=modeOf(k)});renderLikes();
+  $('ps-name').value=S.profile.name;$('ps-age').value=S.profile.age;$('ps-limit').value=S.profile.limit;$('ps-sfx').checked=S.settings.sfx!==false;$('ps-countnums').checked=S.settings.countNums!==false;$('ps-moves').checked=S.settings.moves!==false;$('ps-automode').checked=S.settings.autoMode!==false;$('ps-lang').value=S.settings.lang||'en';$('ps-unlock').checked=!!S.settings.unlock;$('ps-consent').checked=!!S.settings.consent;{const nn=$('nd-note');if(nn){nn.hidden=!ndNote();$('nd-note-ok').onclick=()=>{try{localStorage.setItem('haathi-nd-note','seen')}catch(e){}nn.hidden=true;badge()}}}['letters','numbers','writing','discover'].forEach(k=>{$('ps-m-'+k).value=modeOf(k)});renderLikes();
   renderStudio();resetZone();renderFeedback()}
 $('ps-save').addEventListener('click',()=>setTimeout(()=>{kidsIdx();renderKids()},0));
 $('ps-save').onclick=()=>{S.profile.name=$('ps-name').value.trim()||S.profile.name;const oldAge=S.profile.age;S.profile.age=+$('ps-age').value;if(S.profile.age!==oldAge)placeByAge();S.profile.limit=+$('ps-limit').value;S.settings.sfx=$('ps-sfx').checked;S.settings.countNums=$('ps-countnums').checked;S.settings.moves=$('ps-moves').checked;S.settings.autoMode=$('ps-automode').checked;S.settings.lang=$('ps-lang').value;loadHindi();applyNums();S.settings.unlock=$('ps-unlock').checked;S.settings.consent=$('ps-consent').checked;
   ['letters','numbers','writing','discover'].forEach(k=>{const v=+$('ps-m-'+k).value,was=modeOf(k);if(v!==was){setMode(k,v);if(S.tierLog)S.tierLog[k]=[];logChange(k,was,v,'mode',`${{letters:'Letters',numbers:'Numbers',writing:'Writing',discover:'Discover'}[k]} set to ${MODE_NAMES[v]} by a grown-up.`);S.unseen=0}});
-  {const nu=$('ps-newui').checked;if(nu!==NEWUI){NEWUI=nu;try{nu?localStorage.setItem('haathi-newui','1'):localStorage.removeItem('haathi-newui')}catch(e){}}}
   save();$('ps-saved').hidden=false;setTimeout(()=>$('ps-saved').hidden=true,1600)};
 function resetZone(){const z=$('reset-zone');z.innerHTML='<button class="pill-btn danger" id="p-reset">Reset all progress</button>';
   $('p-reset').onclick=()=>{z.innerHTML='<p>This deletes chapters, stars and skill levels (recordings are kept). It cannot be undone.</p><div class="row" style="justify-content:flex-start"><button class="pill-btn" id="r-no">Keep progress</button><button class="pill-btn danger" id="r-yes">Delete progress</button></div>';
