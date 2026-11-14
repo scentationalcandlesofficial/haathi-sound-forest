@@ -1584,15 +1584,15 @@ function sceneHTML(spec){const [bg,acts]=spec.split('|');const [b,...adds]=bg.sp
 /* ---------- library ---------- */
 const ST_GROUPS=['All','Ramayana','Mahabharata','Gita','Puranas and folk','Panchatantra','Aesop','Folk tale','Feelings','Clever and funny','Sleepy'];
 const SERIES_ORDER={Ramayana:0,Mahabharata:1,Gita:2};
-const stSort=(a,b)=>((SERIES_ORDER[a.series]??9)-(SERIES_ORDER[b.series]??9))||((a.ep||0)-(b.ep||0));
+const stSort=(a,b)=>((b.v2?1:0)-(a.v2?1:0))||((SERIES_ORDER[a.series]??9)-(SERIES_ORDER[b.series]??9))||((a.ep||0)-(b.ep||0));
 function openStories(){const b=$('corner-body');$('corner-title').textContent='Bedtime Stories';b.innerHTML='';const f=S.storyFilter||(S.storyFilter={g:'All',a:0});
   const chips=document.createElement('div');chips.className='st-chips';
-  [['a',0,'All ages'],['a',3,'Age 3+'],['a',5,'Age 5+']].concat(ST_GROUPS.map(g=>['g',g,g==='All'?'All stories':g])).forEach(([k,v,lab])=>{if(k==='g'&&v==='All')return;const c=document.createElement('button');c.className='st-chip'+(f[k]===v?' on':'');c.textContent=lab;
+  [['a',0,'All ages'],['a',3,'Age 3+'],['a',5,'Age 5+']].concat(ST_PILOT?[['a',6,'Age 6+']]:[]).concat(ST_GROUPS.map(g=>['g',g,g==='All'?'All stories':g])).forEach(([k,v,lab])=>{if(k==='g'&&v==='All')return;const c=document.createElement('button');c.className='st-chip'+(f[k]===v?' on':'');c.textContent=lab;
     c.onclick=()=>{FX.tap();f[k]=f[k]===v&&k==='g'?'All':v;save();openStories()};chips.appendChild(c)});b.appendChild(chips);
   const list=BEDTIME.filter(s=>(f.g==='All'||s.group===f.g)&&(!f.a||s.age===f.a)).sort(stSort);
   const g=document.createElement('div');g.className='st-grid';b.appendChild(g);
   list.forEach(s=>{const t=document.createElement('button');t.className='st-card';const done=(S.storiesRead||{})[s.id];
-    t.innerHTML=`<div class="st-cover">${sceneHTML(s.pages[0].s)}</div>${s.series?`<span class="st-ep">${s.series} · Episode ${s.ep}</span>`:''}<b>${s.title}</b><small>${s.series?'':s.group+' · '}${s.age}+ · ${s.pages.length} pages${done?' · ✓ read':''}</small>`;
+    t.innerHTML=`<div class="st-cover">${s.v2?scene2(s,0,true):sceneHTML(s.pages[0].s)}${s.v2?'<i class="st-new">NEW</i>':''}</div>${s.series?`<span class="st-ep">${s.series} · Episode ${s.ep}</span>`:''}<b>${s.title}</b><small>${s.series?'':s.group+' · '}${s.v2?'ages '+s.band:s.age+'+'} · ${stPagesOf(s)} pages${done?' · ✓ read':''}</small>`;
     t.onclick=()=>{unlockAudio();FX.tap();openStory(s.id)};g.appendChild(t)});
   if(!list.length)b.insertAdjacentHTML('beforeend','<p class="card-note">No stories match. Try another filter.</p>');
   b.insertAdjacentHTML('beforeend','<p class="card-note">Tip: stories are best shared. Read together, then talk about the question at the end. For sleep, use the 🌙 night mode, or switch the screen off with "Lights off" and just listen.</p>')}
@@ -2226,11 +2226,83 @@ ACT.wfill=(n)=>{const pool=RWORDS.filter(x=>x.length<=4&&!/^[aeiou]/.test(x));co
   RUN.prompt=()=>say(['P_fill_tile'],`${s0} ___. Which word is missing? Tap it.`);RUN.prompt()};
 Object.assign(ROUNDS,{wlabel:3,wfill:3});
 
+/* ======================= RELEASE 4 (preview): rewritten stories and the new story reader =======================
+   Off by default. Opening the app once with ?stories=new switches the preview on for that phone; ?stories=old switches it off. */
+const ST_PILOT=(()=>{try{const q=new URLSearchParams(location.search).get('stories');if(q==='new')localStorage.setItem('haathi-stories-pilot','1');if(q==='old')localStorage.removeItem('haathi-stories-pilot');return localStorage.getItem('haathi-stories-pilot')==='1'}catch(e){return false}})();
+function stPilotMerge(){(window.HAATHI_STORIES_PILOT||[]).forEach(s=>{const i=BEDTIME.findIndex(x=>x.id===s.base||x.id===s.id);if(i>=0)BEDTIME[i]=s;else BEDTIME.push(s)});if(!$('s-corner').hidden&&$('corner-title').textContent==='Bedtime Stories')openStories()}
+if(ST_PILOT){const sc=document.createElement('script');sc.src='stories/pilot.js';sc.onload=stPilotMerge;document.head.appendChild(sc)}
+const stFx=new Audio();stFx.preload='auto';
+const stArt=k=>{const f=(window.HAATHI_STORY_ART||{})[k];return f?f():''};
+const stPagesOf=s=>s.v2?s.pages.filter(p=>!p.ask&&!p.ctx).length:s.pages.length;
+
+/* one character or thing in a picture: emoji or :castkey, then @x,y,size and optional  < flip  ~move  #hidden-until  !tap-fires  %hidden-after  =name */
+function st2Sprite(s,tok,idx){const m=tok.match(/^(.*?)@([\d.]+),([\d.]+),([\d.]+)(.*)$/);if(!m)return'';
+  const x=+m[2]*4,y=+m[3]*4.4,F=+m[4]*4.2;let who=m[1],flip=false,an='',grp='',trig='',hide='',label=null;
+  m[5].replace(/([<~#!%=])([^<~#!%=]*)/g,(_,k,v)=>{if(k==='<')flip=true;else if(k==='~')an=v;else if(k==='#')grp=v;else if(k==='!')trig=v;else if(k==='%')hide=v;else label=v;return''});
+  let e=who,acc='',at='',name=label;
+  if(who[0]===':'){const c=(s.cast||[]).find(c=>c.k===who.slice(1));if(c){e=c.e;acc=c.acc||'';at=c.at||'';if(label==null)name=c.n}}
+  if(name==='-'||name==null)name='';
+  /* a plain pole, for things emoji cannot show */
+  if(who==='[pole]')return `<rect x="${x-5}" y="${y-F/2}" width="10" height="${F}" rx="5" fill="#8a6a3b"/><rect x="${x-5}" y="${y-F/2}" width="4" height="${F}" rx="2" fill="#a9865a"/>`;
+  const accH=acc?`<text x="${at==='top'?0:F*.46}" y="${at==='top'?-F*.5:F*.18}" font-size="${F*.46}" text-anchor="middle" dominant-baseline="central">${acc}</text>`:'';
+  const tag=name?`<text class="tag" y="${Math.min(F*.62+9,432-y)}" text-anchor="middle">${name}</text>`:'';
+  const attrs=(grp?` data-g="${grp}"`:'')+(trig?` data-tap="${trig}"`:'')+(hide?` data-h="${hide}"`:'');
+  return `<g transform="translate(${x} ${y})"><g class="sp${an?' a-'+an:''}"${attrs} style="animation-delay:${((idx*7)%5)*.18}s">${trig?`<circle class="ring" r="${F*.62}"/>`:''}<text class="act" font-size="${F}" text-anchor="middle" dominant-baseline="central"${flip?' transform="scale(-1 1)"':''}>${e}</text>${accH}${tag}</g></g>`}
+function scene2(s,i,thumb){let k=i;while(k>0&&s.pages[k]&&s.pages[k].ask)k--;const pg=s.pages[k]||{};const spec=pg.s||'';let inner='',night=false;
+  if(spec.startsWith('v:'))inner=stArt(spec.slice(2));
+  else{const [bg,acts]=spec.split('|');const [b,...adds]=(bg||'home').split('+');const B=bgSVG(b);night=B.night;
+    inner=`<svg x="0" y="0" width="400" height="440" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">${B.svg}</svg>${addons(adds,B.night)}${(acts?acts.split(';'):[]).filter(Boolean).map((t,j)=>st2Sprite(s,t,j)).join('')}`}
+  return `<div class="scene scene2${night?' nightscene':''}"><svg viewBox="0 0 400 440" preserveAspectRatio="xMidYMid ${thumb?'slice':'meet'}">${inner}</svg></div>`}
+const st2Words=(t,cls)=>t.split(/(\s+)/).map(w=>!w?'':/^\s+$/.test(w)?w:`<span${cls||''}>${w}</span>`).join('');
+const st2Text=(s,t)=>t.split(/(\{[^}]+\})/).map(seg=>seg[0]==='{'?st2Words(seg.slice(1,-1),` class="gw" data-w="${Object.keys(s.words).indexOf(seg.slice(1,-1))}"`):st2Words(seg)).join('');
+
+const stRender1=stRender;
+stRender=function(){const el=$('s-story'),v2=!!(SR&&SR.s.v2);el.classList.toggle('v2',v2);el.dataset.band=v2?SR.s.band.replace(/\D/g,''):'';stFx.pause();if(!v2)return stRender1();
+  const {s,p}=SR,n=s.pages.length,pg=s.pages[p];el.classList.toggle('night',SR.night);$('st-title').textContent=s.title;SR.answered=false;SR.miss=0;
+  $('st-night').textContent=SR.night?'🌙':'☀️';$('st-mode').textContent=SR.mode==='read'?'🔊 Read to me':'📖 I\'ll read';
+  let pic,txt;
+  if(p<0){pic=scene2(s,0);txt=`${s.series?`<div class="st-sub">${s.series} · Episode ${s.ep}</div>`:''}<div class="st-cover-title">${s.title}</div><div class="st-cast">${s.cast.map(c=>`<div class="st-who"><span class="st-face">${c.e.startsWith('v:')?stArt(c.e.slice(2)):c.e+(c.acc?`<i class="${c.at==='top'?'top':''}">${c.acc}</i>`:'')}</span><b>${c.n}</b><small>${c.d}</small></div>`).join('')}</div><div class="st-sub">For ages ${s.band}${s.source?' · From: '+s.source:''}</div>`}
+  else if(p>=n){pic=scene2(s,0);const nx=s.series&&BEDTIME.find(x=>x.series===s.series&&x.ep===s.ep+1);SR.next=nx&&nx.id;
+    txt=`<div class="st-cover-title">${nx?`End of episode ${s.ep}`:'The End'}</div><p class="st-moral">${s.moral}</p><p class="st-talk">💬 ${s.talk}</p><div class="st-endbtns">${nx?`<button class="pill-btn primary" id="st-nextep">Next: ${nx.title} ▶</button>`:''}<button class="pill-btn" id="st-again">Read again</button><button class="pill-btn" id="st-more">Another story</button><button class="pill-btn primary" id="st-sleep">🌙 Goodnight</button></div>`;
+    S.storiesRead=S.storiesRead||{};S.storiesRead[s.id]=today();save();gc('/story/'+s.id+'/done','Story finished')}
+  else if(pg.ask){pic=scene2(s,p);txt=`<p class="st-q" id="st-text">${st2Words(pg.ask)}</p><div class="st-opts">${pg.opts.map((o,i)=>`<button class="st-opt" data-i="${i}"><span>${o[0]}</span>${o[1]}</button>`).join('')}</div>`}
+  else{pic=scene2(s,p);txt=(pg.ctx?`<div class="st-ctx">${pg.ctx}</div>`:'')+(pg.sh?`<div class="st-shloka">${pg.sh.replace(/।\s*/,'।<br>')}</div>`:'')+`<p class="st-text" id="st-text">${st2Text(s,pg.t)}</p><div class="st-gloss" id="st-gloss" hidden></div>`}
+  $('st-pic').innerHTML=pic;$('st-pic').classList.toggle('asking',!!(pg&&pg.ask));$('st-words').innerHTML=txt;$('st-words').scrollTop=0;
+  $('st-dots').innerHTML=Array.from({length:n+2},(_,i)=>`<i class="${i-1===p?'on':''}${s.pages[i-1]&&s.pages[i-1].ask?' q':''}"></i>`).join('');
+  $('st-prev').disabled=p<0;$('st-next').disabled=p>=n;
+  if(p>=n){if(SR.next)$('st-nextep').onclick=()=>{FX.tap();openStory(SR.next)};$('st-again').onclick=()=>{FX.tap();SR.p=-1;stRender()};$('st-more').onclick=()=>{stStop();FX.tap();go('corner');openStories()};$('st-sleep').onclick=()=>{stStop();stLights(true)}}
+  if(pg&&pg.ask)$('st-words').querySelectorAll('.st-opt').forEach(b=>b.onclick=()=>st2Answer(b,+b.dataset.i));
+  $('st-words').querySelectorAll('.gw').forEach(w=>w.onclick=()=>st2Gloss(+w.dataset.w));
+  stPlay()};
+/* a pause-and-ask page: a wrong tap is never punished; after two misses the right answer glows */
+function st2Answer(b,i){const pg=SR.s.pages[SR.p];if(SR.answered)return;const ok=pg.ok==null||i===pg.ok;
+  if(!ok){FX.boing();anim(b,'wiggle',500);SR.miss=(SR.miss||0)+1;if(SR.miss>=2){const r=$('st-words').querySelector(`.st-opt[data-i="${pg.ok}"]`);if(r)r.classList.add('hint')}return}
+  SR.answered=true;stStop();b.classList.add('right');FX.chime();const r=SR,pp=SR.p;const nextPage=()=>{if(SR===r&&SR.p===pp){SR.p++;stRender()}};
+  $('st-words').insertAdjacentHTML('beforeend',`<p class="st-yes">${pg.yes}</p>`);
+  if(SR.mode!=='read'){SR.tm=setTimeout(nextPage,2800);return}
+  stBlob(SR.s.id+'_'+pp+'y').then(u=>{if(SR!==r||SR.p!==pp)return;if(!u){SR.tm=setTimeout(nextPage,1800);return}stFx.src=u;stFx.onended=()=>{SR.tm=setTimeout(nextPage,900)};stFx.play().catch(()=>{SR.tm=setTimeout(nextPage,1800)})})}
+/* an explained word: tap it to see and hear what it means */
+function st2Gloss(k){const s=SR.s,w=Object.keys(s.words)[k],g=$('st-gloss');if(!g||!w)return;stStop();FX.tap();g.hidden=false;g.innerHTML=`<b>${w}</b> ${s.words[w]}`;const r=SR,pp=SR.p;
+  stBlob(s.id+'_w'+k).then(u=>{if(u&&SR===r&&SR.p===pp){stFx.src=u;stFx.onended=null;stFx.play().catch(()=>{})}})}
+/* a question waits for an answer instead of turning the page; with the screen off nobody can answer, so it moves on */
+const stEnded1=stAudio.onended;
+stAudio.onended=()=>{const pg=SR&&SR.s.v2&&SR.s.pages[SR.p];if(pg&&pg.ask&&!SR.answered){$('st-play').textContent='▶';const t=$('st-text');if(t)t.querySelectorAll('span').forEach(w=>w.classList.add('lit'));
+    if(!$('st-lights').hidden){const r=SR;SR.tm=setTimeout(()=>{if(SR===r){SR.p++;stRender()}},2500)}return}stEnded1()};
+const stPrefetch1=stPrefetch;
+stPrefetch=function(s){if(!s.v2)return stPrefetch1(s);gc('/story/'+s.id+'/start','Story opened');
+  (async()=>{const keys=[s.id+'_t',...s.pages.flatMap((p,i)=>p.ask?[s.id+'_'+i,s.id+'_'+i+'y']:p.sh?[s.id+'_'+i+'_sh',s.id+'_'+i]:[s.id+'_'+i]),s.id+'_e',...Object.keys(s.words).map((_,k)=>s.id+'_w'+k)];for(const k of keys){if(!SR||SR.id!==s.id)return;await stBlob(k)}})()};
+/* things in the picture that can be tapped */
+$('st-pic').addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-tap]');if(!t||!SR||!SR.s.v2)return;if((t.dataset.g&&!t.classList.contains('on'))||t.classList.contains('done')||t.classList.contains('gone'))return;
+  SR.taps=(SR.taps||0)+1;FX.tick(SR.taps%8+1);const trig=t.dataset.tap;if(!t.dataset.re)t.classList.add('done');t.classList.remove('tapped');void t.getBoundingClientRect();t.classList.add('tapped');t.addEventListener('animationend',()=>t.classList.remove('tapped'),{once:true});
+  const again=a=>{a.style.animationName='none';void a.getBoundingClientRect();a.style.animationName=''};
+  $('st-pic').querySelectorAll(`[data-g="${trig}"]`).forEach(x=>{x.classList.add('on');if(x.classList.contains('sp'))again(x);x.querySelectorAll('.sp').forEach(again)});
+  $('st-pic').querySelectorAll(`[data-h="${trig}"]`).forEach(x=>x.classList.add('gone'))});
+
 /* ======================= BOOT ======================= */
 if(S.profile&&S.placed!==3)placeByAge();
 document.addEventListener('visibilitychange',()=>{if(document.hidden){save();stopVoice();sync(false);document.querySelectorAll('canvas').forEach(c=>c.dispatchEvent(new PointerEvent('pointercancel')))}else{if(actx&&actx.state!=='running')try{actx.resume()}catch(e){}}});
 window.addEventListener('pageshow',()=>{if(actx&&actx.state!=='running')try{actx.resume()}catch(e){}});
 document.addEventListener('pointerdown',()=>{if(actx&&actx.state!=='running')actx.resume()},{passive:true});
-window.__haathi={MERGE,REPL,mergeRound,micOn,cornerNode,cornerLocked,tierOf:id=>tierOf(kindOfId(id),id),newUI:v=>{if(v!=null)NEWUI=!!v;return NEWUI},composeAdv,go,ACT,roundDone:ok=>roundDone(ok),RUN:()=>RUN,curChapter,placeByAge:()=>placeByAge(),SK,LS,CS,DIG,PREP,DOTPICS,S:()=>S,compose,learn,startRun,sceneHTML,openStory};
+window.__haathi={MERGE,REPL,mergeRound,micOn,cornerNode,cornerLocked,stPilotMerge,openStory,openStories,SR:()=>SR,BEDTIME,tierOf:id=>tierOf(kindOfId(id),id),newUI:v=>{if(v!=null)NEWUI=!!v;return NEWUI},composeAdv,go,ACT,roundDone:ok=>roundDone(ok),RUN:()=>RUN,curChapter,placeByAge:()=>placeByAge(),SK,LS,CS,DIG,PREP,DOTPICS,S:()=>S,compose,learn,startRun,sceneHTML,openStory};
 go('start');
 })();
