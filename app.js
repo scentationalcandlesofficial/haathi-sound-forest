@@ -2235,19 +2235,20 @@ const stFx=new Audio();stFx.preload='auto';
 const stArt=k=>{const f=(window.HAATHI_STORY_ART||{})[k];return f?f():''};
 const stPagesOf=s=>s.v2?s.pages.filter(p=>!p.ask&&!p.ctx).length:s.pages.length;
 
-/* one character or thing in a picture: emoji or :castkey, then @x,y,size and optional  < flip  ~move  #hidden-until  !tap-fires  %hidden-after  =name */
+/* one character or thing in a picture: emoji or :castkey, then @x,y,size and optional  < flip  ~move  #hidden-until  !tap-fires  %hidden-after  *look  =name */
 function st2Sprite(s,tok,idx){const m=tok.match(/^(.*?)@([\d.]+),([\d.]+),([\d.]+)(.*)$/);if(!m)return'';
-  const x=+m[2]*4,y=+m[3]*4.4,F=+m[4]*4.2;let who=m[1],flip=false,an='',grp='',trig='',hide='',label=null;
-  m[5].replace(/([<~#!%=])([^<~#!%=]*)/g,(_,k,v)=>{if(k==='<')flip=true;else if(k==='~')an=v;else if(k==='#')grp=v;else if(k==='!')trig=v;else if(k==='%')hide=v;else label=v;return''});
+  const x=+m[2]*4,y=+m[3]*4.4,F=+m[4]*4.2;let who=m[1],flip=false,an='',grp='',trig='',hide='',label=null,cls='';
+  m[5].replace(/([<~#!%=*])([^<~#!%=*]*)/g,(_,k,v)=>{if(k==='<')flip=true;else if(k==='~')an=v;else if(k==='#')grp=v;else if(k==='!')trig=v;else if(k==='%')hide=v;else if(k==='*')cls=v;else label=v;return''});
   let e=who,acc='',at='',name=label;
   if(who[0]===':'){const c=(s.cast||[]).find(c=>c.k===who.slice(1));if(c){e=c.e;acc=c.acc||'';at=c.at||'';if(label==null)name=c.n}}
   if(name==='-'||name==null)name='';
   /* a plain pole, for things emoji cannot show */
+  if(who==='[stick]')return `<rect x="${x-F/2}" y="${y-4}" width="${F}" height="8" rx="4" fill="#8a6a3b"/><rect x="${x-F/2}" y="${y-4}" width="${F}" height="3" rx="1.5" fill="#a9865a"/>`;
   if(who==='[pole]')return `<rect x="${x-5}" y="${y-F/2}" width="10" height="${F}" rx="5" fill="#8a6a3b"/><rect x="${x-5}" y="${y-F/2}" width="4" height="${F}" rx="2" fill="#a9865a"/>`;
   const accH=acc?`<text x="${at==='top'?0:F*.46}" y="${at==='top'?-F*.5:F*.18}" font-size="${F*.46}" text-anchor="middle" dominant-baseline="central">${acc}</text>`:'';
   const tag=name?`<text class="tag" y="${Math.min(F*.62+9,432-y)}" text-anchor="middle">${name}</text>`:'';
   const attrs=(grp?` data-g="${grp}"`:'')+(trig?` data-tap="${trig}"`:'')+(hide?` data-h="${hide}"`:'');
-  return `<g transform="translate(${x} ${y})"><g class="sp${an?' a-'+an:''}"${attrs} style="animation-delay:${((idx*7)%5)*.18}s">${trig?`<circle class="ring" r="${F*.62}"/>`:''}<text class="act" font-size="${F}" text-anchor="middle" dominant-baseline="central"${flip?' transform="scale(-1 1)"':''}>${e}</text>${accH}${tag}</g></g>`}
+  return `<g transform="translate(${x} ${y})"><g class="sp${an?' a-'+an:''}${cls?' c-'+cls:''}"${attrs} style="animation-delay:${((idx*7)%5)*.18}s">${trig?`<circle class="ring" r="${F*.62}"/>`:''}<text class="act" font-size="${F}" text-anchor="middle" dominant-baseline="central"${flip?' transform="scale(-1 1)"':''}>${e}</text>${accH}${tag}</g></g>`}
 function scene2(s,i,thumb){let k=i;while(k>0&&s.pages[k]&&s.pages[k].ask)k--;const pg=s.pages[k]||{};const spec=pg.s||'';let inner='',night=false;
   if(spec.startsWith('v:'))inner=stArt(spec.slice(2));
   else{const [bg,acts]=spec.split('|');const [b,...adds]=(bg||'home').split('+');const B=bgSVG(b);night=B.night;

@@ -515,6 +515,8 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 .scene2 [data-g].on{opacity:1;pointer-events:auto}
 .scene2 .gone{opacity:0!important;pointer-events:none!important;transition:opacity .25s}
 .scene2 [data-tap]{cursor:pointer}
+.scene2 .c-blue .act{filter:hue-rotate(185deg) saturate(1.6) brightness(.92)}
+.scene2 .c-chalk .act{fill:#fff;letter-spacing:-1px}
 .scene2 .ring{fill:rgba(255,255,255,.01);stroke:#fff;stroke-width:5;pointer-events:all;transform-box:fill-box;transform-origin:50% 50%;animation:sp-ring 1.5s ease-out infinite}
 .scene2 [data-tap].done .ring{display:none}
 .scene2 .sp.tapped{animation:sp-pop .45s ease-out}
@@ -559,7 +561,7 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 @media (orientation:landscape) and (max-height:540px){#s-story.v2 .st-book{flex-direction:row;align-items:stretch}#s-story.v2 .st-pic{height:100%;flex:none;max-height:100%}#s-story.v2 .st-words{flex:1;max-height:100%;justify-content:center;padding:8px 12px}
   #s-story.v2 .st-text,#s-story.v2 .st-q{font-size:clamp(14px,4.4vh,18px)!important;line-height:1.3!important}.st-who{flex-basis:76px;padding:3px 4px}.st-who small{font-size:11px}.st-face{width:34px;height:34px;font-size:26px;line-height:34px}.st-opt{min-height:52px;font-size:14px}.st-opt span{font-size:22px}.st-gloss{font-size:13px;padding:5px 8px}}
 /* short phones: a smaller picture and smaller words, so a page seldom needs scrolling */
-@media (orientation:portrait) and (max-height:620px){#s-story.v2 .st-pic{min-height:96px}#s-story.v2 .st-words{max-height:68%;padding:8px 12px;gap:4px}
+@media (orientation:portrait) and (max-height:620px){#s-story.v2 .st-pic{min-height:96px}.st-cast{flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;scrollbar-width:none;padding-bottom:2px}.st-cast .st-who{flex:none}#s-story.v2 .st-words{max-height:68%;padding:8px 12px;gap:4px}
   #s-story.v2[data-band="34"] .st-text{font-size:18px;line-height:1.34}#s-story.v2[data-band="5"] .st-text{font-size:16px;line-height:1.3}#s-story.v2[data-band="67"] .st-text{font-size:15.5px;line-height:1.28}
   #s-story.v2 .st-q{font-size:17px}#s-story.v2 .st-cover-title{font-size:21px}.st-cast{gap:5px}.st-who{flex-basis:84px;padding:3px 4px}.st-who b{font-size:13px}.st-who small{font-size:11px}.st-face{width:32px;height:32px;font-size:24px;line-height:32px}.st-face i{font-size:13px}
   .st-opt{min-height:54px;font-size:14px}.st-opt span{font-size:24px}.st-gloss{font-size:13.5px;padding:5px 8px}#s-story.v2 .st-sub,#s-story.v2 .st-moral,#s-story.v2 .st-talk{font-size:14px}#s-story.v2 .st-endbtns .pill-btn{font-size:14px;padding:6px 12px}}

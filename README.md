@@ -78,7 +78,8 @@ Also in this release: a game that is taller than the screen can now be scrolled 
 ## Story pilot (preview only, not live)
 Six rewritten stories and a new story reader sit behind a preview switch. The live app still shows the 54 original stories.
 - **Switch on:** open the app once with `?stories=new` at the end of the address. **Switch off:** open it once with `?stories=old`. The switch is remembered on that phone only.
-- **Stories in the pilot:** The Thirsty Crow and Chintu's First Day at School (ages 3 to 4), The Monkey and the Crocodile and Do Your Best (age 5), Kaikeyi's Two Wishes and Birbal's Khichdi (ages 6 to 7). They replace their old versions on the shelf and carry a NEW tag.
+- **Stories in the preview:** 30 of the 54 so far (all the Aesop, Panchatantra, feelings, bedtime, clever-and-funny and Purana stories, plus Kaikeyi's Two Wishes and Do Your Best). Each replaces its old version on the shelf and carries a NEW tag. The remaining Ramayana, Mahabharata and Gita episodes follow.
+- **Text sources:** `gen/stories/pilot.py` (first six) and `gen/stories/pilot_b1.py`, `pilot_b2.py` (later batches). A story is published to the preview only once all its narration exists.
 - **What is new in each story:** two to four times the length, a "meet the characters" opening, two or three explained words (tap the dotted word), two pause-and-ask questions, and a "where this story comes from" page.
 - **Pictures:** The Thirsty Crow is drawn as vector art (the same on every phone) and its pebbles can be tapped into the pot. Chintu's First Day uses moving emoji with things to tap. The other four use emoji with name tags and light movement.
 - **Files:** `stories/pilot.js` (text and drawn art, built from `gen/stories/pilot.py` and `gen/stories/pilot_art.js`), narration in `stories/audio/` under the new story ids.
