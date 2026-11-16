@@ -78,8 +78,9 @@ Also in this release: a game that is taller than the screen can now be scrolled 
 ## Story pilot (preview only, not live)
 Six rewritten stories and a new story reader sit behind a preview switch. The live app still shows the 54 original stories.
 - **Switch on:** open the app once with `?stories=new` at the end of the address. **Switch off:** open it once with `?stories=old`. The switch is remembered on that phone only.
-- **Stories in the preview:** 30 of the 54 so far (all the Aesop, Panchatantra, feelings, bedtime, clever-and-funny and Purana stories, plus Kaikeyi's Two Wishes and Do Your Best). Each replaces its old version on the shelf and carries a NEW tag. The remaining Ramayana, Mahabharata and Gita episodes follow.
-- **Text sources:** `gen/stories/pilot.py` (first six) and `gen/stories/pilot_b1.py`, `pilot_b2.py` (later batches). A story is published to the preview only once all its narration exists.
+- **Stories in the preview:** all 54, each replacing its old version on the shelf with a NEW tag. Age bands: 19 for ages 3 to 4, 17 for age 5, 18 for ages 6 to 7. Heavier epic episodes (exile, the golden deer, the war, the dice game, the house of lac) moved to 6 to 7.
+- **Text sources:** `gen/stories/pilot.py` (first six, the builder and the pronunciation list) and `pilot_b1.py` to `pilot_b4.py` (the other 48). A story is published to the preview only once all its narration exists. The Gita stories reuse the original verse recordings.
+- **To make the new stories the default:** change the preview default in `app.js` (search for `ST_PILOT`) once the stories are approved.
 - **What is new in each story:** two to four times the length, a "meet the characters" opening, two or three explained words (tap the dotted word), two pause-and-ask questions, and a "where this story comes from" page.
 - **Pictures:** The Thirsty Crow is drawn as vector art (the same on every phone) and its pebbles can be tapped into the pot. Chintu's First Day uses moving emoji with things to tap. The other four use emoji with name tags and light movement.
 - **Files:** `stories/pilot.js` (text and drawn art, built from `gen/stories/pilot.py` and `gen/stories/pilot_art.js`), narration in `stories/audio/` under the new story ids.
