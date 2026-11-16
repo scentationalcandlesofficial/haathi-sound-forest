@@ -1592,7 +1592,7 @@ function openStories(){const b=$('corner-body');$('corner-title').textContent='B
   const list=BEDTIME.filter(s=>(f.g==='All'||s.group===f.g)&&(!f.a||s.age===f.a)).sort(stSort);
   const g=document.createElement('div');g.className='st-grid';b.appendChild(g);
   list.forEach(s=>{const t=document.createElement('button');t.className='st-card';const done=(S.storiesRead||{})[s.id];
-    t.innerHTML=`<div class="st-cover">${s.v2?scene2(s,0,true):sceneHTML(s.pages[0].s)}${s.v2?'<i class="st-new">NEW</i>':''}</div>${s.series?`<span class="st-ep">${s.series} · Episode ${s.ep}</span>`:''}<b>${s.title}</b><small>${s.series?'':s.group+' · '}${s.v2?'ages '+s.band:s.age+'+'} · ${stPagesOf(s)} pages${done?' · ✓ read':''}</small>`;
+    t.innerHTML=`<div class="st-cover">${s.v2?scene2(s,0,true):sceneHTML(s.pages[0].s)}</div>${s.series?`<span class="st-ep">${s.series} · Episode ${s.ep}</span>`:''}<b>${s.title}</b><small>${s.series?'':s.group+' · '}${s.v2?'ages '+s.band:s.age+'+'} · ${stPagesOf(s)} pages${done?' · ✓ read':''}</small>`;
     t.onclick=()=>{unlockAudio();FX.tap();openStory(s.id)};g.appendChild(t)});
   if(!list.length)b.insertAdjacentHTML('beforeend','<p class="card-note">No stories match. Try another filter.</p>');
   b.insertAdjacentHTML('beforeend','<p class="card-note">Tip: stories are best shared. Read together, then talk about the question at the end. For sleep, use the 🌙 night mode, or switch the screen off with "Lights off" and just listen.</p>')}
@@ -2226,9 +2226,9 @@ ACT.wfill=(n)=>{const pool=RWORDS.filter(x=>x.length<=4&&!/^[aeiou]/.test(x));co
   RUN.prompt=()=>say(['P_fill_tile'],`${s0} ___. Which word is missing? Tap it.`);RUN.prompt()};
 Object.assign(ROUNDS,{wlabel:3,wfill:3});
 
-/* ======================= RELEASE 4 (preview): rewritten stories and the new story reader =======================
-   Off by default. Opening the app once with ?stories=new switches the preview on for that phone; ?stories=old switches it off. */
-const ST_PILOT=(()=>{try{const q=new URLSearchParams(location.search).get('stories');if(q==='new')localStorage.setItem('haathi-stories-pilot','1');if(q==='old')localStorage.removeItem('haathi-stories-pilot');return localStorage.getItem('haathi-stories-pilot')==='1'}catch(e){return false}})();
+/* ======================= RELEASE 4: rewritten stories and the new story reader =======================
+   On for everyone. Opening the app once with ?stories=old brings back the original 54 stories on that phone (emergency fallback); ?stories=new undoes that. */
+const ST_PILOT=(()=>{try{const q=new URLSearchParams(location.search).get('stories');if(q==='new')localStorage.removeItem('haathi-stories-pilot');if(q==='old')localStorage.setItem('haathi-stories-pilot','0');return localStorage.getItem('haathi-stories-pilot')!=='0'}catch(e){return true}})();
 function stPilotMerge(){(window.HAATHI_STORIES_PILOT||[]).forEach(s=>{const i=BEDTIME.findIndex(x=>x.id===s.base||x.id===s.id);if(i>=0)BEDTIME[i]=s;else BEDTIME.push(s)});if(!$('s-corner').hidden&&$('corner-title').textContent==='Bedtime Stories')openStories()}
 if(ST_PILOT){const sc=document.createElement('script');sc.src='stories/pilot.js';sc.onload=stPilotMerge;document.head.appendChild(sc)}
 const stFx=new Audio();stFx.preload='auto';

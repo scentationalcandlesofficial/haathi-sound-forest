@@ -75,12 +75,11 @@ Four of the 15 were already covered by release 2 (Meet a letter say-it, Count wi
 
 Also in this release: a game that is taller than the screen can now be scrolled instead of being cut off, and a late "tap done" prompt no longer speaks over the next game.
 
-## Story pilot (preview only, not live)
-Six rewritten stories and a new story reader sit behind a preview switch. The live app still shows the 54 original stories.
-- **Switch on:** open the app once with `?stories=new` at the end of the address. **Switch off:** open it once with `?stories=old`. The switch is remembered on that phone only.
-- **Stories in the preview:** all 54, each replacing its old version on the shelf with a NEW tag. Age bands: 19 for ages 3 to 4, 17 for age 5, 18 for ages 6 to 7. Heavier epic episodes (exile, the golden deer, the war, the dice game, the house of lac) moved to 6 to 7.
+## Rewritten stories (release 4, live)
+All 54 stories are rewritten and shown in a new story reader, for everyone. The original 54 stay in `stories/stories.js` as a fallback.
+- **Emergency fallback:** open the app once with `?stories=old` at the end of the address to bring back the original stories on that phone. `?stories=new` undoes it. The choice is remembered on that phone only.
+- **Stories:** all 54, each replacing its old version on the shelf. Age bands: 19 for ages 3 to 4, 17 for age 5, 18 for ages 6 to 7. Heavier epic episodes (exile, the golden deer, the war, the dice game, the house of lac) moved to 6 to 7.
 - **Text sources:** `gen/stories/pilot.py` (first six, the builder and the pronunciation list) and `pilot_b1.py` to `pilot_b4.py` (the other 48). A story is published to the preview only once all its narration exists. The Gita stories reuse the original verse recordings.
-- **To make the new stories the default:** change the preview default in `app.js` (search for `ST_PILOT`) once the stories are approved.
 - **What is new in each story:** two to four times the length, a "meet the characters" opening, two or three explained words (tap the dotted word), two pause-and-ask questions, and a "where this story comes from" page.
 - **Pictures:** The Thirsty Crow is drawn as vector art (the same on every phone) and its pebbles can be tapped into the pot. Chintu's First Day uses moving emoji with things to tap. The other four use emoji with name tags and light movement.
 - **Files:** `stories/pilot.js` (text and drawn art, built from `gen/stories/pilot.py` and `gen/stories/pilot_art.js`), narration in `stories/audio/` under the new story ids.
