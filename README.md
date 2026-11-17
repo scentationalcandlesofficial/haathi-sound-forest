@@ -84,7 +84,20 @@ All 54 stories are rewritten and shown in a new story reader, for everyone. The 
 - **Pictures:** The Thirsty Crow is drawn as vector art (the same on every phone) and its pebbles can be tapped into the pot. Chintu's First Day uses moving emoji with things to tap. The other four use emoji with name tags and light movement.
 - **Files:** `stories/pilot.js` (text and drawn art, built from `gen/stories/pilot.py` and `gen/stories/pilot_art.js`), narration in `stories/audio/` under the new story ids.
 
-Not built yet from the review: Steps C to F.
+## Release 5 (Step C of the full review)
+The Grown-ups page, still behind the same sum, now has three tabs.
+- **Today:** a 30-second read. Minutes played, today's adventure, days in a row, the last 7 days as dots, one thing that went well, one thing to practise, and one 2-minute activity to do together away from the phone. Older tips sit under "More ideas for this week".
+- **Progress:** five plain areas (Sounds and letters, Reading, Numbers, Writing, My world), each marked Getting started, Growing or Confident, with the rule written under them. The full tables (levels, every skill, letter sounds) are one tap away under "Details".
+- **Settings:** everything else, unchanged, plus one new switch for Show a grown-up.
+- **Show a grown-up:** after the first adventure of the day the child gets one small thing to tell or do with a parent (ten kinds, chosen by age, never the same kind twice running). The grown-up presses and holds a button for 2 seconds and the child earns a together sticker, shown in the sticker book. "Later" parks the task behind a letter button on the home screen for the rest of the day. A parent can also confirm it from the Today tab. It can be switched off in Settings.
+- **Weekly summary:** on the Progress tab. Written on the phone from the last 7 days: days played, minutes, adventures finished, levels gained, sounds mastered, most played game, one activity to try. "Send on WhatsApp" opens WhatsApp with the text ready to edit. No server is involved.
+- **Guess it!:** a 2-minute game for two, from age 4. The grown-up holds the phone on their forehead, the child describes the picture without saying its name. Tip the phone down for a right guess and up to pass, or the child taps the tick and the arrow. It is on the Play shelf and on the Today tab. It is not part of the daily adventure and does not move any level.
+- **New things kept on the phone:** games played per day for the last 3 weeks, the dates adventures were finished, the day's task and the count of together stickers. Counts only.
+- **New anonymous counts:** Grown-ups page opened (once a day), weekly summary sent, Show a grown-up shown, done and put off. The notice on the setup screen says so.
+- **Voice lines:** 22 new lines in English and Hindi (`P_sg_*`, `P_guess_*`).
+- **Code:** the block marked RELEASE 5 in `app.js` and the styles marked release 5 in `index.html`.
+
+Not built yet from the review: Steps D to F.
 
 ### Backup of the old app
 The last version before the redesign is kept as the branch `classic-backup-2026-11-12` in this repository. To put it back on the main link: `git checkout origin/classic-backup-2026-11-12 -- .`, commit and push. As an emergency fallback on a single phone, opening the app with `?new=0` shows the old map again and `?new=1` returns to the new design.

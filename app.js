@@ -48,7 +48,7 @@ const ndNote=()=>{try{return localStorage.getItem('haathi-nd-note')==='show'}cat
 function blank(){return {profile:null,chapters:[],intro:[],lastIntroCh:-9,sounds:{},sk:{},minutes:{},settings:{sfx:true,unlock:false,consent:false},said:0,likes:{},fbPrefs:{},device:null,lastSync:0,sentFb:0}}
 function load(){try{const r=localStorage.getItem(KEY);if(r){const o=Object.assign(blank(),JSON.parse(r));o.settings=Object.assign(blank().settings,o.settings);o.likes=o.likes||{};o.fbPrefs=o.fbPrefs||{};return o}}catch(e){}return blank()}
 function loadHindi(){if(window.__hiLoaded||window.__hiLoading||!(S.settings&&S.settings.lang==='hi'))return;window.__hiLoading=1;const sc=document.createElement('script');sc.src='clips-hi.js';sc.onerror=()=>{window.__hiLoading=0};document.head.appendChild(sc)}
-function badge(){['btn-parent','nd-parent'].forEach(id=>{const b=$(id);if(b)b.classList.toggle('has-news',(S.unseen||0)>0||ndNote())})}
+function badge(){['btn-parent','nd-parent'].forEach(id=>{const b=$(id);if(b)b.classList.toggle('has-news',(S.unseen||0)>0||ndNote()||sgPending())})}
 function renderProgress(){const el=$('p-progress');if(!el)return;const nm=S.profile?S.profile.name:'Your child';
   const modes=['letters','numbers','writing','discover'].map(k=>`<span class="chip">${{letters:'Letters',numbers:'Numbers',writing:'Writing',discover:'Discover'}[k]}: <b>${MODE_NAMES[modeOf(k)]}</b></span>`).join(' ');
   const ch=(S.changes||[]).slice(-12).reverse();
@@ -398,7 +398,7 @@ function renderStart(){r2Who();$('start-haathi').innerHTML=haathi('happy');if(S.
 function begin(){unlockAudio();FX.trumpet();if(!S.profile){go('setup');return}go('map');const nu=markDay();setTimeout(()=>say(['P_welcome',200,NEWUI?'P_nd_home':'P_map_hi'],null).then(()=>{if(nu)say(['P_dress'],`Haathi can now wear: ${nu.name}! Open the sticker book.`)}),600)}
 applyNums();loadHindi();$('btn-start').onclick=begin;$('btn-book').onclick=()=>{unlockAudio();FX.tap();openBook()};$('start-haathi').onclick=begin;
 $('kid-add').onclick=()=>{FX.tap();addKid()};
-{const b=$('btn-who');if(S.profile){const k=kidsIdx();b.hidden=false;b.textContent=`Playing as ${S.profile.name||'child'} (age ${S.profile.age}) · Change child or age`;b.onclick=()=>{FX.tap();openGate(()=>{go('parent');setTimeout(()=>{const p=$('kids-panel');if(p&&p.scrollIntoView)p.scrollIntoView({behavior:'smooth'})},80)})}}}
+{const b=$('btn-who');if(S.profile){const k=kidsIdx();b.hidden=false;b.textContent=`Playing as ${S.profile.name||'child'} (age ${S.profile.age}) · Change child or age`;b.onclick=()=>{FX.tap();openGate(()=>{PT_NEXT='settings';go('parent');setTimeout(()=>{const p=$('kids-panel');if(p&&p.scrollIntoView)p.scrollIntoView({behavior:'smooth'})},80)})}}}
 let setupAge=4;
 function renderSetup(){const ac=$('agechips');ac.innerHTML='';[3,4,5,6,7].forEach(a=>{const b=document.createElement('button');b.textContent=a;b.setAttribute('aria-pressed',a===setupAge);b.onclick=()=>{setupAge=a;FX.tap();renderSetup()};ac.appendChild(b)})}
 $('btn-setup-done').onclick=()=>{unlockAudio();gc('/new-child/age-'+setupAge,'New child aged '+setupAge);S.profile={name:$('in-name').value.trim()||'friend',age:setupAge,limit:+$('in-limit').value,created:today()};S.settings.consent=$('in-consent').checked;
@@ -1463,7 +1463,7 @@ function awardSticker(){S.stickers=S.stickers||[];const left=STICKERS.filter(s=>
 function openBook(){const ov=$('book');const have=S.stickers||[];const dp=daysPlayed();S.wear=S.wear||{};
   ov.innerHTML=`<div class="box" style="max-width:560px;max-height:92vh;overflow:auto">
     <h3>${S.profile?S.profile.name+"'s":'My'} sticker book</h3><p class="note">${new Set(have).size} of ${STICKERS.length} stickers · 🔥 ${streak()} day${streak()===1?'':'s'} in a row · played on ${dp} day${dp===1?'':'s'}</p>
-    <div class="stk">${STICKERS.map(s=>`<span class="${have.includes(s)?'got':''}">${have.includes(s)?s:'?'}</span>`).join('')}</div>
+    <div class="stk">${STICKERS.map(s=>`<span class="${have.includes(s)?'got':''}">${have.includes(s)?s:'?'}</span>`).join('')}</div>${r5Book()}
     <h3 style="margin-top:12px">Haathi's wardrobe</h3><p class="note">Play on more days to unlock new things for Haathi to wear. Tap to put on or take off.</p>
     <div class="wardrobe"><div class="haathi" style="width:130px;height:138px" id="wd-h">${haathi('happy')}</div><div class="wd-items">${DRESS.map(d=>`<button class="wd ${dp>=d.days?'':'lock'} ${S.wear[d.slot]===d.id?'on':''}" data-id="${d.id}"><span>${dp>=d.days?d.e:'🔒'}</span><small>${dp>=d.days?d.name:'Day '+d.days}</small></button>`).join('')}</div></div>
     <button class="big-btn go" id="book-close" style="margin-top:12px">Back</button></div>`;
@@ -1713,12 +1713,12 @@ function renderParent(){renderKids();renderProgress();S.unseen=0;save();badge();
     return `<tr><td>${SK[id].sub}: ${SK[id].name}${chip}</td><td>${SK[id].lab(param(id))}</td><td>${s&&s.n?`<div class="bar"><i style="width:${Math.round(s.p*100)}%"></i></div>${Math.round(s.p*100)}% · ${s.n} tries`:'–'}</td></tr>`}).join('');
   $('p-map').innerHTML=ORDER.map(l=>{const st=S.intro.includes(l)||S.intro.includes(SAME[l])?status(l):'none',lab={none:S.intro.includes(l)?'met':'not yet',prac:'practising',mast:'mastered',due:'review'}[st];return `<div class="scell st-${st}"><div class="l">${l}</div><div class="s">${lab}</div></div>`}).join('');
   $('ps-name').value=S.profile.name;$('ps-age').value=S.profile.age;$('ps-limit').value=S.profile.limit;$('ps-sfx').checked=S.settings.sfx!==false;$('ps-countnums').checked=S.settings.countNums!==false;$('ps-moves').checked=S.settings.moves!==false;$('ps-automode').checked=S.settings.autoMode!==false;$('ps-lang').value=S.settings.lang||'en';$('ps-unlock').checked=!!S.settings.unlock;$('ps-consent').checked=!!S.settings.consent;$('ps-mic').checked=!!S.settings.mic;$('ps-tilt').checked=S.settings.tilt!==false;{const nn=$('nd-note');if(nn){nn.hidden=!ndNote();$('nd-note-ok').onclick=()=>{try{localStorage.setItem('haathi-nd-note','seen')}catch(e){}nn.hidden=true;badge()}}}['letters','numbers','writing','discover'].forEach(k=>{$('ps-m-'+k).value=modeOf(k)});renderLikes();
-  renderStudio();resetZone();renderFeedback()}
+  renderStudio();resetZone();renderFeedback();r5Parent()}
 $('ps-save').addEventListener('click',()=>setTimeout(()=>{kidsIdx();renderKids()},0));
-$('ps-save').onclick=()=>{S.profile.name=$('ps-name').value.trim()||S.profile.name;const oldAge=S.profile.age;S.profile.age=+$('ps-age').value;if(S.profile.age!==oldAge)placeByAge();S.profile.limit=+$('ps-limit').value;S.settings.sfx=$('ps-sfx').checked;S.settings.countNums=$('ps-countnums').checked;S.settings.moves=$('ps-moves').checked;S.settings.autoMode=$('ps-automode').checked;S.settings.lang=$('ps-lang').value;loadHindi();applyNums();S.settings.unlock=$('ps-unlock').checked;S.settings.consent=$('ps-consent').checked;S.settings.tilt=$('ps-tilt').checked;
+$('ps-save').onclick=()=>{S.profile.name=$('ps-name').value.trim()||S.profile.name;const oldAge=S.profile.age;S.profile.age=+$('ps-age').value;if(S.profile.age!==oldAge)placeByAge();S.profile.limit=+$('ps-limit').value;S.settings.sfx=$('ps-sfx').checked;S.settings.countNums=$('ps-countnums').checked;S.settings.moves=$('ps-moves').checked;S.settings.autoMode=$('ps-automode').checked;S.settings.lang=$('ps-lang').value;loadHindi();applyNums();S.settings.unlock=$('ps-unlock').checked;S.settings.consent=$('ps-consent').checked;S.settings.tilt=$('ps-tilt').checked;{const c=$('ps-sg');if(c)S.settings.showGrown=c.checked}
   {const want=$('ps-mic').checked;if(want&&!S.settings.mic&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){navigator.mediaDevices.getUserMedia({audio:true}).then(st=>{st.getTracks().forEach(t=>t.stop());S.settings.mic=true;save()}).catch(()=>{S.settings.mic=false;save();const c=$('ps-mic');if(c)c.checked=false})}else S.settings.mic=want&&!!S.settings.mic}
   ['letters','numbers','writing','discover'].forEach(k=>{const v=+$('ps-m-'+k).value,was=modeOf(k);if(v!==was){setMode(k,v);if(S.tierLog)S.tierLog[k]=[];logChange(k,was,v,'mode',`${{letters:'Letters',numbers:'Numbers',writing:'Writing',discover:'Discover'}[k]} set to ${MODE_NAMES[v]} by a grown-up.`);S.unseen=0}});
-  save();$('ps-saved').hidden=false;setTimeout(()=>$('ps-saved').hidden=true,1600)};
+  save();r5Today();r5AreasRender();r5Week();badge();$('ps-saved').hidden=false;setTimeout(()=>$('ps-saved').hidden=true,1600)};
 function resetZone(){const z=$('reset-zone');z.innerHTML='<button class="pill-btn danger" id="p-reset">Reset all progress</button>';
   $('p-reset').onclick=()=>{z.innerHTML='<p>This deletes chapters, stars and skill levels (recordings are kept). It cannot be undone.</p><div class="row" style="justify-content:flex-start"><button class="pill-btn" id="r-no">Keep progress</button><button class="pill-btn danger" id="r-yes">Delete progress</button></div>';
     $('r-no').onclick=resetZone;$('r-yes').onclick=()=>{S=blank();save();sessSec=0;go('setup')}}}
@@ -1825,7 +1825,7 @@ ACT.move=(n)=>{body().innerHTML='';$('cap').textContent='';moveBreak(()=>{if(RUN
 function ndDots(c){const d=c.nodes.filter(n=>n.stars!=null).length;return c.nodes.map((n,i)=>`<i class="${i<d?'on':''}"></i>`).join('')}
 
 /* ---- home: one choice ---- */
-function renderHome(){if(S.profile)markDay();badge();const c=curChapter();const started=c.nodes.some(n=>n.stars!=null);
+function renderHome(){if(S.profile)markDay();badge();r5Home();const c=curChapter();const started=c.nodes.some(n=>n.stars!=null);
   $('nd-parent').innerHTML=$('btn-parent').innerHTML;$('nd-haathi').innerHTML=haathi('happy');$('nd-dots').innerHTML=ndDots(c);
   const nm=S.profile&&S.profile.name&&S.profile.name!=='friend'?', '+S.profile.name:'';const h=new Date().getHours();
   $('nd-bubble').textContent=S.advDone===today()&&!started?`All done for today${nm}! See you tomorrow.`:`${h<12?'Good morning':h<17?'Good afternoon':'Good evening'}${nm}! Shall we play?`}
@@ -1862,6 +1862,7 @@ function openShelf(kind,speak){go('corner');const b=$('corner-body');b.innerHTML
   else{const kinds=kind==='make'?['writing']:['letters','numbers'];
     const seenTile={};kinds.forEach(k=>{const m=modeOf(k);const all=k==='letters'?[...CORNER.letters,...Object.keys(READ_G).map(g=>[g,...READ_G[g]])]:CORNER[k];
       all.filter(([id])=>tierOf(k,id)===m&&!cornerLocked(id)).forEach(([id,label,ico])=>{const t=r2Tile(id,label,ico);if(seenTile[t.key])return;seenTile[t.key]=1;items.push({id:t.key,ico:t.ico,label:t.label,n:ndPlays(t.key),col:COL_OF[k],run:()=>startRun(cornerNode(id,k),{corner:k})})})})}
+  r5Shelf(kind,items);
   const fav=items.filter(x=>x.n>0).sort((a,c)=>c.n-a.n),nw=items.filter(x=>x.n===0);
   const pages=Math.max(1,Math.ceil(items.length/8));const p=(ND_PAGE[kind]||0)%pages;
   /* every page has up to four favourites and four new games; every game sits on exactly one page */
@@ -1888,7 +1889,7 @@ function finishND(run,stars,chDone){const n=run.node,box=$('reward-box'),adv=run
   const pid=n.pid||n.t;S.plays=S.plays||{};S.plays[pid]=(S.plays[pid]||0)+1;gc('/g/'+pid+'/done','Game finished: '+pid);if(chDone)gc('/adv/done','Adventure finished');
   /* meeting a letter and the board game are not tests, so they do not push Easy/Medium/Hard up */
   if(n.t!=='move'&&n.t!=='friend'&&n.t!=='meet'&&n.t!=='race'&&n.t!=='race20')modeSuggest(n,stars,document.createElement('div'));
-  if(chDone){S.advDone=today();S.advCount=(S.advCount||0)+1}
+  r5Finish(run,chDone,pid);if(chDone){S.advDone=today();S.advCount=(S.advCount||0)+1}
   save();sync(false);RUN=null;
   if(n.t==='move'&&!chDone){go('path');return}
   const ch=adv?S.chapters.find(c=>c.id===run.from.chapter):null;const stk=chDone?awardSticker():null;
@@ -1901,7 +1902,7 @@ function finishND(run,stars,chDone){const n=run.node,box=$('reward-box'),adv=run
     fq.querySelectorAll('button').forEach(b=>b.onclick=()=>{fq.querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');FX.tap();likeIds(n).forEach(id=>{const L=S.likes[id]||(S.likes[id]={up:0,mid:0,down:0});if(fq.dataset.v)L[fq.dataset.v]--;L[b.dataset.f]++});fq.dataset.v=b.dataset.f;save()});box.appendChild(fq)}
   const row=document.createElement('div');row.className='row';
   const mk=(cls,html,label,fn)=>{const x=document.createElement('button');x.className='big-btn '+cls+' nd-big';x.innerHTML=html;x.setAttribute('aria-label',label);x.onclick=()=>{FX.tap();$('reward').hidden=true;fn()};row.appendChild(x)};
-  if(chDone)mk('go','🏠','Home',()=>{go('home');say(['P_nd_seeyou'],null)});
+  if(chDone)mk('go','🏠','Home',()=>{go('home');if(!sgOffer())say(['P_nd_seeyou'],null)});
   else if(adv)mk('go',ICON.next.replace('currentColor','#fff'),'Next stop',()=>go('path'));
   else{mk('soft',ICON.back,'Back',()=>backFrom(run.from));mk('go','↻','Play again',()=>startRun(n,run.from))}
   box.appendChild(row);$('reward').hidden=false;confetti();FX.fanfare();
@@ -2299,11 +2300,206 @@ $('st-pic').addEventListener('click',e=>{const t=e.target.closest&&e.target.clos
   $('st-pic').querySelectorAll(`[data-g="${trig}"]`).forEach(x=>{x.classList.add('on');if(x.classList.contains('sp'))again(x);x.querySelectorAll('.sp').forEach(again)});
   $('st-pic').querySelectorAll(`[data-h="${trig}"]`).forEach(x=>x.classList.add('gone'))});
 
+/* ======================= RELEASE 5: Grown-ups in three tabs, Show a grown-up, Guess it! ======================= */
+/* ---- small helpers ---- */
+let PT_NEXT=null;
+const r5E=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const r5Name=()=>{const n=S.profile&&S.profile.name;return n&&n!=='friend'?n:'Your child'};
+const r5Last7=()=>{const a=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);a.push(d)}return a};
+const r5Mon=d=>d.toLocaleDateString('en-IN',{month:'short'});
+const r5Ago=k=>{if(!k)return 'a while ago';const n=daysBetween(k,today());return n<=0?'today':n===1?'yesterday':n+' days ago'};
+const r5Ten=p=>Math.max(0,Math.min(10,Math.round(p*10)));
+const r5AreaOf=id=>({Maths:'numbers',Writing:'writing',Reading:'reading',Discover:'world'}[SK[id]&&SK[id].sub]||'numbers');
+function r5Title(p){if(MERGE[p])return MERGE[p].t;if(REPL[p])return REPL[p][2];if(TITLES[p])return TITLES[p];if(p==='cards')return 'Picture cards';if(p.slice(0,2)==='d_'&&DSEC[p.slice(2)])return DSEC[p.slice(2)].name;return p}
+
+/* ---- tabs ---- */
+function ptTab(t){document.querySelectorAll('#s-parent .pt-tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.pt===t?'true':'false'));
+  document.querySelectorAll('#s-parent .pt-pane').forEach(p=>p.hidden=p.dataset.pane!==t);const sc=$('s-parent');if(sc)sc.scrollTop=0}
+document.querySelectorAll('#s-parent .pt-tabs button').forEach(b=>b.onclick=()=>{FX.tap();ptTab(b.dataset.pt)});
+
+/* ---- Show a grown-up: one small thing to tell or do with a parent, once a day, after the first adventure ---- */
+const SG_COL={red:'🔴',blue:'🔵',green:'🟢',yellow:'🟡'};
+const SG_T={
+ start:{min:3,cat:'letters',arg:c=>c.l,pic:a=>`<span class="lc">${a}</span>`,txt:a=>`Tell a grown-up three things that start like <b>${a}</b>, as in ${KEYW(a)[0]}.`,say:a=>['P_sg_start',150,...sndOf(a)]},
+ back:{min:4,cat:'letters',arg:c=>c.l,pic:a=>`<span class="lc">${a}</span>`,txt:a=>`Draw the letter <b>${a}</b> on a grown-up's back with your finger. Can they guess it?`,say:()=>['P_sg_back']},
+ rhyme:{min:5,cat:'letters',arg:()=>rnd(RHY)[0],pic:()=>'🎵',txt:a=>`Together, think of a word that rhymes with <b>${a}</b>.`,say:a=>['P_sg_rhyme',150,W(a)]},
+ count:{min:3,cat:'numbers',arg:()=>ageR()<=4?5:10,pic:()=>'🔢',txt:a=>`Count ${a===5?'five':'ten'} things in the room together.`,say:a=>['P_sg_count'+a]},
+ jump:{min:3,cat:'move',arg:()=>ageR()<=4?5:10,pic:()=>'🤸',txt:a=>`Jump ${a===5?'five':'ten'} times together and count out loud.`,say:a=>['P_sg_jump'+a]},
+ air:{min:3,cat:'move',arg:()=>0,pic:()=>'⭕',txt:()=>'Draw a big circle in the air together. Then a big cross.',say:()=>['P_sg_air']},
+ fav:{min:3,cat:'talk',arg:()=>0,pic:()=>'💬',txt:()=>'Tell a grown-up which stop you liked best today, and why.',say:()=>['P_sg_fav']},
+ hug:{min:3,cat:'talk',arg:()=>0,pic:()=>'🤗',txt:()=>'Give a grown-up a big hug, and tell them one thing you learned today.',say:()=>['P_sg_hug']},
+ colour:{min:3,cat:'world',arg:()=>rnd(Object.keys(SG_COL)),pic:a=>SG_COL[a],txt:a=>`Together, find three ${a} things.`,say:a=>['P_sg_'+a]},
+ shapes:{min:4,cat:'world',arg:()=>0,pic:()=>'🔷',txt:()=>'Together, find something round and something square.',say:()=>['P_sg_shapes']}
+};
+const sgPlain=g=>SG_T[g.k]?SG_T[g.k].txt(g.a).replace(/<[^>]+>/g,''):'';
+function sgPending(){try{return !!(S.profile&&S.settings.showGrown!==false&&S.sg&&S.sg.d===today()&&!S.sg.done&&SG_T[S.sg.k])}catch(e){return false}}
+function sgPick(ch){const age=ageR();let l=(ch&&ch.nodes.map(n=>n.t==='meet'?n.l:null).find(Boolean))||(ch&&ch.nodes.map(n=>n.focus).find(Boolean))||(S.intro.length?weakestLetter():'s');if(!WORDS[l])l='s';
+  const log=(S.sgLog||[]).map(x=>x.k).filter(k=>SG_T[k]);const keys=Object.keys(SG_T).filter(k=>SG_T[k].min<=age);
+  const recent=log.slice(-Math.min(6,keys.length-1));let c=keys.filter(k=>!recent.includes(k));if(!c.length)c=keys;
+  const lastCat=log.length?SG_T[log[log.length-1]].cat:null;const c2=c.filter(k=>SG_T[k].cat!==lastCat);if(c2.length)c=c2;
+  const k=rnd(c);return {d:today(),k,a:SG_T[k].arg({l})}}
+/* called from the end of every game: keeps a 3-week count of games per day for the weekly summary, and sets up the day's task */
+function r5Finish(run,chDone,pid){const t=today();S.pd=S.pd||{};const o=S.pd[t]||(S.pd[t]={});o[pid]=(o[pid]||0)+1;const ks=Object.keys(S.pd).sort();while(ks.length>21)delete S.pd[ks.shift()];
+  if(!chDone)return;const first=S.advDone!==t;S.advLog=S.advLog||[];S.advLog.push(t);if(S.advLog.length>90)S.advLog=S.advLog.slice(-90);
+  if(first&&S.settings.showGrown!==false&&!(S.sg&&S.sg.d===t)){S.sg=sgPick(S.chapters.find(c=>c.id===run.from.chapter));S.sgLog=S.sgLog||[];S.sgLog.push({d:t,k:S.sg.k});if(S.sgLog.length>30)S.sgLog=S.sgLog.slice(-30)}}
+function sgComplete(quiet){const g=S.sg;if(!g||g.done)return;g.done=1;S.together=(S.together||0)+1;const e=(S.sgLog||[]).filter(x=>x.d===g.d).pop();if(e)e.done=1;save();gc('/sg/done','Show a grown-up: done together');badge();
+  if(quiet)return;const ov=$('sg');
+  ov.innerHTML=`<div class="sg-box" role="dialog" aria-label="Together sticker"><div class="sg-pic">🤝</div><h3>Together sticker!</h3><p class="sg-task">${S.together} together sticker${S.together===1?'':'s'} so far. They are in the sticker book.</p><button class="big-btn go" id="sg-ok" aria-label="Home">🏠</button></div>`;
+  confetti();FX.fanfare();say([300,'P_sg_done'],null);$('sg-ok').onclick=()=>{FX.tap();ov.hidden=true;stopVoice();if(current==='home')renderHome()}}
+function sgOpen(){if(!sgPending())return false;const g=S.sg,T=SG_T[g.k],ov=$('sg');
+  ov.innerHTML=`<div class="sg-box" role="dialog" aria-label="Show a grown-up"><div class="sg-pic">${T.pic(g.a)}</div><h3>Show a grown-up!</h3><p class="sg-task">${T.txt(g.a)}</p>
+    <button class="sg-hold" id="sg-hold" aria-label="Grown-up: press and hold when you have done it together"><i></i><span>🤝</span><small id="sg-hold-t">Grown-up: press and hold</small></button>
+    <div class="sg-row"><button class="round" id="sg-hear" aria-label="Hear it again">${ICON.ear}</button><button class="pill-btn" id="sg-later">Later</button></div></div>`;
+  ov.hidden=false;if(!g.shown){g.shown=1;save();gc('/sg/shown','Show a grown-up: shown')}
+  const talk=intro=>{const hint=intro&&(S.sgHint||0)<3;if(hint){S.sgHint=(S.sgHint||0)+1;save()}say([...(intro?['P_sg_find',350]:[]),...T.say(g.a),...(hint?[600,'P_sg_hold']:[])],null)};
+  const hb=$('sg-hold');let ht=null;
+  const down=e=>{if(e&&e.preventDefault)e.preventDefault();if(ht)return;unlockAudio();hb.classList.add('holding');$('sg-hold-t').textContent='Keep holding';FX.tick(4);ht=setTimeout(()=>{ht=null;sgComplete()},2000)};
+  const up=()=>{if(!ht)return;clearTimeout(ht);ht=null;hb.classList.remove('holding');const t=$('sg-hold-t');if(t)t.textContent='Grown-up: press and hold'};
+  hb.onpointerdown=down;hb.onpointerup=up;hb.onpointerleave=up;hb.onpointercancel=up;hb.oncontextmenu=e=>e.preventDefault();
+  hb.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&!e.repeat)down(e)};hb.onkeyup=up;
+  $('sg-hear').onclick=()=>{unlockAudio();FX.tap();talk(false)};
+  $('sg-later').onclick=()=>{unlockAudio();FX.tap();up();ov.hidden=true;if(!g.later){g.later=1;save();gc('/sg/later','Show a grown-up: later')}say(['P_sg_later'],null);if(current==='home')renderHome()};
+  talk(true);return true}
+/* the finale's Home button: the card comes up by itself only the first time; after that it waits behind the letter button on the home screen */
+function sgOffer(){return sgPending()&&!S.sg.shown?sgOpen():false}
+function r5Home(){const b=$('nd-sg');if(b)b.hidden=!sgPending()}
+{const b=$('nd-sg');if(b)b.onclick=()=>{unlockAudio();FX.tap();sgOpen()}}
+function r5Book(){const n=S.together||0;if(!n&&S.settings.showGrown===false)return '';
+  return `<h3 style="margin-top:12px">Together stickers</h3><p class="note">${n?`<span style="font-size:24px;letter-spacing:2px">${'🤝'.repeat(Math.min(n,30))}</span>${n>30?' and '+(n-30)+' more':''}<br>`:''}${n} so far. One each day, for showing a grown-up after the adventure.</p>`}
+
+/* ---- Grown-ups, Today: a 30-second read ---- */
+const SG_BANK={
+ letters:[l=>`Play I spy with the sound "${l}" (as in ${KEYW(l)[0]}). Take turns to find three things that start with it. Say the sound, not the letter name.`,
+   l=>`Sound hunt: walk through one room and touch three things that start with the sound "${l}" (as in ${KEYW(l)[0]}).`,
+   l=>`Draw the letter ${l} on each other's back with a finger and guess it. Then swap.`],
+ numbers:['Count the rotis or spoons at the next meal together, touching each one as you count.','Count the stairs going up, and count backwards coming down.','Make two small piles of buttons or peanuts. Ask which pile has more, then count both to check.','Share six biscuits between two plates, one at a time. Ask if both plates have the same.'],
+ writing:['Draw big lines, circles and crosses with a finger in a plate of atta or rice.','Paint the first letter of your child\'s name on the floor with a wet finger or a brush and plain water.','Draw a zigzag road on paper and let your child drive a crayon along it without leaving the road.'],
+ world:['Stand at a window and name five things you can both see. Ask one "why" question about one of them.','Sort the washing together: whose is it, and what colour is it?','Name the vegetables while you cook, and let your child touch and smell each one.'],
+ reading:['Read one short page together and slide a finger under each word as you say it.','Find three words on a packet or a signboard, and say the first sound of each together.']
+};
+function r5Insight(){const t=today(),wk=r5Last7().map(dkey);const ids=Object.keys(SK).filter(id=>S.sk[id]&&S.sk[id].n>=3);let good=null,weak=null,area=null,letter=null;
+  const ups=(S.changes||[]).filter(c=>c.d===t&&(c.kind||'level')==='level'&&c.to>c.from&&SK[c.id]);
+  if(ups.length)good=`Moved up a level today in ${SK[ups[ups.length-1].id].name}.`;
+  if(!good){const lt=ORDER.map(l=>({l,a:((S.sounds[l]||{}).att||[]).filter(x=>x.d===t)})).filter(x=>x.a.length>=2&&x.a.every(y=>y.ok)).sort((a,b)=>b.a.length-a.a.length)[0];if(lt)good=`The sound "${lt.l}" (as in ${KEYW(lt.l)[0]}): right every time today.`}
+  if(!good){const a=ids.filter(id=>S.sk[id].last===t&&S.sk[id].p>=.7).sort((x,y)=>S.sk[y].p-S.sk[x].p)[0];if(a)good=`${SK[a].name}: right first time about ${r5Ten(S.sk[a].p)} times in 10 lately.`}
+  if(!good){const a=ids.filter(id=>S.sk[id].p>=.75).sort((x,y)=>(S.sk[y].last||'').localeCompare(S.sk[x].last||'')||S.sk[y].p-S.sk[x].p)[0];if(a)good=`${SK[a].name} is going well (last played ${r5Ago(S.sk[a].last)}).`}
+  if(!good)good=S.advDone===t?'Finished today\'s adventure.':'Nothing to report yet. This fills in after a few games.';
+  const rec7=id=>S.sk[id].last&&wk.includes(S.sk[id].last)?1:0;
+  const w=ids.filter(id=>S.sk[id].p<.55).sort((x,y)=>(rec7(y)-rec7(x))||S.sk[x].p-S.sk[y].p)[0];
+  const wl=(S.intro||[]).filter(l=>S.sounds[l]&&S.sounds[l].att.length>=3&&accuracy(l)<.6).sort((a,b)=>accuracy(a)-accuracy(b))[0];
+  if(wl&&(!w||accuracy(wl)<=S.sk[w].p)){const a=S.sounds[wl].att.slice(-5);weak=`The sound "${wl}" (as in ${KEYW(wl)[0]}): right ${a.filter(x=>x.ok).length} of the last ${a.length} tries.`;area='letters';letter=wl}
+  else if(w){weak=`${SK[w].name}: right first time about ${r5Ten(S.sk[w].p)} times in 10. It will come back in the next adventures.`;area=r5AreaOf(w)}
+  else weak='Nothing flagged yet.';
+  return {good,weak,area,letter}}
+function r5Activity(ins){const day=Math.floor(new Date(today()).getTime()/864e5);const area=ins.area||['letters','numbers','writing','world'][day%4];const list=SG_BANK[area]||SG_BANK.numbers;const x=list[day%list.length];
+  let l=ins.letter||(S.intro.length?weakestLetter():'s');if(!WORDS[l])l='s';return typeof x==='function'?x(l):x}
+const r5Guess=()=>startRun({t:'guessit',pid:'guessit',title:'Guess it!'},{});
+function r5Today(msg){const el=$('pt-today');if(!el||!S.profile)return;const t=today(),nm=r5E(r5Name()),ins=r5Insight();
+  const min=Math.round(S.minutes[t]||0),c=curChapter(),dn=c.nodes.filter(n=>n.stars!=null).length;
+  const adv=S.advDone===t?'Done':dn?`${dn} of ${c.nodes.length}`:'Not yet';const days=new Set(S.days||[]);
+  const dots=r5Last7().map((d,i)=>`<i class="${days.has(dkey(d))?'on':''}${i===6?' now':''}">${d.toLocaleDateString('en-IN',{weekday:'short'}).slice(0,2)}</i>`).join('');
+  const g=S.sg&&S.sg.d===t&&SG_T[S.sg.k]?S.sg:null;const idea=r5E(r5Activity(ins));let together;
+  if(g&&!g.done&&S.settings.showGrown!==false)together=`<p class="pt-task">${nm} was asked to show you this today:<br><b>${r5E(sgPlain(g))}</b></p><div class="pt-btns"><button class="pill-btn primary" id="pt-sg-ok">We did it</button></div><p class="note">Pressing the button gives ${nm} a together sticker. Another idea for later: ${idea}</p>`;
+  else together=`${g&&g.done?`<p class="note">Done together today: ${r5E(sgPlain(g))} ${msg?'<b>Together sticker added.</b>':''}</p>`:''}<p class="pt-task">${idea}</p>`;
+  el.innerHTML=`<div class="panel"><p class="pt-date">${new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'})} · ${nm}, age ${S.profile.age}</p>
+      <div class="pt-nums"><div><b>${min}</b><span>minute${min===1?'':'s'} today</span></div><div><b>${adv}</b><span>today's adventure</span></div><div><b>${streak()}</b><span>day${streak()===1?'':'s'} in a row</span></div></div>
+      <div class="pt-days" aria-label="Days played in the last 7 days">${dots}</div></div>
+    <div class="panel"><div class="pt-row"><span aria-hidden="true">⭐</span><p><b>Went well</b><br>${r5E(ins.good)}</p></div><div class="pt-row"><span aria-hidden="true">🎯</span><p><b>To practise</b><br>${r5E(ins.weak)}</p></div></div>
+    <div class="panel pt-do"><h3>Do together: 2 minutes, away from the phone</h3>${together}</div>
+    ${S.profile.age>=4?`<div class="panel"><h3>A game for two: Guess it!</h3><p>You hold the phone on your forehead. ${nm} sees a picture and describes it without saying its name, and you guess. Two minutes.</p><div class="pt-btns"><button class="pill-btn primary" id="pt-guess">Play Guess it!</button></div></div>`:''}`;
+  const ok=$('pt-sg-ok');if(ok)ok.onclick=()=>{FX.tap();sgComplete(true);r5Today(true)};
+  const gb=$('pt-guess');if(gb)gb.onclick=()=>{unlockAudio();FX.tap();r5Guess()}}
+
+/* ---- Grown-ups, Progress: five plain areas ---- */
+const PT_ST=['Getting started','Growing','Confident'];
+function r5Areas(){const list=(ids,none)=>{const tried=ids.filter(id=>S.sk[id]&&S.sk[id].n>=3),tries=ids.reduce((a,id)=>a+((S.sk[id]&&S.sk[id].n)||0),0);
+    const strong=tried.filter(id=>S.sk[id].p>=.7),weak=tried.filter(id=>S.sk[id].p<.55);
+    const st=tries<12||tried.length<2?0:(tried.length>=4&&tries>=30&&strong.length/tried.length>=.6&&weak.length/tried.length<=.2)?2:1;
+    const nm=a=>a.sort((x,y)=>(S.sk[y].last||'').localeCompare(S.sk[x].last||'')).slice(0,2).map(id=>SK[id].name).join(', ');
+    const eg=!tries?none:[strong.length?'Going well: '+nm(strong)+'.':'',weak.length?'Working on: '+nm(weak)+'.':'',`${tries} tries across ${ids.filter(id=>S.sk[id]&&S.sk[id].n).length} of ${ids.length} games.`].filter(Boolean).join(' ');
+    return {st,eg}};
+  const bySub=s=>Object.keys(SK).filter(id=>SK[id].sub===s);
+  /* sounds and letters */
+  const inPlayL=ORDER.filter(l=>S.intro.includes(l)||S.intro.includes(SAME[l])),prac=ORDER.filter(l=>S.sounds[l]&&S.sounds[l].att.length>=3),mast=ORDER.filter(l=>['mast','due'].includes(status(l)));
+  const trick=prac.filter(l=>accuracy(l)<.6).sort((a,b)=>accuracy(a)-accuracy(b))[0];
+  const A=[{n:'Sounds and letters',st:prac.length<3?0:mast.length>=Math.max(4,Math.ceil(inPlayL.length*.6))?2:1,
+    eg:`Letter sounds in play: ${inPlayL.length} of ${ORDER.length}${inPlayL.length?' ('+inPlayL.slice(0,8).join(', ')+(inPlayL.length>8?', ...':'')+')':''}. Mastered: ${mast.length}.${trick?` Trickiest right now: "${trick}" (as in ${KEYW(trick)[0]}).`:''}`}];
+  /* reading */
+  {const s=S.sk.read,opened=Object.keys(S.storiesRead||{}).length;const stn=`Stories opened: ${opened}.`;
+   if(!(s&&s.n)&&!readUnlock())A.push({n:'Reading',st:0,eg:`Word-reading games open at age 6, or at 5 once about 10 letter sounds are going well. Stories can be listened to at any age. ${stn}`});
+   else A.push({n:'Reading',st:!s||s.n<12?0:s.p>=.7?2:1,eg:s&&s.n?`Reading words: ${SK.read.lab(param('read'))}, right first time about ${r5Ten(s.p)} times in 10. ${stn}`:`Word-reading games are open but not played yet. ${stn}`})}
+  const n=list(bySub('Maths'),'No number games played yet.'),w=list(bySub('Writing'),'No writing games played yet.'),d=list(bySub('Discover'),'No topics played yet.');
+  A.push({n:'Numbers',st:n.st,eg:n.eg},{n:'Writing',st:w.st,eg:w.eg},{n:'My world',st:d.st,eg:d.eg});return A}
+function r5AreasRender(){const el=$('pt-areas');if(!el||!S.profile)return;
+  el.innerHTML=`<h3>How ${r5E(r5Name())} is doing</h3>`+r5Areas().map(a=>`<div class="pt-area"><b>${a.n}</b><span class="pt-st s${a.st}">${PT_ST[a.st]}</span><small>${r5E(a.eg)}</small></div>`).join('')+
+    `<p class="note"><b>How to read this.</b> Getting started: only a few tries so far. Confident: at least four games in the area have been played a fair amount, and most are answered right on the first try at the current level. Growing: everything in between. The questions get harder as your child improves, so an area can go from Confident back to Growing. That is normal. This is a guide from play on this phone, not a test.</p>`}
+
+/* ---- Grown-ups, Progress: the week in a few lines, made on the phone, sent by the parent ---- */
+function r5WeekText(){const D=r5Last7(),keys=D.map(dkey),nm=r5Name();
+  const range=D[0].getMonth()===D[6].getMonth()?`${D[0].getDate()} to ${D[6].getDate()} ${r5Mon(D[6])}`:`${D[0].getDate()} ${r5Mon(D[0])} to ${D[6].getDate()} ${r5Mon(D[6])}`;
+  const played=keys.filter(k=>(S.days||[]).includes(k)).length,min=Math.round(keys.reduce((a,k)=>a+(S.minutes[k]||0),0));
+  const adv=(S.advLog||[]).filter(d=>keys.includes(d)).length,tog=(S.sgLog||[]).filter(x=>x.done&&keys.includes(x.d)).length;
+  const ups=[...new Set((S.changes||[]).filter(c=>keys.includes(c.d)&&(c.kind||'level')==='level'&&c.to>c.from&&SK[c.id]).map(c=>SK[c.id].name))].slice(-3);
+  const mas=ORDER.filter(l=>S.sounds[l]&&S.sounds[l].mastered&&keys.includes(S.sounds[l].mastered));
+  const cnt={};keys.forEach(k=>{const o=(S.pd||{})[k];if(o)Object.keys(o).forEach(p=>{if(p!=='move')cnt[p]=(cnt[p]||0)+o[p]})});const fav=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0];
+  const L=[`${nm==='Your child'?'My child':nm}'s week with Haathi (${range})`];
+  if(!played)L.push('No play in the last 7 days.');
+  else{L.push(`Played on ${played} of 7 days, about ${min} minute${min===1?'':'s'} in all.`);
+    L.push(`Adventures finished: ${adv}.${tog?` Done together with a grown-up: ${tog}.`:''}`);
+    if(ups.length)L.push(`Moved up a level in: ${ups.join(', ')}.`);
+    if(mas.length)L.push(`Letter sounds mastered: ${mas.join(', ')}.`);
+    if(!ups.length&&!mas.length)L.push('No level changes this week. Steady practice.');
+    if(fav)L.push(`Most played game: ${r5Title(fav)}.`)}
+  L.push(`To try together: ${r5Activity(r5Insight())}`);L.push(`Haathi's Sound Forest, a free learning game for ages 3 to 7: ${SHARE_URL}`);return L.join('\n')}
+function r5Copy(txt,done){const fb=()=>{try{const ta=document.createElement('textarea');ta.value=txt;ta.style.cssText='position:fixed;opacity:0;left:0;top:0';document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done(true)}catch(e){done(false)}};
+  try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(()=>done(true)).catch(fb);return}}catch(e){}fb()}
+function r5Week(){const el=$('pt-week');if(!el||!S.profile)return;const txt=r5WeekText();
+  el.innerHTML=`<h3>This week, ready to share</h3><pre class="pt-pre" id="pt-week-txt"></pre><div class="pt-btns"><button class="pill-btn primary" id="pt-wa">Send on WhatsApp</button><button class="pill-btn" id="pt-copy">Copy text</button></div><p class="note">This is written on this phone from the last 7 days of play. Nothing leaves the phone until you press send in WhatsApp, and you choose who gets it. You can edit the message there first.</p>`;
+  $('pt-week-txt').textContent=txt;
+  $('pt-wa').onclick=()=>{FX.tap();gc('/parent/share','Weekly summary: WhatsApp pressed');try{window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank','noopener')}catch(e){}};
+  $('pt-copy').onclick=()=>{FX.tap();r5Copy(txt,ok=>{const b=$('pt-copy');if(!b)return;b.textContent=ok?'Copied':'Could not copy';setTimeout(()=>{const x=$('pt-copy');if(x)x.textContent='Copy text'},1600)})}}
+function r5Parent(){ptTab(PT_NEXT||'today');PT_NEXT=null;gc('/parent/open','Grown-ups page opened',true);const c=$('ps-sg');if(c)c.checked=S.settings.showGrown!==false;r5Today();r5AreasRender();r5Week()}
+
+/* ---- Guess it!: a game for two. The grown-up holds the phone on their forehead and guesses what the child describes ---- */
+Object.assign(ROUNDS,{guessit:1});Object.assign(TITLES,{guessit:'Guess it!'});Object.assign(ND_ICO,{guessit:'🙈'});
+const GS_DECKS=a=>a<=4?['farm','wild','fruits','vehicles','home']:['farm','wild','fruits','vehicles','home','vegetables','birds','sea','bugs','clothes','helpers','indianfood','music','body'];
+function gsCards(){const seen={},out=[];GS_DECKS(ageR()).forEach(id=>{if(DSEC[id])DSEC[id].items.forEach(i=>{const d=DI(i.k);if(d.e&&d.n&&d.e!=='❓'&&!seen[d.n]){seen[d.n]=1;out.push({e:d.e,n:d.n})}})});return shuffle(out)}
+function r5Shelf(kind,items){if(kind==='play'&&ageR()>=4)items.push({id:'guessit',ico:'🙈',label:'Guess it!',n:ndPlays('guessit'),run:()=>startRun({t:'guessit',pid:'guessit',title:'Guess it!'},{corner:'letters'})})}
+ACT.guessit=n=>{const run=RUN,b=body();$('cap').textContent='';const root=document.createElement('div');root.className='gs-wrap';b.innerHTML='';b.appendChild(root);
+  const alive=()=>RUN===run&&document.body.contains(root);const TOTAL=n.secs||120;
+  const canTilt=S.settings.tilt!==false&&typeof DeviceOrientationEvent!=='undefined',ask=canTilt&&typeof DeviceOrientationEvent.requestPermission==='function';
+  let cards=gsCards(),ci=-1,cur=null,got=[],playing=false,locked=false,armed=false,iv=null,wl=null,over=false,tEnd=0;
+  const rel=()=>{try{if(wl){wl.release();wl=null}}catch(_){}};
+  /* held upright on a forehead the phone reads about 90. Tipped so the screen faces the floor it reads towards 180, tipped to the ceiling towards 0. It has to come back upright before the next tip counts */
+  const ori=e=>{if(e.beta==null||!playing||locked)return;const v=e.beta;if(!armed){if(v>60&&v<120)armed=true;return}
+    if(v>=135||v<=-135){armed=false;mark(true)}else if(v<=40&&v>=-40){armed=false;mark(false)}};
+  const stop=()=>{over=true;playing=false;if(iv){clearInterval(iv);iv=null}window.removeEventListener('deviceorientation',ori);rel()};
+  const show=()=>{ci++;if(ci>=cards.length){cards=gsCards();ci=0}cur=cards[ci];$('gs-p').textContent=cur.e;$('gs-n').textContent=cur.n;armed=false};
+  const mark=ok=>{if(!playing||locked||!alive())return;locked=true;if(ok){got.push(cur);FX.chime()}else FX.swish();try{if(navigator.vibrate)navigator.vibrate(ok?[60,40,60]:40)}catch(_){}
+    $('gs-s').textContent=got.length;const f=document.createElement('div');f.className='gs-flash '+(ok?'ok':'skip');f.textContent=ok?'✓':'➜';f.setAttribute('aria-hidden','true');root.appendChild(f);
+    setTimeout(()=>{if(!alive())return;f.remove();locked=false;if(playing)show()},650)};
+  const finish=()=>{const ok=alive();stop();if(!ok)return;S.guessBest=Math.max(S.guessBest||0,got.length);save();RUN.prompt=null;
+    root.innerHTML=`<div class="gs-count">${got.length}</div><h3>guessed in ${TOTAL===120?'2 minutes':TOTAL+' seconds'}!</h3><div class="gs-list">${got.map(c=>`<span>${c.e}</span>`).join('')}</div><p class="gs-tip">Best so far: ${S.guessBest}</p>`;
+    FX.trumpet();say([300,'P_guess_end'],null);actions([['go','Done',()=>roundDone(true),'']])};
+  const play=()=>{if(!alive())return;RUN.prompt=null;
+    root.innerHTML=`<div class="gs-bar"><i id="gs-t"></i></div><div class="gs-score" id="gs-s" aria-label="Right guesses">0</div><div class="gs-pic" id="gs-p"></div><div class="gs-name" id="gs-n"></div><div class="gs-btns"><button class="gs-skip" id="gs-x" aria-label="Pass">➜</button><button class="gs-ok" id="gs-y" aria-label="Right guess">✓</button></div>`;
+    $('gs-x').onclick=()=>mark(false);$('gs-y').onclick=()=>mark(true);playing=true;locked=false;show();tEnd=Date.now()+TOTAL*1000;let last=0;
+    iv=setInterval(()=>{if(!alive()){stop();return}const left=tEnd-Date.now(),bar=$('gs-t');if(bar)bar.style.width=Math.max(0,left/(TOTAL*10))+'%';
+      const s=Math.ceil(left/1000);if(s<=10&&s>0&&s!==last){last=s;FX.tick(12-s)}if(left<=0)finish()},200)};
+  const count=k=>{if(!alive()){stop();return}if(k===0){say(['P_guess_go'],null);play();return}root.innerHTML=`<p class="gs-tip">Phone on your forehead!</p><div class="gs-count">${k}</div>`;FX.tick(8-k);setTimeout(()=>count(k-1),1000)};
+  const begin=()=>{$('actions').innerHTML='';stopVoice();
+    /* listening is harmless when the phone gives no readings; on phones that ask first (iPhone), this tap is what lets them start */
+    if(canTilt){window.addEventListener('deviceorientation',ori);if(ask){try{const r=DeviceOrientationEvent.requestPermission();if(r&&r.catch)r.catch(()=>{})}catch(_){}}}
+    try{if(navigator.wakeLock&&navigator.wakeLock.request)navigator.wakeLock.request('screen').then(x=>{wl=x;if(over||!alive())rel()}).catch(()=>{})}catch(_){}
+    count(n.lead==null?5:n.lead)};
+  root.innerHTML=`<div class="gs-steps"><div><span aria-hidden="true">🙆</span><p><b>Grown-up:</b> hold the phone upright on your forehead, with the screen facing your child.</p></div><div><span aria-hidden="true">🗣️</span><p><b>Child:</b> look at the picture and tell them about it. Do not say its name!</p></div><div><span aria-hidden="true">👍</span><p>${canTilt?'Right guess: tip the phone down to the floor, or your child taps ✓. To pass: tip it up to the ceiling, or tap ➜.':'Right guess: your child taps ✓. To pass: tap ➜.'}</p></div></div>`;
+  RUN.prompt=()=>say(['P_guess_intro'],null);RUN.prompt();actions([['go','Start',begin,'']])};
+
 /* ======================= BOOT ======================= */
 if(S.profile&&S.placed!==3)placeByAge();
 document.addEventListener('visibilitychange',()=>{if(document.hidden){save();stopVoice();sync(false);document.querySelectorAll('canvas').forEach(c=>c.dispatchEvent(new PointerEvent('pointercancel')))}else{if(actx&&actx.state!=='running')try{actx.resume()}catch(e){}}});
 window.addEventListener('pageshow',()=>{if(actx&&actx.state!=='running')try{actx.resume()}catch(e){}});
 document.addEventListener('pointerdown',()=>{if(actx&&actx.state!=='running')actx.resume()},{passive:true});
-window.__haathi={MERGE,REPL,mergeRound,micOn,cornerNode,cornerLocked,stPilotMerge,openStory,openStories,SR:()=>SR,BEDTIME,tierOf:id=>tierOf(kindOfId(id),id),newUI:v=>{if(v!=null)NEWUI=!!v;return NEWUI},composeAdv,go,ACT,roundDone:ok=>roundDone(ok),RUN:()=>RUN,curChapter,placeByAge:()=>placeByAge(),SK,LS,CS,DIG,PREP,DOTPICS,S:()=>S,compose,learn,startRun,sceneHTML,openStory};
+window.__haathi={MERGE,REPL,mergeRound,micOn,cornerNode,cornerLocked,stPilotMerge,openStory,openStories,SR:()=>SR,BEDTIME,tierOf:id=>tierOf(kindOfId(id),id),newUI:v=>{if(v!=null)NEWUI=!!v;return NEWUI},composeAdv,go,ACT,roundDone:ok=>roundDone(ok),RUN:()=>RUN,curChapter,placeByAge:()=>placeByAge(),SK,LS,CS,DIG,PREP,DOTPICS,S:()=>S,compose,learn,startRun,sceneHTML,openStory,r5:{sgPick,sgOpen,sgPending,r5WeekText,r5Areas,r5Insight,gsCards,SG_T,SG_BANK}};
 go('start');
 })();

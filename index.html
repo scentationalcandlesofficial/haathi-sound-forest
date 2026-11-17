@@ -566,6 +566,45 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
   #s-story.v2[data-band="34"] .st-text{font-size:18px;line-height:1.34}#s-story.v2[data-band="5"] .st-text{font-size:16px;line-height:1.3}#s-story.v2[data-band="67"] .st-text{font-size:15.5px;line-height:1.28}
   #s-story.v2 .st-q{font-size:17px}#s-story.v2 .st-cover-title{font-size:21px}.st-cast{gap:5px}.st-who{flex-basis:84px;padding:3px 4px}.st-who b{font-size:13px}.st-who small{font-size:11px}.st-face{width:32px;height:32px;font-size:24px;line-height:32px}.st-face i{font-size:13px}
   .st-opt{min-height:54px;font-size:14px}.st-opt span{font-size:24px}.st-gloss{font-size:13.5px;padding:5px 8px}#s-story.v2 .st-sub,#s-story.v2 .st-moral,#s-story.v2 .st-talk{font-size:14px}#s-story.v2 .st-endbtns .pill-btn{font-size:14px;padding:6px 12px}}
+/* release 5: Grown-ups in three tabs, Show a grown-up, Guess it! */
+.pt-tabs{display:flex;gap:6px;background:#fff;border-radius:999px;padding:5px;position:sticky;top:0;z-index:5;box-shadow:0 3px 0 var(--shadow);flex:none}
+.pt-tabs button{flex:1;font-family:var(--f-display);font-weight:800;font-size:17px;border-radius:999px;padding:9px 6px;color:var(--ink-soft);background:none;min-height:44px}
+.pt-tabs button[aria-selected="true"]{background:var(--peacock);color:#fff}
+.pt-stack{grid-column:1/-1;display:flex;flex-direction:column;gap:14px;min-width:0}
+.pt-det>summary{font-family:var(--f-display);font-weight:800;font-size:18px;color:var(--leaf);cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px}
+.pt-det>summary::-webkit-details-marker{display:none}.pt-det>summary::before{content:"▸";transition:transform .15s}.pt-det[open]>summary::before{transform:rotate(90deg)}
+.pt-det h3{margin-top:8px}
+.pt-date{font-family:var(--f-display);font-weight:700;color:var(--ink-soft);font-size:15px;margin:0}
+.pt-row{display:flex;gap:12px;align-items:flex-start;text-align:left}.pt-row>span{font-size:28px;line-height:1.1;flex:none;width:34px;text-align:center}.pt-row p{margin:0;line-height:1.4}.pt-row b{font-family:var(--f-display)}
+.pt-nums{display:flex;gap:10px;flex-wrap:wrap}.pt-nums>div{flex:1 1 90px;background:#f4f8f5;border-radius:16px;padding:10px 8px;text-align:center}.pt-nums b{display:block;font-family:var(--f-display);font-size:24px;color:var(--peacock);line-height:1.1}.pt-nums span{font-size:13px;color:var(--ink-soft)}
+.pt-days{display:flex;gap:6px;justify-content:space-between;max-width:340px}.pt-days i{flex:1;font-style:normal;text-align:center;font-size:12px;color:var(--ink-soft)}.pt-days i::before{content:"";display:block;width:22px;height:22px;border-radius:50%;margin:0 auto 3px;background:#e6ece8}.pt-days i.on::before{background:var(--leaf-2,#2f8a5f)}.pt-days i.now{font-weight:700;color:var(--ink)}
+.pt-do{border:3px solid var(--mango)}.pt-do .pt-task{font-size:18px;line-height:1.4;margin:0}
+.pt-area{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:10px 0;border-top:2px solid #eef3ef;text-align:left}.pt-area:first-of-type{border-top:0}
+.pt-area b{font-family:var(--f-display);font-size:17px}.pt-area small{grid-column:1/-1;color:var(--ink-soft);font-size:14px;line-height:1.4}
+.pt-st{font-family:var(--f-display);font-weight:800;font-size:13px;border-radius:999px;padding:3px 10px;align-self:center;white-space:nowrap}
+.pt-st.s0{background:#eef3ef;color:#5c6d63}.pt-st.s1{background:#fff4dd;color:#8a5200}.pt-st.s2{background:#dff1e5;color:var(--leaf)}
+.pt-pre{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;min-width:0;font:inherit;font-size:14px;line-height:1.45;background:#f4f8f5;border-radius:14px;padding:12px;margin:0;text-align:left}
+#nd-sg{animation:pulse 1.6s ease-in-out infinite;width:62px;height:62px;font-size:32px;border-radius:18px;background:var(--mango);box-shadow:0 5px 0 #b97a12;margin-left:auto}
+#sg{position:fixed;inset:0;background:rgba(23,51,38,.6);display:grid;place-items:center;padding:16px;z-index:46}
+.sg-box{background:#fff;border-radius:30px;padding:18px;display:flex;flex-direction:column;gap:10px;align-items:center;text-align:center;max-width:400px;width:100%;max-height:100%;overflow-y:auto}
+.sg-pic{font-size:clamp(54px,16vw,84px);line-height:1}.sg-pic .lc{font-family:var(--f-letter);font-weight:700;color:var(--peacock)}
+.sg-box h3{font-size:24px}.sg-task{font-size:18px;line-height:1.4;margin:0;background:#fff6df;border-radius:16px;padding:10px 12px}
+.sg-hold{position:relative;overflow:hidden;width:100%;max-width:300px;min-height:84px;border-radius:24px;background:var(--leaf-2,#2f8a5f);color:#fff;box-shadow:0 5px 0 #1f6b4a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.sg-hold span{font-size:34px;line-height:1;position:relative}.sg-hold small{font-family:var(--f-display);font-weight:800;font-size:15px;position:relative}
+.sg-hold i{position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(255,255,255,.35)}.sg-hold.holding i{width:100%;transition:width 2s linear}
+.sg-row{display:flex;gap:10px;align-items:center;justify-content:center}.sg-row .pill-btn{min-height:52px;padding:10px 26px;font-size:20px}
+.gs-wrap{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;position:relative}
+.gs-steps{display:flex;flex-direction:column;gap:8px;max-width:440px;text-align:left}.gs-steps div{display:flex;gap:10px;align-items:center;background:#fff;border-radius:16px;padding:8px 12px;font-size:16px;line-height:1.35}.gs-steps span{font-size:30px;flex:none}.gs-steps p{margin:0}.gs-wrap h3{margin:0}.gs-tip{font-family:var(--f-display);font-weight:800;font-size:20px;color:var(--ink-soft);margin:0}.sg-hint{font-size:13px;color:var(--ink-soft);margin:0}.pt-btns{display:flex;gap:10px;flex-wrap:wrap}
+.gs-bar{position:absolute;left:10px;right:10px;top:8px;height:10px;border-radius:999px;background:#fff;overflow:hidden}.gs-bar i{display:block;height:100%;background:var(--mango);width:100%}
+.gs-score{position:absolute;right:12px;top:26px;font-family:var(--f-display);font-weight:800;font-size:20px;background:#fff;border-radius:999px;padding:2px 12px;color:var(--leaf)}
+.gs-pic{font-size:min(58vw,36vh);line-height:1.05}.gs-name{font-family:var(--f-display);font-weight:800;font-size:clamp(24px,7vw,40px);color:var(--ink)}
+.gs-btns{display:flex;gap:12px;width:100%;max-width:440px}.gs-btns button{flex:1;min-height:64px;border-radius:22px;font-size:30px;font-weight:800;color:#fff;font-family:var(--f-display)}
+.gs-ok{background:var(--leaf-2,#2f8a5f);box-shadow:0 5px 0 #1f6b4a}.gs-skip{background:var(--mango);box-shadow:0 5px 0 #b97a12}
+.gs-flash{position:absolute;inset:0;display:grid;place-items:center;font-size:120px;color:#fff;border-radius:26px;z-index:3}.gs-flash.ok{background:rgba(47,138,95,.92)}.gs-flash.skip{background:rgba(246,168,33,.92)}
+.gs-count{font-family:var(--f-display);font-weight:800;font-size:min(40vw,30vh);color:var(--peacock);line-height:1}
+.gs-list{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:460px}.gs-list span{background:#fff;border-radius:12px;padding:2px 8px;font-size:26px}
+@media (max-height:440px){.sg-box{display:grid;grid-template-columns:1fr 1fr;max-width:640px;gap:6px 16px;padding:12px 16px;align-items:center;justify-items:center}.sg-box>.sg-pic{grid-area:1/1;font-size:46px}.sg-box>h3{grid-area:2/1;font-size:20px;margin:0}.sg-box>.sg-task{grid-area:3/1;font-size:15px}.sg-box>.sg-hold{grid-area:1/2/3/3;min-height:72px}.sg-box>.sg-row{grid-area:3/2}.sg-box>#sg-ok{grid-area:1/2/4/3}.gs-wrap{flex-direction:row;flex-wrap:wrap;align-content:center}.gs-steps{max-width:none}.gs-pic{font-size:min(30vw,44vh)}.gs-btns{flex-direction:column-reverse;width:auto;max-width:none}.gs-btns button{min-width:110px}.gs-wrap>.gs-tip,.gs-wrap>.gs-list{flex-basis:100%;text-align:center}.gs-count{font-size:min(20vw,26vh)}.gs-list span{font-size:20px}}
+@media (max-height:620px){.gs-steps div{font-size:14px;padding:6px 10px}.gs-steps span{font-size:24px}.gs-btns button{min-height:54px}.sg-box{padding:12px;gap:8px}.sg-task{font-size:16px}.sg-hold{min-height:68px}}
 /* release 3: drag, number line slider, times tables, act-it-out sums, slate tools */
 .dragme{touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
 .dragging{position:relative;z-index:40;transition:none!important;filter:drop-shadow(0 8px 6px rgba(0,0,0,.25));cursor:grabbing}
@@ -672,7 +711,7 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
     <div class="field"><label for="in-limit">Play time per session</label>
       <select id="in-limit"><option value="10">10 minutes</option><option value="15" selected>15 minutes</option><option value="20">20 minutes</option></select></div>
     <label class="check" style="align-items:flex-start"><input type="checkbox" id="in-consent"> <span>Help improve the game: share anonymous play data and likes (age, scores, which games are enjoyed). No names, photos or recordings. You can turn this off any time in Grown-ups.</span></label>
-    <p class="note">The game counts visits anonymously (how many families, which age group, and which games are played and finished) so we know how far it has spread and which games work. No names, no cookies, nothing about your child beyond age.</p>
+    <p class="note">The game counts visits anonymously (how many families, which age group, which games are played and finished, and how often the Grown-ups page, its weekly summary and Show a grown-up are used) so we know how far it has spread and which games work. No names, no cookies, nothing about your child beyond age.</p>
     <button class="pill-btn primary" id="btn-setup-done" style="align-self:center;font-size:22px;padding:12px 28px">Start the journey</button>
   </div>
 </section>
@@ -697,7 +736,7 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 </section>
 
 <section class="screen nd-home" id="s-home" hidden>
-  <div class="nd-top"><button class="pill-btn small" id="nd-parent" aria-label="Grown-ups settings" style="gap:6px;white-space:nowrap"></button><button class="nd-door" id="nd-lib" aria-label="Library">📚</button></div>
+  <div class="nd-top"><button class="pill-btn small" id="nd-parent" aria-label="Grown-ups settings" style="gap:6px;white-space:nowrap"></button><button class="nd-door nd-sgb" id="nd-sg" aria-label="Show a grown-up" hidden>💌</button><button class="nd-door" id="nd-lib" aria-label="Library">📚</button></div>
   <div class="nd-bubble" id="nd-bubble"></div>
   <button class="haathi nd-haathi" id="nd-haathi" aria-label="Haathi. Open the sticker book"></button>
   <button class="nd-play" id="nd-play" aria-label="Play today's adventure"><svg viewBox="0 0 24 24" fill="#3b2400"><path d="M7 4.5v15l13-7.5z"/></svg></button>
@@ -742,20 +781,65 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 
 <section class="screen parent" id="s-parent" hidden>
   <div class="topbar"><button class="round" data-back aria-label="Back to map"></button><h2>Grown-ups</h2></div>
-  <div class="p-grid">
+  <div class="pt-tabs" role="tablist" aria-label="Grown-ups sections"><button role="tab" data-pt="today" aria-selected="true">Today</button><button role="tab" data-pt="progress" aria-selected="false">Progress</button><button role="tab" data-pt="settings" aria-selected="false">Settings</button></div>
+  <div class="p-grid pt-pane" data-pane="today">
     <div class="panel" style="grid-column:1/-1;border:3px solid var(--mango)" id="nd-note" hidden><h3>The app has a new look</h3>
       <p>The home screen now has one big Play button. It starts a short daily adventure of 5 stops chosen for your child: a warm-up, letters, a movement break, numbers and writing. One sticker is earned at the end.</p>
       <p>Every game, picture card, topic and story is still here, in the Library (the green book button on the home screen). Your child's progress, stickers and levels are unchanged.</p>
-      <p>Easy, Medium and Hard are no longer shown to the child. The app moves them on its own, and you can set them under Settings on this page.</p>
+      <p>Easy, Medium and Hard are no longer shown to the child. The app moves them on its own, and you can set them in the Settings tab on this page.</p>
       <button class="pill-btn primary" id="nd-note-ok" style="align-self:flex-start">Got it</button>
     </div>
+    <div class="pt-stack" id="pt-today"></div>
+    <details class="panel pt-det" style="grid-column:1/-1"><summary>More ideas for this week</summary><p id="p-tip"></p>
+      <div id="ai-zone"></div></details>
+  </div>
+  <div class="p-grid pt-pane" data-pane="progress" hidden>
+    <div class="panel" style="grid-column:1/-1" id="pt-areas"></div>
+    <div class="panel" style="grid-column:1/-1" id="pt-week"></div>
+    <div class="panel" style="grid-column:1/-1" id="likes-panel"><h3>What your child enjoys</h3><p id="p-likes"></p><p class="note" id="p-global" hidden></p></div>
+    <details class="panel pt-det" style="grid-column:1/-1" id="prog-panel"><summary>Details: levels, every skill and letter sounds</summary>
+      <h3>Levels and recent changes</h3><p class="note">Levels adjust during every game: 2 right in a row makes the next question a little harder, a miss makes it a little easier. Easy, Medium and Hard move on their own after a run of games, and every change is listed here.</p><div id="p-progress"></div>
+      <h3>Totals</h3><div class="stats" id="p-stats"></div><p id="p-summary"></p>
+      <h3>Learning engine: how the next chapter was chosen</h3><ul class="why" id="p-why"></ul>
+      <p class="note">The app tracks every skill below on this phone. Skills move up a level after mostly-right first tries, and down a level after repeated misses. Each new chapter mixes a new letter, the weakest skills, and older skills due for review.</p>
+      <div style="overflow-x:auto"><table class="eng-table" id="p-eng"></table></div>
+      <h3>Letter sounds</h3><div class="smap" id="p-map"></div>
+      <p style="font-size:13px">Mastered = 4 of the last 5 first tries right, in 2 games, on 2 different days.</p>
+    </details>
+  </div>
+  <div class="p-grid pt-pane" data-pane="settings" hidden>
     <div class="panel" style="grid-column:1/-1" id="kids-panel"><h3>Children on this phone</h3>
       <p class="note">Each child has their own age, level and progress. Tap "Play as" to switch, or add another child (for example an older sibling).</p>
       <div id="kids-list" class="kids"></div>
       <button class="pill-btn primary" id="kid-add" style="align-self:flex-start">+ Add another child</button>
     </div>
-    <div class="panel" style="grid-column:1/-1" id="prog-panel"><h3>How your child is doing</h3><p class="note">Levels adjust during every game: 2 right in a row makes the next question a little harder, a miss makes it a little easier. Easy, Medium and Hard move on their own after a run of games, and every change is listed here.</p><div id="p-progress"></div></div>
-    <div class="panel" style="grid-column:1/-1" id="likes-panel"><h3>What your child enjoys</h3><p id="p-likes"></p><p class="note" id="p-global" hidden></p></div>
+    <div class="panel" id="set-panel"><h3>Settings</h3>
+      <div class="field"><label for="ps-name">Nickname</label><input id="ps-name" maxlength="16"></div>
+      <div class="field"><label for="ps-age">Age</label><select id="ps-age"><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select></div>
+      <div class="field"><label for="ps-lang">Spoken instructions</label><select id="ps-lang"><option value="en">English (with some Hindi praise)</option><option value="hi">हिंदी / Hinglish (letters and words stay English)</option></select></div>
+      <div class="field"><label for="ps-limit">Session limit</label><select id="ps-limit"><option value="10">10 minutes</option><option value="15">15 minutes</option><option value="20">20 minutes</option></select></div>
+      <label class="check"><input type="checkbox" id="ps-sfx"> Sound effects</label>
+      <label class="check"><input type="checkbox" id="ps-countnums"> Show numbers on objects while counting</label>
+      <label class="check"><input type="checkbox" id="ps-moves"> Movement breaks after every 3 games</label>
+      <label class="check"><input type="checkbox" id="ps-automode"> Move between Easy, Medium and Hard automatically (you are told each time)</label>
+      <label class="check"><input type="checkbox" id="ps-consent"> Share anonymous play data to help improve the game</label>
+      <label class="check"><input type="checkbox" id="ps-mic"> <span><b>Say it, hear it.</b> Let my child record a word and hear it back after Haathi. The recording is played once and thrown away. It is never saved or sent.</span></label>
+      <label class="check"><input type="checkbox" id="ps-tilt"> Tilt the phone in Roll the ladoo, the number line and Guess it! (from age 4; a finger always works too)</label>
+      <label class="check"><input type="checkbox" id="ps-sg"> <span><b>Show a grown-up.</b> After the first adventure of the day, Haathi gives my child one small thing to tell or do with me.</span></label>
+      <div class="field"><label>Level for each area (the app also moves these on its own)</label>
+        <div class="nd-levels"><label>Letters<select id="ps-m-letters"><option value="0">Easy</option><option value="1">Medium</option><option value="2">Hard</option></select></label><label>Numbers<select id="ps-m-numbers"><option value="0">Easy</option><option value="1">Medium</option><option value="2">Hard</option></select></label><label>Writing<select id="ps-m-writing"><option value="0">Easy</option><option value="1">Medium</option><option value="2">Hard</option></select></label><label>My world<select id="ps-m-discover"><option value="0">Easy</option><option value="1">Medium</option><option value="2">Hard</option></select></label></div></div>
+
+      <label class="check"><input type="checkbox" id="ps-unlock"> Unlock every game in the corners (for grown-ups trying it)</label>
+      <button class="pill-btn primary" id="ps-save" style="align-self:flex-start">Save settings</button>
+      <div class="row" style="justify-content:flex-start;gap:8px;margin-top:8px"><button class="pill-btn" id="p-reload">↻ Reload the app</button><button class="pill-btn" id="p-reset">Start over for this child</button></div>
+      <p class="note">Reload fixes a stuck screen and keeps all progress. Start over clears this child's stars, stickers and levels (name, age and settings stay).</p>
+      <span id="ps-saved" class="note" hidden>Saved.</span>
+    </div>
+    <div class="panel" style="grid-column:1/-1"><h3>Sound Studio: record real letter sounds</h3>
+      <p class="note">Until a sound is recorded, the games use the picture word instead (for example "sun" for s), because computer voices say single sounds wrongly. Record in a quiet room. Say only the sound, short and clean, with no "uh" after it. On Android, "Record" opens the phone's recorder. On iPhone, record in Voice Memos first, save it to Files, then choose it here.</p>
+      <div id="studio"></div>
+      <input type="file" id="rec-file" accept="audio/*" capture hidden>
+    </div>
     <div class="panel" style="grid-column:1/-1"><h3>Share this game</h3>
       <p>Send the game to other parents. It opens in any phone browser, no sign-up.</p>
       <div class="row" style="justify-content:flex-start"><button class="pill-btn primary" id="btn-share">Share</button><a class="pill-btn" id="share-wa" target="_blank" rel="noopener" style="text-decoration:none">WhatsApp</a><button class="pill-btn" id="share-copy">Copy link</button></div>
@@ -774,40 +858,6 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
       <div class="row" style="justify-content:flex-start"><a class="pill-btn primary" id="fb-wa" href="https://wa.me/" target="_blank" rel="noopener" style="text-decoration:none">Send on WhatsApp</a><button class="pill-btn" id="fb-copy">Copy text</button></div>
       <p class="note" id="fb-note" hidden></p>
       <textarea id="fb-preview" rows="6" readonly hidden style="font:inherit;font-size:14px;padding:9px;border-radius:12px;border:2px solid var(--shadow)"></textarea>
-    </div>
-    <div class="panel"><h3>Progress</h3><div class="stats" id="p-stats"></div><p id="p-summary"></p></div>
-    <div class="panel"><h3>Try at home this week</h3><p id="p-tip"></p>
-      <div id="ai-zone"></div></div>
-    <div class="panel" style="grid-column:1/-1"><h3>Learning engine: how the next chapter was chosen</h3><ul class="why" id="p-why"></ul>
-      <p class="note">The app tracks every skill below on this phone. Skills move up a level after mostly-right first tries, and down a level after repeated misses. Each new chapter mixes a new letter, the weakest skills, and older skills due for review.</p>
-      <div style="overflow-x:auto"><table class="eng-table" id="p-eng"></table></div></div>
-    <div class="panel" style="grid-column:1/-1"><h3>Letter sounds</h3><div class="smap" id="p-map"></div>
-      <p style="font-size:13px">Mastered = 4 of the last 5 first tries right, in 2 games, on 2 different days.</p></div>
-    <div class="panel" style="grid-column:1/-1"><h3>Sound Studio: record real letter sounds</h3>
-      <p class="note">Until a sound is recorded, the games use the picture word instead (for example "sun" for s), because computer voices say single sounds wrongly. Record in a quiet room. Say only the sound, short and clean, with no "uh" after it. On Android, "Record" opens the phone's recorder. On iPhone, record in Voice Memos first, save it to Files, then choose it here.</p>
-      <div id="studio"></div>
-      <input type="file" id="rec-file" accept="audio/*" capture hidden>
-    </div>
-    <div class="panel"><h3>Settings</h3>
-      <div class="field"><label for="ps-name">Nickname</label><input id="ps-name" maxlength="16"></div>
-      <div class="field"><label for="ps-age">Age</label><select id="ps-age"><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select></div>
-      <div class="field"><label for="ps-lang">Spoken instructions</label><select id="ps-lang"><option value="en">English (with some Hindi praise)</option><option value="hi">हिंदी / Hinglish (letters and words stay English)</option></select></div>
-      <div class="field"><label for="ps-limit">Session limit</label><select id="ps-limit"><option value="10">10 minutes</option><option value="15">15 minutes</option><option value="20">20 minutes</option></select></div>
-      <label class="check"><input type="checkbox" id="ps-sfx"> Sound effects</label>
-      <label class="check"><input type="checkbox" id="ps-countnums"> Show numbers on objects while counting</label>
-      <label class="check"><input type="checkbox" id="ps-moves"> Movement breaks after every 3 games</label>
-      <label class="check"><input type="checkbox" id="ps-automode"> Move between Easy, Medium and Hard automatically (you are told each time)</label>
-      <label class="check"><input type="checkbox" id="ps-consent"> Share anonymous play data to help improve the game</label>
-      <label class="check"><input type="checkbox" id="ps-mic"> <span><b>Say it, hear it.</b> Let my child record a word and hear it back after Haathi. The recording is played once and thrown away. It is never saved or sent.</span></label>
-      <label class="check"><input type="checkbox" id="ps-tilt"> Tilt the phone in Roll the ladoo (from age 4; a finger always works too)</label>
-      <div class="field"><label>Level for each area (the app also moves these on its own)</label>
-        <div class="nd-levels"><label>Letters<select id="ps-m-letters"><option value="0">Easy</option><option value="1">Medium</option><option value="2">Hard</option></select></label><label>Numbers<select id="ps-m-numbers"><option value="0">Easy</option><option value="1">Medium</option><option value="2">Hard</option></select></label><label>Writing<select id="ps-m-writing"><option value="0">Easy</option><option value="1">Medium</option><option value="2">Hard</option></select></label><label>My world<select id="ps-m-discover"><option value="0">Easy</option><option value="1">Medium</option><option value="2">Hard</option></select></label></div></div>
-
-      <label class="check"><input type="checkbox" id="ps-unlock"> Unlock every game in the corners (for grown-ups trying it)</label>
-      <button class="pill-btn primary" id="ps-save" style="align-self:flex-start">Save settings</button>
-      <div class="row" style="justify-content:flex-start;gap:8px;margin-top:8px"><button class="pill-btn" id="p-reload">↻ Reload the app</button><button class="pill-btn" id="p-reset">Start over for this child</button></div>
-      <p class="note">Reload fixes a stuck screen and keeps all progress. Start over clears this child's stars, stickers and levels (name, age and settings stay).</p>
-      <span id="ps-saved" class="note" hidden>Saved.</span>
     </div>
     <div class="panel"><h3>About</h3>
       <p class="note">Screen time: WHO and the Indian Academy of Pediatrics suggest no more than 1 hour a day of screen time at this age. A good daily dose here is 10 to 15 minutes, then do the writing step on paper or in a sand tray.</p>
@@ -833,6 +883,7 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 </div></div>
 
 <div class="reward" id="book" hidden></div>
+<div id="sg" hidden></div>
 <div class="reward" id="reward" hidden><div class="box" id="reward-box"></div></div>
 <canvas class="confetti" id="confetti"></canvas>
 
