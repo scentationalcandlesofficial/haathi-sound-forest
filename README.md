@@ -109,7 +109,19 @@ The Grown-ups page, still behind the same sum, now has three tabs.
 - **Files:** `books/books.js` (built from `gen/books/books.py`), narration in `books/audio/` (one file a page) and `books/audio/w/` (one file a word, played on tap). 8 new instruction lines in English and Hindi (`P_tb_*`). New picture backgrounds for the books: market, street, roof, rail, kitchen.
 - **Code:** the block marked RELEASE 6 in `app.js` and the styles marked release 6 in `index.html`.
 
-Not built yet from the review: Steps E and F.
+## Release 7 (Step E of the full review, part 1: six new games)
+- **Shake and count** (ages 3 and 4): shake the phone like a dafli, or tap it. Each shake drops a ladoo into the jar and Haathi counts. Stop at the number asked, then press the tick. Tap a ladoo to take it out.
+- **Haathi's dhaba** (ages 3 to 5): an animal customer orders, for example "2 rotis and 1 cup of chai". The child drags or taps food onto the thali and rings the bell. Vegetarian menu plus boiled egg. Ages 3 and 4 get small orders; age 5 gets bigger ones.
+- **Who am I?** (ages 4 to 6): Haathi gives up to three clues ("I am long and yellow"). A wrong pick brings the next clue. 76 riddles written for the app, in the farm, wild, birds, sea, bugs, vehicles, fruits, vegetables, helpers and sky topics. Clues are files in `riddles/audio/`, fetched when needed.
+- **Sound blender** (age 5): slide a finger across three letters. Each sound plays as the finger passes, then Haathi joins them into the word and the child picks the picture. Uses the grown-up's Sound Studio recording for a letter when there is one, otherwise Haathi's own sound.
+- **Act-it-out sums** (age 5 to 10, ages 6 and 7 to 20): "3 birds sit on the tree. 2 more fly in." The child moves the birds (or feeds Haathi ladoos, or knocks mangoes down), then answers.
+- **Slide to the number** (ages 6 and 7): tilt the phone or drag Haathi along a number line to 20, later 100, then press the tick.
+- **Tilt and shake** are on by default and follow the existing Settings switch, now called "Tilt and shake the phone". A finger always works too.
+- All six are in the Play shelf and can come up in adventures, at the level that suits the child.
+- **Files:** `riddles/riddles.js` (built from `gen/riddles/riddles.py`), `riddles/audio/`. 51 new voice lines (`P_sk_*`, `P_dh_*`, `P_who_*`, `P_bl_*`, `P_ao_*`, `P_sl_*`), Hindi for the instruction lines. The pure letter sounds (`S_*`) are now in the sound bundle for the blender.
+- **Code:** the block marked RELEASE 7 in `app.js` and the styles marked release 7 in `index.html`.
+
+Not built yet from the review: the Make sandbox (rest of Step E) and Step F.
 
 ### Backup of the old app
 The last version before the redesign is kept as the branch `classic-backup-2026-11-12` in this repository. To put it back on the main link: `git checkout origin/classic-backup-2026-11-12 -- .`, commit and push. As an emergency fallback on a single phone, opening the app with `?new=0` shows the old map again and `?new=1` returns to the new design.

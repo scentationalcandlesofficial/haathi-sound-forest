@@ -2625,11 +2625,166 @@ stRender=function(){stRender6();const b=$('st-ir');if(!b||!SR)return;const pg=SR
   $('ps-save').addEventListener('click',()=>{const t=tbS(),v=sel.value,was=tbLevel();t.lvl=v==='auto'?null:+v;const now=tbLevel();if(now!==was)logChange('tb',was,now,'mode',`Tiny books set to ${TB_LV[now]} by a grown-up.`);save();r5AreasRender();r5Today()})}}
 const tbReadIn=keys=>Object.values(tbS().read).filter(d=>keys.includes(d)).length;
 
+/* ======================= RELEASE 7: six new games (Step E) ======================= */
+/* shared: tap an item, or drag it onto a target. A short press counts as a tap */
+function dragTap(el,target,onDrop){let st=null,ghost=null;
+  el.onpointerdown=e=>{if(el.disabled)return;e.preventDefault();st={x:e.clientX,y:e.clientY,id:e.pointerId,moved:false};try{el.setPointerCapture(e.pointerId)}catch(_){}};
+  el.onpointermove=e=>{if(!st)return;const dx=e.clientX-st.x,dy=e.clientY-st.y;if(!st.moved&&Math.hypot(dx,dy)>10){st.moved=true;ghost=el.cloneNode(true);ghost.classList.add('dt-ghost');document.body.appendChild(ghost)}
+    if(ghost){ghost.style.left=e.clientX+'px';ghost.style.top=e.clientY+'px'}};
+  const end=e=>{if(!st)return;const s=st;st=null;if(ghost){ghost.remove();ghost=null}if(e.type==='pointercancel')return;
+    const t=typeof target==='function'?target():target;let over=false;if(t){const r=t.getBoundingClientRect();over=e.clientX>=r.left-10&&e.clientX<=r.right+10&&e.clientY>=r.top-10&&e.clientY<=r.bottom+10}
+    if(!s.moved||over)onDrop(el)};
+  el.onpointerup=end;el.onpointercancel=end;el.oncontextmenu=e=>e.preventDefault()}
+const r7Alive=(n,el)=>RUN&&RUN.node===n&&document.body.contains(el);
+const motionOn=()=>S.settings.tilt!==false;
+
+/* ---------------------------------------------------------------- Shake and count (ages 3 and 4) */
+const DAFLI=`<svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44" fill="#b9793f"/><circle cx="50" cy="50" r="36" fill="#f6e2b8"/>${[0,1,2,3,4,5].map(i=>{const a=i*Math.PI/3,x=50+40*Math.cos(a),y=50+40*Math.sin(a);return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="6" fill="#e8c46a" stroke="#a4801f" stroke-width="2"/>`}).join('')}<circle cx="50" cy="50" r="7" fill="#e7cf9c"/></svg>`;
+ACT.shakecount=n=>{const max=n.max||5,target=deck('sk'+max,range(max>5?4:1,max)),run=RUN;let count=0,wrong=false,busy=false;const L=once(ok=>learnN(n,ok));
+  const ask=motionOn()&&typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function';
+  body().innerHTML=`<div class="sk-wrap"><div class="sk-ask" aria-label="Put ${target} ladoos in the jar"><b>${target}</b><span>${objHTML('ladoo',0,'s4')}</span></div>
+    <div class="sk-row"><button class="sk-daf" id="sk-daf" aria-label="Dafli: tap to drop a ladoo">${DAFLI}</button><div class="sk-jar" id="sk-jar"><div class="sk-in" id="sk-in"></div></div></div>
+    ${ask?'<button class="pill-btn small" id="sk-perm">📱 Shake</button>':''}</div>`;
+  const jar=$('sk-in'),daf=$('sk-daf');
+  const prompt=()=>say(['P_sk_go',250,N(target),...(run.round===0?[400,'P_sk_how']:[])],`Put ${target} ladoo${target>1?'s':''} in the jar!`);RUN.prompt=prompt;prompt();
+  const add=()=>{if(busy||!r7Alive(n,jar))return;if(count>=20)return;count++;const d=document.createElement('span');d.className='obj ladoo s4 sk-l';d.setAttribute('role','button');d.setAttribute('aria-label','Take this ladoo out');
+    d.onclick=()=>{if(busy)return;d.remove();count--;FX.swish();say([N(count)],String(count))};jar.appendChild(d);FX.pop();anim(daf,'sk-hit',260);say([N(count)],String(count))};
+  daf.onclick=()=>{unlockAudio();add()};
+  let last=null,lastT=0;const mot=e=>{if(!r7Alive(n,jar)){window.removeEventListener('devicemotion',mot);return}const a=e.accelerationIncludingGravity;if(!a||a.x==null)return;
+    if(last){const d=Math.abs(a.x-last.x)+Math.abs(a.y-last.y)+Math.abs(a.z-last.z),t=Date.now();if(d>20&&t-lastT>380){lastT=t;add()}}last={x:a.x,y:a.y,z:a.z}};
+  if(motionOn()&&typeof DeviceMotionEvent!=='undefined'){if(ask)$('sk-perm').onclick=()=>{try{DeviceMotionEvent.requestPermission().then(r=>{if(r==='granted'){window.addEventListener('devicemotion',mot);const b=$('sk-perm');if(b)b.remove()}}).catch(()=>{})}catch(_){}};else window.addEventListener('devicemotion',mot)}
+  actions([['go','',()=>{if(busy)return;if(count===target){busy=true;L(!wrong);window.removeEventListener('devicemotion',mot);FX.chime();burst(jar,16);say([N(target),250,rnd(PRAISE)],`${target}! Well done!`).then(()=>{if(RUN===run)roundDone(!wrong)})}
+    else{wrong=true;L(false);FX.boing();anim(jar,'wiggle',500);say(count>target?['P_sk_over']:['P_sk_less',300,'P_sk_go',250,N(target)],count>target?'Too many! Tap a ladoo to take it out.':'Not yet! The jar needs more.')}},ICON.check||'✓','sk-done']])};
+
+/* ---------------------------------------------------------------- Haathi's dhaba (ages 3 to 5) */
+const SAMOSA='<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M50 12L90 84H10Z" fill="#e1a84b" stroke="#a8702a" stroke-width="5" stroke-linejoin="round"/><path d="M50 30L74 76" stroke="#c98b3a" stroke-width="4"/></svg>';
+const JALEBI='<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M50 52c0-6 8-6 8 0s-10 12-16 4-2-20 10-20 22 10 20 24-16 26-32 22-26-20-20-36 26-26 40-20" fill="none" stroke="#f39a1e" stroke-width="9" stroke-linecap="round"/></svg>';
+const DH_FOOD={roti:{e:'🫓',n:'roti'},dal:{e:'🍲',n:'dal'},rice:{e:'🍚',n:'rice'},samosa:{h:SAMOSA,n:'samosa'},ladoo:{h:'<span class="obj ladoo s3" style="margin:0"></span>',n:'ladoo'},jalebi:{h:JALEBI,n:'jalebi'},chai:{e:'☕',n:'chai'},lassi:{e:'🥛',n:'lassi'},egg:{e:'🥚',n:'egg'}};
+const dhPic=k=>{const f=DH_FOOD[k];return f.h||`<span class="dh-e">${f.e}</span>`};
+const DH_GUEST=['🐒','🐄','🐇','🐐','🦚','🐻','🐼','🦊','🐯','🦒'];
+const dhSay=(k,q)=>[N(q),'P_dh_f_'+k+(q===1?'1':'N')];
+const dhTxt=(k,q)=>{const s={roti:['roti','rotis'],dal:['bowl of dal','bowls of dal'],rice:['plate of rice','plates of rice'],samosa:['samosa','samosas'],ladoo:['ladoo','ladoos'],jalebi:['jalebi','jalebis'],chai:['cup of chai','cups of chai'],lassi:['glass of lassi','glasses of lassi'],egg:['boiled egg','boiled eggs']}[k];return q+' '+s[q===1?0:1]};
+ACT.dhaba=n=>{const run=RUN,dishes=n.dishes||1,max=n.max||3;const keys=shuffle(Object.keys(DH_FOOD));const ord=keys.slice(0,dishes).map(k=>({k,q:ri(1,max)}));
+  const shelf=shuffle([...ord.map(o=>o.k),...keys.slice(dishes,dishes+(dishes===1?2:2))]);const guest=rnd(DH_GUEST);const plate={};let wrong=false,busy=false;const L=once(ok=>learnN(n,ok));
+  body().innerHTML=`<div class="dh-wrap"><div class="dh-top"><span class="dh-guest">${guest}</span><div class="dh-bubble">${ord.map(o=>`<span class="dh-o" data-k="${o.k}" data-q="${o.q}"><b>${o.q}</b>${dhPic(o.k)}</span>`).join('<i>+</i>')}</div></div>
+    <div class="dh-thali" id="dh-thali" aria-label="Thali"></div><div class="dh-shelf" id="dh-shelf"></div></div>`;
+  const thali=$('dh-thali'),sh=$('dh-shelf');
+  const sayOrder=()=>say([...(run.round===0?['P_dh_hello',300]:[]),'P_dh_want',...ord.flatMap((o,i)=>[...(i?['P_and']:[]),...dhSay(o.k,o.q)]),'P_dh_please',...(run.round===0?[400,'P_dh_serve']:[])],ord.map(o=>dhTxt(o.k,o.q)).join(' and ')+', please!');
+  RUN.prompt=sayOrder;sayOrder();
+  const draw=()=>{thali.innerHTML=Object.keys(plate).filter(k=>plate[k]>0).map(k=>`<div class="dh-pile">${Array.from({length:plate[k]},()=>`<button class="dh-item" data-k="${k}" aria-label="Take off one ${DH_FOOD[k].n}">${dhPic(k)}</button>`).join('')}</div>`).join('');
+    thali.querySelectorAll('.dh-item').forEach(b=>b.onclick=()=>{if(busy)return;plate[b.dataset.k]--;FX.swish();draw()})};
+  shelf.forEach(k=>{const b=document.createElement('button');b.className='dh-food';b.dataset.k=k;b.innerHTML=dhPic(k)+`<small>${DH_FOOD[k].n}</small>`;b.setAttribute('aria-label','Add '+DH_FOOD[k].n);sh.appendChild(b);
+    dragTap(b,thali,()=>{if(busy||!r7Alive(n,thali))return;const tot=Object.values(plate).reduce((a,c)=>a+c,0);if(tot>=14)return;plate[k]=(plate[k]||0)+1;FX.pop();draw();anim(thali,'dh-bump',300)})});
+  actions([['star','Serve',()=>{if(busy)return;const ok=ord.every(o=>(plate[o.k]||0)===o.q)&&Object.keys(plate).every(k=>!plate[k]||ord.some(o=>o.k===k));
+    if(ok){busy=true;L(!wrong);FX.chime();burst(thali,18);const g=body().querySelector('.dh-guest');if(g)g.textContent='😋';say(['P_dh_thanks',250,rnd(PRAISE)],'Yum! Thank you!').then(()=>{if(RUN===run)roundDone(!wrong)})}
+    else{wrong=true;L(false);FX.boing();anim(thali,'wiggle',500);say(['P_dh_wrong',300,'P_dh_want',...ord.flatMap((o,i)=>[...(i?['P_and']:[]),...dhSay(o.k,o.q)]),'P_dh_please'],'Not quite. '+ord.map(o=>dhTxt(o.k,o.q)).join(' and ')+', please!')}},'🛎️ ','dh-serve']])};
+ACT.dhaba2=n=>ACT.dhaba(Object.assign(n,{dishes:2}));
+
+/* ---------------------------------------------------------------- Who am I? riddles (ages 4 to 6) */
+const RID=window.HAATHI_RIDDLES||{};const RIDB={};
+async function ridPlay(k,i){const p=`riddles/audio/${k}_${i}.mp3`;let u=RIDB[p];if(!u){try{const r=await fetch(p);if(!r.ok)throw 0;u=RIDB[p]=URL.createObjectURL(await r.blob())}catch(e){return}}
+  stopVoice();await new Promise(res=>{try{const a=r7Aud;a.onended=res;a.onerror=res;a.src=u;a.play().catch(res)}catch(e){res()}})}
+const r7Aud=new Audio();
+GAME_AGE.whoami=4;GLABEL.whoami='Who am I?';GICON.whoami='🕵️';
+DSC.sections.forEach(s=>{if(['fruits','vegetables','farm','wild','birds','sea','bugs','vehicles','helpers','sky'].includes(s.id)&&s.items.filter(i=>RID[i.k]).length>=4&&!s.games.includes('whoami'))s.games.push('whoami')});
+ACT.d_whoami=n=>{const run=RUN,sec=DSEC[n.sec];const all=(sec?sec.items.map(i=>i.k):Object.keys(RID)).filter(k=>DI(k).e&&DI(k).e!=='❓');const pool=all.filter(k=>RID[k]);
+  const k=deck('who'+(n.sec||''),pool);const opts=shuffle([k,...others(all,k,Math.max(2,nopt()-1))]);let clue=0,wrong=false,busy=false,miss=0;const L=once(ok=>learnN(n,ok));
+  body().innerHTML=`<div class="who-top"><span class="who-q">🕵️ Who am I?</span><span class="who-dots" id="who-dots">${[0,1,2].map(i=>`<i class="${i===0?'on':''}"></i>`).join('')}</span><button class="pill-btn small" id="who-more">💡 Another clue</button></div><p class="who-clue" id="who-clue"></p><div class="choices" id="pk"></div>`;
+  const cl=$('who-clue'),more=$('who-more');
+  const show=i=>{cl.textContent=RID[k][i];$('who-dots').querySelectorAll('i').forEach((d,j)=>d.classList.toggle('on',j<=i));more.disabled=i>=2;more.classList.toggle('dim',i>=2)};
+  const give=async(i,intro)=>{show(i);if(intro)await say(['P_who_intro'],null);else if(i>0)await say(['P_who_more'],null);if(RUN!==run||busy)return;await ridPlay(k,i)};
+  RUN.prompt=()=>give(clue,false);give(0,true);
+  more.onclick=()=>{unlockAudio();FX.tap();if(busy||clue>=2)return;clue++;give(clue,false)};
+  opts.forEach(x=>{const d=DI(x);const b=document.createElement('button');b.className='pcard who-card';b.innerHTML=`<span>${d.e}</span><small>${d.n}</small>`;b.setAttribute('aria-label',d.n);b._ok=x===k;
+    b.onclick=()=>{if(busy)return;unlockAudio();if(x===k){busy=true;L(!wrong);b.classList.add('right');FX.chime();burst(b,14);try{r7Aud.pause()}catch(e){}say(['P_who_was',DN(k),300,rnd(PRAISE)],`It was the ${d.n.toLowerCase()}!`).then(()=>{if(RUN===run)roundDone(!wrong)})}
+      else{wrong=true;miss++;L(false);FX.boing();anim(b,'wiggle',500);b.disabled=true;b.classList.add('dim');if(clue<2){clue++;give(clue,false)}else{const r=[...$('pk').children].find(c=>c._ok);ndHint(r);say(['P_nd_here'],'Here it is. Tap it!')}}};
+    $('pk').appendChild(b)})};
+
+/* ---------------------------------------------------------------- Sound blender (age 5) */
+const BLEND_W={cat:'🐈',hat:'👒',bat:'🦇',rat:'🐀',dog:'🐕',log:'🪵',nut:'🥜',hut:'🛖',sun:'☀️',bus:'🚌',pig:'🐖',map:'🗺️',bed:'🛏️',leg:'🦵',ten:'🔟',bag:'👜',bug:'🐛',cap:'🧢',hen:'🐔',pen:'🖊️',cup:'☕'};
+/* the grown-up's own recorded sound when there is one; otherwise Haathi's */
+const pureSnd=l=>hasRec(l)?'R_'+l:'S_'+l;
+ACT.blender=n=>{const run=RUN;const w=deck('blend',Object.keys(BLEND_W));const opts=shuffle([w,...others(Object.keys(BLEND_W),w,Math.max(2,nopt()-1))]);let wrong=false,busy=false,heard=new Set(),joined=false;const L=once(ok=>recordLetter(w[0],ok,opts.length,'blender'));
+  body().innerHTML=`<div class="bl-track" id="bl-track"><div class="bl-rail"></div>${[...w].map((c,i)=>`<button class="bl-tile" data-i="${i}" aria-label="Sound ${c}">${c}</button>`).join('')}<span class="bl-ball" id="bl-ball" aria-hidden="true">👆</span></div><div class="bl-word" id="bl-word" hidden>${w}</div><div class="choices bl-pk" id="pk" hidden></div>`;
+  const tr=$('bl-track'),tiles=[...tr.querySelectorAll('.bl-tile')],ball=$('bl-ball');
+  const prompt=()=>say(joined?['P_bl_pick']:['P_bl_slide'],joined?'Which picture is it?':'Slide your finger over the letters!');RUN.prompt=prompt;prompt();
+  const play=i=>{tiles.forEach((t,j)=>t.classList.toggle('lit',j===i));heard.add(i);say([pureSnd(w[i])],w[i])};
+  tiles.forEach((t,i)=>t.onclick=e=>{if(e.detail!==0)return;unlockAudio();play(i)});
+  let drag=false,lastI=-1;const pos=e=>{const r=tr.getBoundingClientRect();const x=Math.max(0,Math.min(r.width,e.clientX-r.left));ball.style.left=x+'px';
+    const i=tiles.findIndex(t=>{const b=t.getBoundingClientRect();return e.clientX>=b.left&&e.clientX<=b.right});if(i>=0&&i!==lastI){lastI=i;play(i)}
+    if(x>=r.width-6&&heard.size===w.length&&!joined)join()};
+  tr.onpointerdown=e=>{unlockAudio();drag=true;lastI=-1;try{tr.setPointerCapture(e.pointerId)}catch(_){}pos(e)};
+  tr.onpointermove=e=>{if(drag)pos(e)};tr.onpointerup=tr.onpointercancel=()=>{drag=false;if(heard.size===w.length&&!joined)join()};
+  const join=()=>{if(joined||!r7Alive(n,tr))return;joined=true;tiles.forEach(t=>t.classList.add('lit'));FX.sparkle&&FX.sparkle();$('bl-word').hidden=false;
+    say(['P_bl_join',300,...[...w].map(c=>pureSnd(c)),250,W(w),400,'P_bl_pick'],w).then(()=>{if(RUN!==run)return;const pk=$('pk');pk.hidden=false;
+      opts.forEach(x=>{const b=document.createElement('button');b.className='pcard';b.innerHTML=BLEND_W[x];b.setAttribute('aria-label',x);b._ok=x===w;
+        b.onclick=()=>{if(busy)return;if(x===w){busy=true;L(!wrong);b.classList.add('right');FX.chime();burst(b,14);say([W(w),250,rnd(PRAISE)],`${w}!`).then(()=>{if(RUN===run)roundDone(!wrong)})}
+          else{wrong=true;L(false);FX.boing();anim(b,'wiggle',500);say([...[...w].map(c=>pureSnd(c)),250,W(w)],w)}};pk.appendChild(b)})})};
+  if(run.round===0)setTimeout(()=>{if(RUN===run&&!heard.size)ball.classList.add('bl-demo')},1600)};
+
+/* ---------------------------------------------------------------- Act-it-out sums (ages 5 to 7) */
+const AO={birds:{op:'+',e:'🐦',home:'🌳',hc:'ao-tree',a:'P_ao_birds_a',b:['#','P_ao_birds_b'],q:'P_ao_birds_q',ta:(a)=>`${a} bird${a>1?'s':''} sit on the tree.`,tb:b=>`${b} more fly in. Move them onto the tree!`,tq:'How many birds are on the tree now?'},
+  fish:{op:'+',e:'🐟',home:'',hc:'ao-pond',a:'P_ao_fish_a',b:['#','P_ao_fish_b'],q:'P_ao_fish_q',ta:a=>`${a} fish swim in the pond.`,tb:b=>`${b} more jump in. Move them into the pond!`,tq:'How many fish are in the pond now?'},
+  ladoo:{op:'-',e:'ladoo',home:'',hc:'ao-plate',a:'P_ao_ladoo_a',b:['P_ao_ladoo_b1','#','P_ao_ladoo_b2'],q:'P_ao_ladoo_q',ta:a=>`${a} ladoos are on the plate.`,tb:b=>`Haathi is hungry. Give him ${b}!`,tq:'How many ladoos are left on the plate?'},
+  mango:{op:'-',e:'🥭',home:'🌳',hc:'ao-tree',a:'P_ao_mango_a',b:['#','P_ao_mango_b'],q:'P_ao_mango_q',ta:a=>`${a} mangoes hang on the tree.`,tb:b=>`${b} fall down. Tap them to make them fall!`,tq:'How many mangoes are still on the tree?'}};
+ACT.actout=n=>{const run=RUN,max=n.max||10;const kind=deck('ao'+max,Object.keys(AO));const sc=AO[kind];let a,b;
+  if(sc.op==='+'){b=ri(1,max>10?5:3);a=ri(max>10?5:1,max-b)}else{b=ri(1,max>10?5:3);a=ri(b+(max>10?3:1),max)}
+  const ans=sc.op==='+'?a+b:a-b;let moved=0,wrong=false,busy=false;const L=once(ok=>learnN(n,ok));const obj=i=>sc.e==='ladoo'?`<span class="obj ladoo s3"></span>`:`<span class="ao-e">${sc.e}</span>`;
+  body().innerHTML=`<div class="ao-wrap ao-${kind}"><div class="ao-home ${sc.hc}" id="ao-home">${sc.home?`<span class="ao-bg">${sc.home}</span>`:''}<div class="ao-in" id="ao-in">${Array.from({length:sc.op==='+'?a:a},(_,i)=>`<span class="ao-o${sc.op==='-'?' ao-t':''}" data-i="${i}">${obj(i)}</span>`).join('')}</div></div>
+    ${sc.op==='+'?`<div class="ao-out" id="ao-out">${Array.from({length:b},(_,i)=>`<button class="ao-o ao-mv" aria-label="Move me">${obj(i)}</button>`).join('')}</div>`:`<div class="ao-out ao-haathi" id="ao-out">${kind==='ladoo'?'<span class="ao-hh">🐘</span>':'<span class="ao-ground"></span>'}</div>`}
+    <div class="choices" id="ao-ch" hidden></div></div>`;
+  const home=$('ao-in'),out=$('ao-out');
+  const seqB=()=>sc.b.flatMap(x=>x==='#'?[N(b)]:[x]);
+  const story=()=>say([N(a),sc.a,300,...seqB()],`${sc.ta(a)} ${sc.tb(b)}`);
+  const ask=()=>{const ch=$('ao-ch');if(!ch||!ch.hidden)return;ch.hidden=false;say([sc.q],sc.tq);
+    numChoices(ans,Math.max(max,a),ch,(btn,v)=>{if(busy)return;const ok=v===ans;L(ok);
+      if(ok){busy=true;btn.classList.add('right');FX.chime();burst(btn,14);say([N(ans),300,rnd(PRAISE)],`${ans}!`).then(()=>{if(RUN===run)roundDone(!wrong)})}
+      else{wrong=true;FX.boing();anim(btn,'wiggle',500);say(['P_count_again'],"Let's count together.")}},0)};
+  RUN.prompt=()=>moved>=b?say([sc.q],sc.tq):story();story();
+  const done1=()=>{moved++;if(moved>=b)setTimeout(()=>{if(r7Alive(n,home))ask()},450)};
+  if(sc.op==='+')out.querySelectorAll('.ao-mv').forEach(el=>dragTap(el,home,()=>{if(el.disabled||!r7Alive(n,home))return;el.disabled=true;const s=document.createElement('span');s.className='ao-o ao-new';s.innerHTML=obj(0);home.appendChild(s);el.style.visibility='hidden';FX.pop();done1()}));
+  else home.querySelectorAll('.ao-t').forEach(el=>{const go=()=>{if(moved>=b||el.classList.contains('gone')||!r7Alive(n,home))return;el.classList.add('gone');FX.swish();if(kind==='ladoo'){const s=document.createElement('span');s.className='ao-eaten';s.innerHTML=obj(0);out.appendChild(s)}else{const s=document.createElement('span');s.className='ao-fallen';s.innerHTML=obj(0);out.appendChild(s)}done1()};
+    el.setAttribute('role','button');el.setAttribute('aria-label',kind==='ladoo'?'Give to Haathi':'Make it fall');dragTap(el,kind==='ladoo'?out:null,go)})};
+ACT.actout20=n=>ACT.actout(Object.assign(n,{max:20}));
+
+/* ---------------------------------------------------------------- Slide to the number (ages 6 and 7) */
+ACT.slide=n=>{const run=RUN,max=n.max||20;const target=deck('sl'+max,range(1,max-1).filter(v=>max<=20||v%10!==0));let v=0,vel=0,gx=0,wrong=false,busy=false,miss=0,drag=false;const L=once(ok=>learnN(n,ok));
+  const step=max<=20?5:10;const canTilt=motionOn()&&typeof DeviceOrientationEvent!=='undefined',ask=canTilt&&typeof DeviceOrientationEvent.requestPermission==='function';
+  body().innerHTML=`<div class="sl-wrap"><div class="sl-ask">Take Haathi to <b>${target}</b></div><div class="sl-line" id="sl-line"><div class="sl-bar"></div>${range(0,max).map(i=>`<i class="sl-tick${i%step===0?' big':''}" style="left:${i/max*100}%">${i%step===0?`<span>${i}</span>`:''}</i>`).join('')}<span class="sl-h" id="sl-h">🐘</span><span class="sl-show" id="sl-show" hidden></span></div>${ask?'<button class="pill-btn small" id="sl-perm">📱 Tilt</button>':''}</div>`;
+  const line=$('sl-line'),hh=$('sl-h');
+  const prompt=()=>say(['P_sl_go',N(target),...(run.round===0?[400,'P_sl_how']:[])],`Take Haathi to ${target}!`);RUN.prompt=prompt;prompt();
+  const place=()=>{hh.style.left=(v/max*100)+'%'};place();
+  const fromX=e=>{const r=line.getBoundingClientRect();v=Math.max(0,Math.min(max,(e.clientX-r.left)/r.width*max));vel=0;place()};
+  line.onpointerdown=e=>{unlockAudio();drag=true;try{line.setPointerCapture(e.pointerId)}catch(_){}fromX(e)};line.onpointermove=e=>{if(drag)fromX(e)};line.onpointerup=line.onpointercancel=()=>{drag=false};
+  const ori=e=>{if(e.gamma==null)return;gx=Math.max(-1,Math.min(1,e.gamma/30))};
+  if(canTilt){window.addEventListener('deviceorientation',ori);if(ask)$('sl-perm').onclick=()=>{try{DeviceOrientationEvent.requestPermission().then(()=>{const b=$('sl-perm');if(b)b.remove()}).catch(()=>{})}catch(_){}}}
+  const stop=()=>window.removeEventListener('deviceorientation',ori);
+  const loop=()=>{if(!r7Alive(n,line)){stop();return}if(!drag&&!busy&&Math.abs(gx)>.06){vel=vel*.9+gx*max*.0008;v=Math.max(0,Math.min(max,v+vel));place()}else vel*=.8;requestAnimationFrame(loop)};requestAnimationFrame(loop);
+  actions([['go','',()=>{if(busy)return;const at=Math.round(v);v=at;place();const sh=$('sl-show');sh.hidden=false;sh.textContent=at;sh.style.left=(at/max*100)+'%';
+    if(at===target){busy=true;L(!wrong);stop();FX.chime();burst(hh,16);say([N(target),300,rnd(PRAISE)],`${target}! Well done!`).then(()=>{if(RUN===run)roundDone(!wrong)})}
+    else{wrong=true;miss++;L(false);FX.boing();anim(hh,'wiggle',500);if(NEWUI&&miss>=2){const t=line.querySelectorAll('.sl-tick')[target];if(t)t.classList.add('sl-hint')}
+      say([at<target?'P_sl_up':'P_sl_down',300,'P_sl_go',N(target)],at<target?`That is ${at}. Go a bit further!`:`That is ${at}. Go back a little!`)}},ICON.check||'✓','sl-done']])};
+
+/* ---------------------------------------------------------------- register */
+Object.assign(SK,{
+ shakecount:{sub:'Maths',name:'Shake and count',levels:[5,10],lab:v=>'to '+v,unlock:()=>true,node:v=>({t:'shakecount',max:v})},
+ dhaba:{sub:'Maths',name:"Haathi's dhaba",levels:[1,2],lab:v=>v===1?'one dish':'two dishes',unlock:()=>true,node:v=>({t:'dhaba',dishes:v,max:3})},
+ dhaba2:{sub:'Maths',name:"Haathi's dhaba, bigger orders",levels:[3,5],lab:v=>'up to '+v+' of each',unlock:()=>true,node:v=>({t:'dhaba2',max:v})},
+ actout:{sub:'Maths',name:'Act-it-out sums',levels:[10],lab:()=>'to 10',unlock:()=>true,node:v=>({t:'actout',max:v})},
+ actout20:{sub:'Maths',name:'Act-it-out sums to 20',levels:[20],lab:()=>'to 20',unlock:()=>true,node:v=>({t:'actout20',max:v})},
+ slide:{sub:'Maths',name:'Slide to the number',levels:[20,100],lab:v=>'0 to '+v,unlock:()=>true,node:v=>({t:'slide',max:v})}});
+Object.assign(TIER.numbers,{shakecount:0,dhaba:0,dhaba2:1,actout:1,actout20:2,slide:2});
+CORNER.numbers.push(['shakecount','Shake and count','🪘'],['dhaba',"Haathi's dhaba",'🍛'],['dhaba2',"Haathi's dhaba",'🍛'],['actout','Act-it-out sums','🐦+'],['actout20','Act-it-out sums','🐦+'],['slide','Slide to the number','🐘↔']);
+TIER.letters.blender=1;LGAMES.blender=()=>true;CORNER.letters.push(['blender','Sound blender','c·a·t']);
+Object.assign(ROUNDS,{shakecount:4,dhaba:4,dhaba2:4,actout:4,actout20:4,slide:5,blender:4,d_whoami:5});
+Object.assign(TITLES,{shakecount:'Shake and count',dhaba:"Haathi's dhaba",dhaba2:"Haathi's dhaba",actout:'Act-it-out sums',actout20:'Act-it-out sums',slide:'Slide to the number',blender:'Sound blender',d_whoami:'Who am I?'});
+Object.assign(ND_ICO,{shakecount:'🪘',dhaba:'🍛',dhaba2:'🍛',actout:'🐦',actout20:'🐦',slide:'🐘',blender:'🔤',d_whoami:'🕵️'});
+
 /* ======================= BOOT ======================= */
 if(S.profile&&S.placed!==3)placeByAge();
 document.addEventListener('visibilitychange',()=>{if(document.hidden){save();stopVoice();sync(false);document.querySelectorAll('canvas').forEach(c=>c.dispatchEvent(new PointerEvent('pointercancel')))}else{if(actx&&actx.state!=='running')try{actx.resume()}catch(e){}}});
 window.addEventListener('pageshow',()=>{if(actx&&actx.state!=='running')try{actx.resume()}catch(e){}});
 document.addEventListener('pointerdown',()=>{if(actx&&actx.state!=='running')actx.resume()},{passive:true});
-window.__haathi={MERGE,REPL,mergeRound,micOn,cornerNode,cornerLocked,stPilotMerge,openStory,openStories,SR:()=>SR,BEDTIME,tierOf:id=>tierOf(kindOfId(id),id),newUI:v=>{if(v!=null)NEWUI=!!v;return NEWUI},composeAdv,go,ACT,roundDone:ok=>roundDone(ok),RUN:()=>RUN,curChapter,placeByAge:()=>placeByAge(),SK,LS,CS,DIG,PREP,DOTPICS,S:()=>S,compose,learn,startRun,sceneHTML,openStory,r5:{sgPick,sgOpen,sgPending,r5WeekText,r5Areas,r5Insight,gsCards,SG_T,SG_BANK},r6:{tbOpen,tbS,tbLevel,TB:()=>TB,tbOfferDue,tbPick,scene2,TBOOKS,ndIcon}};
+window.__haathi={MERGE,REPL,mergeRound,micOn,cornerNode,cornerLocked,stPilotMerge,openStory,openStories,SR:()=>SR,BEDTIME,tierOf:id=>tierOf(kindOfId(id),id),newUI:v=>{if(v!=null)NEWUI=!!v;return NEWUI},composeAdv,go,ACT,roundDone:ok=>roundDone(ok),RUN:()=>RUN,curChapter,placeByAge:()=>placeByAge(),SK,LS,CS,DIG,PREP,DOTPICS,S:()=>S,compose,learn,startRun,sceneHTML,openStory,r5:{sgPick,sgOpen,sgPending,r5WeekText,r5Areas,r5Insight,gsCards,SG_T,SG_BANK},r6:{tbOpen,tbS,tbLevel,TB:()=>TB,tbOfferDue,tbPick,scene2,TBOOKS,ndIcon},r7:{BLEND_W,RID,AO,DH_FOOD,pureSnd,openShelf,dNode}};
 go('start');
 })();
