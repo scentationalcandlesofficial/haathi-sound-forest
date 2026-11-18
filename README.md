@@ -97,7 +97,19 @@ The Grown-ups page, still behind the same sum, now has three tabs.
 - **Voice lines:** 22 new lines in English and Hindi (`P_sg_*`, `P_guess_*`).
 - **Code:** the block marked RELEASE 5 in `app.js` and the styles marked release 5 in `index.html`.
 
-Not built yet from the review: Steps D to F.
+## Release 6 (Step D of the full review)
+- **Tiny books:** 30 short books the child reads, written for this app and approved before building (8 samples in the review doc, then 22 more from the approved list). Starter (age 4, 1 or 2 words a page), Level 1 (age 5, one short sentence), Level 2 (ages 5 and 6, one or two sentences), Level 3 (ages 6 and 7, two or three sentences). Half are about Haathi and his forest friends, half about an Indian family at home, at the market and at school.
+- **How a page works:** Haathi does not read first. The child reads, and can tap any word to hear it. Then the child taps "I read it!" (or, with the microphone on, records the page and hears it back once). After that a speaker button lets Haathi read the page with the words lighting up.
+- **Where:** a "Books I can read" row at the top of the Stories shelf (from age 4), with easier books under it. For ages 5 to 7 a Tiny book takes the letters or reading stop in every other adventure; a day that meets a new letter keeps it.
+- **Level:** starts from age. After 3 books at a level read with few words tapped for help, the child is offered harder books. A grown-up can set the level in Settings, or put it back to "Set by age". Level changes are listed under Progress.
+- **"I read" on the stories:** ages 6 and 7, when a grown-up has switched the microphone on. A microphone button on each story page records the child reading and plays it back once.
+- **Recordings:** played back once and thrown away, as before. Nothing is stored or sent.
+- **Story questions:** already in the stories since release 4, so nothing new here.
+- **Kept on the phone:** which Tiny books were read (date), how many words were tapped for help, and the level. Counts only. New anonymous counts: Tiny book opened and finished.
+- **Files:** `books/books.js` (built from `gen/books/books.py`), narration in `books/audio/` (one file a page) and `books/audio/w/` (one file a word, played on tap). 8 new instruction lines in English and Hindi (`P_tb_*`). New picture backgrounds for the books: market, street, roof, rail, kitchen.
+- **Code:** the block marked RELEASE 6 in `app.js` and the styles marked release 6 in `index.html`.
+
+Not built yet from the review: Steps E and F.
 
 ### Backup of the old app
 The last version before the redesign is kept as the branch `classic-backup-2026-11-12` in this repository. To put it back on the main link: `git checkout origin/classic-backup-2026-11-12 -- .`, commit and push. As an emergency fallback on a single phone, opening the app with `?new=0` shows the old map again and `?new=1` returns to the new design.

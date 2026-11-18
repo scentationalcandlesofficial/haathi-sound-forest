@@ -2425,7 +2425,7 @@ function r5Areas(){const list=(ids,none)=>{const tried=ids.filter(id=>S.sk[id]&&
   const A=[{n:'Sounds and letters',st:prac.length<3?0:mast.length>=Math.max(4,Math.ceil(inPlayL.length*.6))?2:1,
     eg:`Letter sounds in play: ${inPlayL.length} of ${ORDER.length}${inPlayL.length?' ('+inPlayL.slice(0,8).join(', ')+(inPlayL.length>8?', ...':'')+')':''}. Mastered: ${mast.length}.${trick?` Trickiest right now: "${trick}" (as in ${KEYW(trick)[0]}).`:''}`}];
   /* reading */
-  {const s=S.sk.read,opened=Object.keys(S.storiesRead||{}).length;const stn=`Stories opened: ${opened}.`;
+  {const s=S.sk.read,opened=Object.keys(S.storiesRead||{}).length;const stn=`Stories opened: ${opened}.${tbShown()?` Tiny books read: ${Object.keys(tbS().read).length} of ${TBOOKS().length}, now on ${TB_LV[tbLevel()]}.`:''}`;
    if(!(s&&s.n)&&!readUnlock())A.push({n:'Reading',st:0,eg:`Word-reading games open at age 6, or at 5 once about 10 letter sounds are going well. Stories can be listened to at any age. ${stn}`});
    else A.push({n:'Reading',st:!s||s.n<12?0:s.p>=.7?2:1,eg:s&&s.n?`Reading words: ${SK.read.lab(param('read'))}, right first time about ${r5Ten(s.p)} times in 10. ${stn}`:`Word-reading games are open but not played yet. ${stn}`})}
   const n=list(bySub('Maths'),'No number games played yet.'),w=list(bySub('Writing'),'No writing games played yet.'),d=list(bySub('Discover'),'No topics played yet.');
@@ -2446,6 +2446,7 @@ function r5WeekText(){const D=r5Last7(),keys=D.map(dkey),nm=r5Name();
   if(!played)L.push('No play in the last 7 days.');
   else{L.push(`Played on ${played} of 7 days, about ${min} minute${min===1?'':'s'} in all.`);
     L.push(`Adventures finished: ${adv}.${tog?` Done together with a grown-up: ${tog}.`:''}`);
+    {const tr=tbReadIn(keys);if(tr)L.push(`Tiny books read: ${tr}.`)}
     if(ups.length)L.push(`Moved up a level in: ${ups.join(', ')}.`);
     if(mas.length)L.push(`Letter sounds mastered: ${mas.join(', ')}.`);
     if(!ups.length&&!mas.length)L.push('No level changes this week. Steady practice.');
@@ -2495,11 +2496,140 @@ ACT.guessit=n=>{const run=RUN,b=body();$('cap').textContent='';const root=docume
   root.innerHTML=`<div class="gs-steps"><div><span aria-hidden="true">🙆</span><p><b>Grown-up:</b> hold the phone upright on your forehead, with the screen facing your child.</p></div><div><span aria-hidden="true">🗣️</span><p><b>Child:</b> look at the picture and tell them about it. Do not say its name!</p></div><div><span aria-hidden="true">👍</span><p>${canTilt?'Right guess: tip the phone down to the floor, or your child taps ✓. To pass: tip it up to the ceiling, or tap ➜.':'Right guess: your child taps ✓. To pass: tap ➜.'}</p></div></div>`;
   RUN.prompt=()=>say(['P_guess_intro'],null);RUN.prompt();actions([['go','Start',begin,'']])};
 
+/* ======================= RELEASE 6: Tiny books, "I read" on stories ======================= */
+/* ---- new picture backgrounds for the books: market, street, roof, rail, kitchen ---- */
+const TB_BG={
+ market:n=>`<rect y="226" width="400" height="74" fill="#e8d3a0"/>`+[[24,'#e2563f'],[214,'#2f8a5f']].map(([x,c])=>`<rect x="${x+8}" y="128" width="6" height="100" fill="#8a5a3b"/><rect x="${x+152}" y="128" width="6" height="100" fill="#8a5a3b"/><path d="M${x} 128 H${x+166} L${x+156} 160 H${x+10}Z" fill="${c}"/>${[0,1,2,3,4].map(i=>`<path d="M${x+14+i*30} 128 h15 l-2 32 h-15Z" fill="#fff" opacity=".85"/>`).join('')}<rect x="${x+8}" y="192" width="150" height="36" rx="4" fill="#b07a45"/><rect x="${x+8}" y="192" width="150" height="6" fill="#c9965f"/>`).join(''),
+ street:n=>{const w=n?'#ffd27a':'#fff9e0';return [[0,92,110,'#f2c4a0'],[110,62,90,'#c9d8e8'],[200,100,100,'#f6e3a8'],[300,72,100,'#e8b4c4']].map(([x,y,wd,c])=>`<rect x="${x}" y="${y}" width="${wd}" height="${232-y}" fill="${c}"/>`+[0,1,2].map(r=>[0,1].map(k=>`<rect x="${x+16+k*(wd/2)}" y="${y+18+r*42}" width="${wd/2-30}" height="24" rx="3" fill="${w}"/>`).join('')).join('')).join('')+`<rect y="228" width="400" height="14" fill="#cfc7b8"/><rect y="242" width="400" height="58" fill="#7d838c"/>${[0,1,2,3,4,5,6].map(i=>`<rect x="${i*64+10}" y="270" width="34" height="5" fill="#fff" opacity=".85"/>`).join('')}`},
+ roof:n=>`<rect x="0" y="196" width="130" height="44" fill="#d9c8b0"/><rect x="250" y="206" width="150" height="34" fill="#cbb89c"/><rect x="316" y="160" width="58" height="10" rx="4" fill="#1f2326"/><rect x="320" y="168" width="50" height="62" rx="6" fill="#2f3438"/><rect y="236" width="400" height="64" fill="#e9e1d3"/><rect y="228" width="400" height="12" fill="#d4c9b5"/>`,
+ rail:n=>`<rect y="190" width="400" height="110" fill="#b9d97a"/><rect y="236" width="400" height="34" fill="#a39d94"/>${Array.from({length:17},(_,i)=>`<rect x="${i*24+2}" y="238" width="10" height="30" fill="#6b4a2f"/>`).join('')}<rect y="243" width="400" height="5" fill="#5a5f66"/><rect y="259" width="400" height="5" fill="#5a5f66"/>`,
+ kitchen:n=>`<rect width="400" height="300" fill="${n?'#2a2f5c':'#f6e3c6'}"/><rect x="40" y="40" width="90" height="80" rx="6" fill="${n?'#141a3d':'#bfe6ff'}" stroke="${n?'#5b5f9a':'#fff'}" stroke-width="8"/><rect x="230" y="70" width="150" height="8" fill="#9a6b45"/>${[250,290,330].map((x,i)=>`<rect x="${x}" y="40" width="24" height="30" rx="5" fill="${['#e8a33a','#d9534f','#5aa857'][i]}"/>`).join('')}<rect y="196" width="400" height="12" fill="#c9965f"/><rect y="206" width="400" height="94" fill="${n?'#3a3150':'#9a6b45'}"/><rect x="60" y="178" width="110" height="18" rx="4" fill="#3b3f45"/>`};
+const bgSVG0=bgSVG;
+bgSVG=function(key){const night=/N$/.test(key);const k=key.replace(/N$/,'');if(!TB_BG[k])return bgSVG0(key);
+  const [s1,s2]=night?SKY.night:SKY.day;const gid='sk'+(++SKID);let g=k==='kitchen'?'':`<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${s1}"/><stop offset="1" stop-color="${s2}"/></linearGradient></defs><rect width="400" height="300" fill="url(#${gid})"/>`;
+  g+=TB_BG[k](night);if(night&&k!=='kitchen')g+=`<rect width="400" height="300" fill="#0b1030" opacity="${k==='street'?.3:.42}"/>`;return {svg:g,night}};
+
+/* ---- the books ---- */
+const TB_LV=['Starter','Level 1','Level 2','Level 3'],TB_AGE=['age 4','age 5','ages 5 and 6','ages 6 and 7'];
+const TBOOKS=()=>window.HAATHI_BOOKS||[];
+const tbWkey=w=>w.toLowerCase().replace(/[^a-z']/g,'').replace(/^'+|'+$/g,'');
+function tbS(){return S.tb||(S.tb={lvl:null,read:{},help:{},offer:{}})}
+/* the level starts from age; a grown-up can set it, and the child can accept a harder level after 3 books read with little help */
+function tbLevel(){const t=tbS();if(t.lvl!=null)return t.lvl;const a=ageR();return a<=4?0:a===5?1:a===6?2:3}
+const tbShown=()=>TBOOKS().length>0&&(ageR()>=4||tbS().lvl!=null);
+const tbEasy=(id,b)=>{const h=tbS().help[id];return h!=null&&h<=Math.max(1,Math.round(b.words*.1))};
+function tbOfferDue(){const t=tbS(),L=tbLevel();if(L>=3)return false;const n=TBOOKS().filter(b=>b.lvl===L&&t.read[b.id]&&tbEasy(b.id,b)).length;return n>=3&&n>=(t.offer[L]||0)+3}
+function tbPick(){const L=tbLevel(),t=tbS();const at=TBOOKS().filter(b=>b.lvl===L);if(!at.length)return null;const un=at.find(b=>!t.read[b.id]);if(un)return un;return at.slice().sort((a,b)=>(t.read[a.id]||'').localeCompare(t.read[b.id]||''))[0]}
+
+/* ---- sound: page reading, single words, and the child's own voice (played once, then thrown away) ---- */
+const tbAudio=new Audio();tbAudio.preload='auto';const TBB={};
+async function tbBlob(path){if(TBB[path])return TBB[path];try{const r=await fetch(path);if(!r.ok)throw 0;const u=URL.createObjectURL(await r.blob());TBB[path]=u;return u}catch(e){return null}}
+function tbStopAudio(){try{tbAudio.pause()}catch(e){}tbAudio.ontimeupdate=null;tbAudio.onended=null;const t=document.querySelector('#tb-words .tb-text');if(t)t.classList.remove('reading')}
+let RECNOW=null;
+/* starts recording; btn becomes a stop button. done(true) after the child has heard themselves */
+async function recPage(btn,done){if(RECNOW)return;stopVoice();tbStopAudio();if(typeof stStop==='function'&&SR)stStop();let stream;
+  try{stream=await navigator.mediaDevices.getUserMedia({audio:true})}catch(e){S.settings.mic=false;save();done(false);return}
+  const chunks=[];let rec;try{rec=new MediaRecorder(stream)}catch(e){stream.getTracks().forEach(t=>t.stop());done(false);return}
+  const keep={html:btn.innerHTML,label:btn.getAttribute('aria-label'),fn:btn.onclick};
+  const stop=()=>{try{if(rec.state==='recording')rec.stop()}catch(e){}};RECNOW={stop,rec};
+  btn.classList.add('rec-on');btn.innerHTML='⏹';btn.setAttribute('aria-label','Stop');btn.onclick=()=>{FX.tap();stop()};const tm=setTimeout(stop,45000);
+  rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
+  rec.onstop=async()=>{clearTimeout(tm);stream.getTracks().forEach(t=>t.stop());RECNOW=null;btn.classList.remove('rec-on');btn.innerHTML=keep.html;btn.setAttribute('aria-label',keep.label||'');btn.onclick=keep.fn;
+    if(rec._cancel){chunks.length=0;return}
+    const url=URL.createObjectURL(new Blob(chunks,{type:rec.mimeType||'audio/webm'}));chunks.length=0;
+    await sayRaw(['P_tb_you'],null);await new Promise(res=>{try{const a=new Audio(url);a.onended=res;a.onerror=res;a.play().catch(res)}catch(e){res()}});
+    URL.revokeObjectURL(url);done(true)};
+  try{rec.start()}catch(e){stop();done(false)}}
+function recCancel(){if(RECNOW){try{RECNOW.rec._cancel=1;RECNOW.stop()}catch(e){}RECNOW=null}}
+
+/* ---- the reader ---- */
+let TB=null;
+const tbWords=t=>t.split(/(\s+)/).map(w=>!w?'':/^\s+$/.test(w)?w:`<span data-w="${tbWkey(w)}">${w}</span>`).join('');
+function tbOpen(id,from){const b=TBOOKS().find(x=>x.id===id);if(!b)return false;stopVoice();tbStopAudio();recCancel();
+  TB={b,p:-1,from:from||{},tried:{},tapped:{},help:0,hearTold:false,s:{cast:b.cast,pages:b.pages.map(p=>({s:p.s}))}};go('book');tbRender();
+  gc('/tb/'+id+'/start','Tiny book opened');setTimeout(()=>{if(TB&&TB.b===b&&TB.p<0)sayRaw(['P_tb_intro'],null)},350);
+  (async()=>{for(let i=0;i<b.pages.length;i++){if(!TB||TB.b!==b)return;await tbBlob(`books/audio/${b.id}_${i}.mp3`)}})();return true}
+function tbBack(){tbStopAudio();recCancel();stopVoice();const f=TB&&TB.from;TB=null;
+  if(f&&f.run){const r=f.run;if(RUN===r){const fr=RUN.from;RUN=null;backFrom(fr);return}}
+  go('corner');openStories()}
+function tbRender(){if(!TB)return;const {b,p}=TB,n=b.pages.length;tbStopAudio();
+  const el=$('s-book');el.dataset.lvl=b.lvl;$('tb-title').textContent=b.title;
+  $('tb-dots').innerHTML=Array.from({length:n+2},(_,i)=>`<i class="${i-1===p?'on':''}"></i>`).join('');
+  const ctl=$('tb-ctl');ctl.innerHTML='';const btn=(cls,html,label,fn,id)=>{const x=document.createElement('button');x.className=cls;x.innerHTML=html;x.setAttribute('aria-label',label);if(id)x.id=id;x.onclick=()=>{unlockAudio();fn(x)};ctl.appendChild(x);return x};
+  if(p<0){$('tb-pic').innerHTML=scene2({cast:b.cast,pages:[{s:b.cover}]},0);
+    $('tb-words').innerHTML=`<p class="tb-text tb-title">${tbWords(b.title)}</p><p class="tb-sub">${TB_LV[b.lvl]} · ${b.pages.length} pages</p>`;
+    btn('big-btn go tb-go','📖 Read','Start reading',()=>{FX.tap();stopVoice();TB.p=0;tbRender()})}
+  else if(p>=n){$('tb-pic').innerHTML=scene2({cast:b.cast,pages:[{s:b.cover}]},0);const t=tbS();const first=!t.read[b.id];
+    t.read[b.id]=today();t.help[b.id]=t.help[b.id]==null?TB.help:Math.min(t.help[b.id],TB.help);save();
+    if(!TB.doneSaid){TB.doneSaid=1;gc('/tb/'+b.id+'/done','Tiny book finished');confetti();FX.fanfare()}
+    const offer=!TB.from.run&&tbOfferDue();
+    $('tb-words').innerHTML=`<p class="tb-done">You read the whole book!</p><p class="tb-sub">${r5E(b.title)} · ${b.words} words${first?' · new on your shelf ✓':''}</p>${offer?`<div class="tb-offer"><p>You are reading so well! Try harder books?</p><div class="pt-btns"><button class="pill-btn primary" id="tb-up">Yes, harder books</button><button class="pill-btn" id="tb-stay">Not yet</button></div></div>`:''}`;
+    if(!TB.endSaid){TB.endSaid=1;sayRaw(offer?['P_tb_done',500,'P_tb_up']:['P_tb_done'],null)}
+    if(offer){const L=tbLevel();$('tb-up').onclick=()=>{FX.chime();t.lvl=L+1;t.offer[L]=99;save();logChange('tb',L,L+1,'mode',`Tiny books: moved up to ${TB_LV[L+1]} after 3 books read with little help.`);$('tb-words').querySelector('.tb-offer').innerHTML=`<p>Now on ${TB_LV[L+1]}. New books are on the shelf!</p>`};
+      $('tb-stay').onclick=()=>{FX.tap();t.offer[L]=TBOOKS().filter(x=>x.lvl===L&&t.read[x.id]&&tbEasy(x.id,x)).length;save();$('tb-words').querySelector('.tb-offer').remove()}}
+    if(TB.from.run)btn('big-btn go tb-go','✓ Done','Done',()=>{FX.tap();const r=TB.from.run;TB=null;if(RUN===r){go('play');roundDone(true)}else go('path')});
+    else{btn('pill-btn','↻ Read again','Read again',()=>{FX.tap();TB.p=-1;TB.tried={};TB.help=0;TB.tapped={};TB.endSaid=0;TB.doneSaid=0;tbRender()});btn('pill-btn primary','📚 Another book','Another book',()=>{FX.tap();tbBack()})}}
+  else{const pg=b.pages[p];$('tb-pic').innerHTML=scene2(TB.s,p);$('tb-words').innerHTML=`<p class="tb-text">${tbWords(pg.t)}</p>`;
+    $('tb-words').querySelectorAll('.tb-text span').forEach(sp=>sp.onclick=()=>tbWord(sp));
+    const tried=!!TB.tried[p];
+    btn('round','◀','Previous page',()=>{FX.tap();recCancel();TB.p--;tbRender()});
+    const mic=micOn();
+    btn('big-btn '+(mic?'star':'go')+' tb-try'+(tried?'':' tb-pulse'),mic?'🎤':'✋ I read it!',mic?'Read it to me':'I read it',x=>{if(mic){FX.tap();recPage(x,ok=>{if(!TB||TB.p!==p)return;if(!ok&&!micOn()){tbRender();return}tbTried(p)})}else{FX.chime();tbTried(p)}},'tb-try');
+    const h=btn('round tb-hear'+(tried?' tb-pulse':''),'🔊','Hear Haathi read it',()=>{FX.tap();tbHear()},'tb-hear');h.hidden=!tried;
+    btn('round tb-next'+(tried?' tb-pulse':''),'▶','Next page',()=>{FX.tap();recCancel();TB.p++;tbRender()},'tb-next');
+    if(p===0&&!TB.toldTry){TB.toldTry=1;setTimeout(()=>{if(TB&&TB.p===0&&!RECNOW)sayRaw([mic?'P_tb_mic':'P_tb_self'],null)},300)}}}
+function tbTried(p){if(!TB||TB.p!==p)return;TB.tried[p]=1;const h=$('tb-hear'),nx=$('tb-next'),tr=$('tb-try');if(h){h.hidden=false;h.classList.add('tb-pulse')}if(nx)nx.classList.add('tb-pulse');if(tr)tr.classList.remove('tb-pulse');
+  if(!TB.hearTold){TB.hearTold=true;sayRaw(['P_tb_hear'],null)}}
+async function tbWord(sp){if(!TB)return;const k=sp.dataset.w;if(!k)return;stopVoice();tbStopAudio();const key=TB.p+':'+k;if(!TB.tapped[key]){TB.tapped[key]=1;TB.help++}
+  sp.classList.remove('tapped');void sp.offsetWidth;sp.classList.add('tapped');const u=await tbBlob(`books/audio/w/${k.replace(/'/g,'_')}.mp3`);if(!u||!TB)return;tbAudio.src=u;tbAudio.play().catch(()=>{})}
+async function tbHear(){if(!TB)return;stopVoice();const {b,p}=TB;const u=await tbBlob(`books/audio/${b.id}_${p}.mp3`);if(!u||!TB||TB.p!==p)return;
+  const t=document.querySelector('#tb-words .tb-text');if(!t)return;const ws=[...t.querySelectorAll('span')];ws.forEach(w=>w.classList.remove('lit'));t.classList.add('reading');
+  tbAudio.src=u;tbAudio.ontimeupdate=()=>{if(!tbAudio.duration)return;const lead=.25,tail=.4;const f=Math.max(0,Math.min(1,(tbAudio.currentTime-lead)/Math.max(.1,tbAudio.duration-lead-tail)));
+    const tot=ws.reduce((a,w)=>a+w.textContent.length+1,0);let acc=0,cut=f*tot;ws.forEach(w=>{acc+=w.textContent.length+1;w.classList.toggle('lit',acc<=cut+2)})};
+  tbAudio.onended=()=>{ws.forEach(w=>w.classList.add('lit'));t.classList.remove('reading');const nx=$('tb-next');if(nx)nx.classList.add('tb-pulse')};tbAudio.play().catch(()=>{})}
+$('tb-back').innerHTML=ICON.back;$('tb-back').onclick=()=>{FX.tap();tbBack()};
+CHILD.push('book');
+document.addEventListener('visibilitychange',()=>{if(document.hidden){tbStopAudio();recCancel()}});
+
+/* ---- in an adventure: a Tiny book is one stop ---- */
+Object.assign(ROUNDS,{tinybook:1});Object.assign(TITLES,{tinybook:'Tiny book'});Object.assign(ND_ICO,{tinybook:'📗'});
+ACT.tinybook=n=>{if(!tbOpen(n.book,{run:RUN})){const b=tbPick();if(b){n.book=b.id;if(tbOpen(b.id,{run:RUN}))return}roundDone(true)}};
+/* ages 5 to 7: a Tiny book takes the letters or reading stop every other adventure. A day that meets a new letter keeps it, and the book comes next time */
+function tbAdv(){const c=S.chapters[S.chapters.length-1];if(!c||!c.adv||ageR()<5||!TBOOKS().length)return;
+  const prev=S.chapters[S.chapters.length-2];if(prev&&prev.nodes.some(n=>n.t==='tinybook'))return;
+  const i=c.nodes.findIndex((n,k)=>(k===1||k===3)&&(LGAMES[n.t]||READ_G[n.t])&&n.stars==null);if(i<0)return;
+  const b=tbPick();if(!b)return;const old=c.nodes[i];c.nodes[i]={t:'tinybook',book:b.id,stars:null};
+  const r=c.reasons.findIndex(x=>/^(Reading|Letter practice)/.test(x));const txt=`Tiny book: ${b.title} (${TB_LV[b.lvl]})`;if(r>=0)c.reasons[r]=txt;else c.reasons.push(txt);save()}
+const composeAdv0=composeAdv;composeAdv=function(carry){composeAdv0(carry);try{tbAdv()}catch(e){}};
+
+/* ---- the shelf: "Books I can read" sits above the stories ---- */
+const openStories0=openStories;
+openStories=function(){openStories0();if(!tbShown())return;const b=$('corner-body'),t=tbS(),L=tbLevel();
+  const mine=TBOOKS().filter(x=>x.lvl===L),easy=TBOOKS().filter(x=>x.lvl<L);
+  const sec=document.createElement('div');sec.className='tb-shelf';
+  const card=x=>`<button class="tb-card" data-id="${x.id}"><div class="tb-cv">${scene2({cast:x.cast,pages:[{s:x.cover}]},0,true)}</div><b>${x.title}</b><small>${TB_LV[x.lvl]}${t.read[x.id]?' · ✓ read':''}</small></button>`;
+  sec.innerHTML=`<h3 class="tb-h">📗 Books I can read <small>${TB_LV[L]}</small></h3><div class="tb-row">${mine.map(card).join('')}</div>${easy.length?`<details class="tb-easy"><summary>Easier books</summary><div class="tb-row">${easy.map(card).join('')}</div></details>`:''}<h3 class="tb-h">🌙 Stories to listen to</h3>`;
+  b.insertBefore(sec,b.firstChild);sec.querySelectorAll('.tb-card').forEach(c=>c.onclick=()=>{unlockAudio();FX.tap();tbOpen(c.dataset.id,{})});
+  if(!t.shelfSeen){t.shelfSeen=1;save();setTimeout(()=>{if(current==='corner')sayRaw(['P_tb_shelf'],null)},900)}};
+
+/* ---- "I read" on the stories, ages 6 and 7, when a grown-up has switched the microphone on ---- */
+const stRender6=stRender;
+stRender=function(){stRender6();const b=$('st-ir');if(!b||!SR)return;const pg=SR.s.pages[SR.p];
+  const ok=micOn()&&ageR()>=6&&SR.s.v2&&SR.p>=0&&pg&&!pg.ask&&!pg.ctx&&pg.t;b.hidden=!ok;b.classList.remove('rec-on');b.innerHTML='🎤';b.setAttribute('aria-label','I read: read this page aloud');
+  b.onclick=()=>{unlockAudio();FX.tap();const pp=SR.p;recPage(b,()=>{if(SR&&SR.p===pp&&!micOn())b.hidden=true})}};
+{const ost=$('st-back').onclick;$('st-back').onclick=()=>{recCancel();ost&&ost()}}
+['st-prev','st-next'].forEach(id=>{const o=$(id).onclick;$(id).onclick=()=>{recCancel();o&&o()}});
+
+/* ---- Grown-ups: level setting, and Tiny books in Progress and the weekly summary ---- */
+{const sel=$('ps-tb');if(sel){const rp=renderParent;renderParent=function(){rp();const t=tbS();sel.value=t.lvl==null?'auto':String(t.lvl)};
+  $('ps-save').addEventListener('click',()=>{const t=tbS(),v=sel.value,was=tbLevel();t.lvl=v==='auto'?null:+v;const now=tbLevel();if(now!==was)logChange('tb',was,now,'mode',`Tiny books set to ${TB_LV[now]} by a grown-up.`);save();r5AreasRender();r5Today()})}}
+const tbReadIn=keys=>Object.values(tbS().read).filter(d=>keys.includes(d)).length;
+
 /* ======================= BOOT ======================= */
 if(S.profile&&S.placed!==3)placeByAge();
 document.addEventListener('visibilitychange',()=>{if(document.hidden){save();stopVoice();sync(false);document.querySelectorAll('canvas').forEach(c=>c.dispatchEvent(new PointerEvent('pointercancel')))}else{if(actx&&actx.state!=='running')try{actx.resume()}catch(e){}}});
 window.addEventListener('pageshow',()=>{if(actx&&actx.state!=='running')try{actx.resume()}catch(e){}});
 document.addEventListener('pointerdown',()=>{if(actx&&actx.state!=='running')actx.resume()},{passive:true});
-window.__haathi={MERGE,REPL,mergeRound,micOn,cornerNode,cornerLocked,stPilotMerge,openStory,openStories,SR:()=>SR,BEDTIME,tierOf:id=>tierOf(kindOfId(id),id),newUI:v=>{if(v!=null)NEWUI=!!v;return NEWUI},composeAdv,go,ACT,roundDone:ok=>roundDone(ok),RUN:()=>RUN,curChapter,placeByAge:()=>placeByAge(),SK,LS,CS,DIG,PREP,DOTPICS,S:()=>S,compose,learn,startRun,sceneHTML,openStory,r5:{sgPick,sgOpen,sgPending,r5WeekText,r5Areas,r5Insight,gsCards,SG_T,SG_BANK}};
+window.__haathi={MERGE,REPL,mergeRound,micOn,cornerNode,cornerLocked,stPilotMerge,openStory,openStories,SR:()=>SR,BEDTIME,tierOf:id=>tierOf(kindOfId(id),id),newUI:v=>{if(v!=null)NEWUI=!!v;return NEWUI},composeAdv,go,ACT,roundDone:ok=>roundDone(ok),RUN:()=>RUN,curChapter,placeByAge:()=>placeByAge(),SK,LS,CS,DIG,PREP,DOTPICS,S:()=>S,compose,learn,startRun,sceneHTML,openStory,r5:{sgPick,sgOpen,sgPending,r5WeekText,r5Areas,r5Insight,gsCards,SG_T,SG_BANK},r6:{tbOpen,tbS,tbLevel,TB:()=>TB,tbOfferDue,tbPick,scene2,TBOOKS,ndIcon}};
 go('start');
 })();
