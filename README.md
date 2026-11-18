@@ -121,7 +121,16 @@ The Grown-ups page, still behind the same sum, now has three tabs.
 - **Files:** `riddles/riddles.js` (built from `gen/riddles/riddles.py`), `riddles/audio/`. 51 new voice lines (`P_sk_*`, `P_dh_*`, `P_who_*`, `P_bl_*`, `P_ao_*`, `P_sl_*`), Hindi for the instruction lines. The pure letter sounds (`S_*`) are now in the sound bundle for the blender.
 - **Code:** the block marked RELEASE 7 in `app.js` and the styles marked release 7 in `index.html`.
 
-Not built yet from the review: the Make sandbox (rest of Step E) and Step F.
+## Release 8 (Step E of the full review, part 2: the Make sandbox)
+- **Make anything** sits at the top of the Make shelf for every age, with four tiles. The Magic slate tile is replaced by Draw. The slate stays as an adventure stop for the youngest.
+- **Rangoli maker:** draw anywhere and the pattern repeats eight ways (both halves, both diagonals). Rangoli colours, three brush sizes, a rubber, and stamps (dot, flowers, diya, star). Undo and start again. Ages 6 and 7 get "Copy" challenges: a small rangoli to copy. Not scored.
+- **Draw:** white paper, ten colours, three sizes, a rubber and twelve picture stamps. Undo and start again.
+- **Story scene:** pick a place (forest, village, home, river, garden, school, market, street, roof, field, sea, mountain, day or night), then add animals, people and things. Drag to move; make bigger or smaller, turn round, or take off. When it is kept, Haathi asks the child to tell a grown-up the story.
+- **My makes:** pressing the tick keeps the picture. The 12 newest of each child are kept on this phone (in the browser's own storage); the oldest drops off. Removing a child in Grown-ups removes their pictures. A child can delete a picture with two taps. **Save to phone** is for grown-ups (behind the sum), and uses the phone's share sheet where it has one, otherwise downloads the picture.
+- 8 new voice lines (`P_mk_*`) in English and Hindi. New anonymous counts: a sandbox tool opened, a picture kept, a picture saved to the phone.
+- **Code:** the block marked RELEASE 8 in `app.js` and the styles marked release 8 in `index.html`.
+
+Not built yet from the review: Step F.
 
 ### Backup of the old app
 The last version before the redesign is kept as the branch `classic-backup-2026-11-12` in this repository. To put it back on the main link: `git checkout origin/classic-backup-2026-11-12 -- .`, commit and push. As an emergency fallback on a single phone, opening the app with `?new=0` shows the old map again and `?new=1` returns to the new design.

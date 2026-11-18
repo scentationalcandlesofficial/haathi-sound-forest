@@ -2780,11 +2780,148 @@ Object.assign(ROUNDS,{shakecount:4,dhaba:4,dhaba2:4,actout:4,actout20:4,slide:5,
 Object.assign(TITLES,{shakecount:'Shake and count',dhaba:"Haathi's dhaba",dhaba2:"Haathi's dhaba",actout:'Act-it-out sums',actout20:'Act-it-out sums',slide:'Slide to the number',blender:'Sound blender',d_whoami:'Who am I?'});
 Object.assign(ND_ICO,{shakecount:'🪘',dhaba:'🍛',dhaba2:'🍛',actout:'🐦',actout20:'🐦',slide:'🐘',blender:'🔤',d_whoami:'🕵️'});
 
+/* ======================= RELEASE 8: Make sandbox (Rangoli, Draw, Story scene, My makes) ======================= */
+/* ---- My makes: the 12 newest pictures of each child, kept on this phone only (IndexedDB) ---- */
+let MKDB=null;
+function mkDB(){if(MKDB)return MKDB;MKDB=new Promise((res,rej)=>{try{const r=indexedDB.open('haathi-makes',1);r.onupgradeneeded=()=>{const d=r.result;if(!d.objectStoreNames.contains('makes')){const st=d.createObjectStore('makes',{keyPath:'id'});st.createIndex('kid','kid')}};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}});MKDB.catch(()=>{MKDB=null});return MKDB}
+const mkKid=()=>{try{return kidsIdx().active||'k0'}catch(e){return 'k0'}};
+async function mkList(kid){try{const d=await mkDB();return await new Promise((res,rej)=>{const out=[];const rq=d.transaction('makes').objectStore('makes').index('kid').openCursor(IDBKeyRange.only(kid||mkKid()));
+  rq.onsuccess=()=>{const c=rq.result;if(c){out.push(c.value);c.continue()}else res(out.sort((a,b)=>b.t-a.t))};rq.onerror=()=>rej(rq.error)})}catch(e){return []}}
+async function mkDel(id){try{const d=await mkDB();await new Promise((res,rej)=>{const tx=d.transaction('makes','readwrite');tx.objectStore('makes').delete(id);tx.oncomplete=res;tx.onerror=()=>rej(tx.error)})}catch(e){}}
+async function mkPut(rec){const d=await mkDB();await new Promise((res,rej)=>{const tx=d.transaction('makes','readwrite');tx.objectStore('makes').put(rec);tx.oncomplete=res;tx.onerror=()=>rej(tx.error)});
+  const all=await mkList(rec.kid);for(const x of all.slice(12))await mkDel(x.id)}
+/* removing a child in Grown-ups also removes that child's pictures */
+{const rk=removeKid;removeKid=function(id){rk(id);mkList(id).then(l=>l.forEach(x=>mkDel(x.id)))}}
+
+/* ---- the screen ---- */
+const MK={mode:null,cv:null,x:null,W:0,H:0,dpr:1,col:'#ff6fa8',size:8,tool:'pen',stamp:null,undo:[],dirty:false,scene:null,sel:null,copy:null,saved:false};
+const MK_NAMES={rangoli:'Rangoli maker',draw:'Draw',scene:'Story scene',gallery:'My makes'};
+const MK_RCOL=['#ff6fa8','#ff8c1a','#ffd23f','#3fc380','#33a1fd','#9b5de5','#ffffff','#e63946'];
+const MK_DCOL=['#222222','#e63946','#ff8c1a','#ffd23f','#3fc380','#1e88e5','#9b5de5','#ff6fa8','#8d5524','#ffffff'];
+const MK_RSTAMP=['●','🌸','🌼','🪔','⭐','💠','🔶','🍃'];
+const MK_DSTAMP=['⭐','🌸','🦋','🐘','🌈','☀️','🌙','❤️','🚗','🌳','🐟','🎈'];
+const MK_BG=[['forest','🌳'],['village','🏡'],['home','🏠'],['river','🏞️'],['garden','🌷'],['school','🏫'],['market','🛒'],['street','🚗'],['roof','🪁'],['field','🌾'],['sea','🌊'],['mountain','⛰️']];
+const MK_TRAY={animals:['🐘','🐒','🦚','🐄','🐐','🐕','🐈','🐇','🦁','🐯','🐸','🦆','🐟','🦋','🐦','🐍','🐢','🐔'],
+  people:['👧🏽','👦🏽','👩🏽','👨🏽','👵🏽','👴🏽','👶🏽','🧕🏽','👮🏽‍♀️','👩🏽‍🌾','👨🏽‍🍳','🧑🏽‍🏫','👩🏽‍⚕️','🧑🏽‍🚒'],
+  things:['🌳','🌴','🌸','🏠','⛺','🚗','🛺','🚌','🚂','⛵','🪁','⚽','🎈','☀️','🌙','⭐','☁️','🌈','🍎','🥭','🪔','🎂','🎁','🪑']};
+CHILD.push('make');
+const mkSay=k=>sayRaw([k],null);
+function mkOpen(mode){stopVoice();MK.mode=mode;MK.undo=[];MK.dirty=false;MK.sel=null;MK.copy=null;MK.saved=false;MK.tool='pen';MK.stamp=null;go('make');$('mk-title').textContent=MK_NAMES[mode];
+  $('s-make').dataset.mode=mode;$('mk-tools').innerHTML='';$('mk-act').innerHTML='';$('mk-stage').innerHTML='';
+  if(mode==='gallery'){mkGallery();return}
+  requestAnimationFrame(()=>{if(MK.mode!==mode)return;if(mode==='scene')mkScene();else mkPaint(mode)});
+  gc('/mk/'+mode+'/open','Make: '+MK_NAMES[mode]);setTimeout(()=>{if(MK.mode===mode)mkSay(mode==='rangoli'?'P_mk_rangoli':mode==='draw'?'P_mk_draw':'P_mk_scene')},300)}
+function mkBack(){stopVoice();const m=MK.mode;MK.mode=null;openShelf('make')}
+$('mk-back').innerHTML=ICON.back;$('mk-back').onclick=()=>{FX.tap();if(MK.mode==='gallery'&&$('mk-stage').querySelector('.mk-big')){mkGallery();return}mkBack()};
+$('mk-hear').innerHTML=ICON.ear;$('mk-hear').onclick=()=>{unlockAudio();FX.tap();const m=MK.mode;if(m)mkSay(m==='rangoli'?(MK.copy?'P_mk_copy':'P_mk_rangoli'):m==='draw'?'P_mk_draw':m==='scene'?'P_mk_scene':'P_mk_gallery')};
+function mkBtn(parent,cls,html,label,fn){const b=document.createElement('button');b.className=cls;b.innerHTML=html;b.setAttribute('aria-label',label);b.onclick=()=>{unlockAudio();fn(b)};parent.appendChild(b);return b}
+function mkActs(list){const a=$('mk-act');a.innerHTML='';list.forEach(([cls,html,label,fn])=>mkBtn(a,cls,html,label,fn))}
+
+/* ---- painting: Rangoli (eight-way mirror) and Draw ---- */
+const MK_T=[[1,0,0,1],[-1,0,0,1],[1,0,0,-1],[-1,0,0,-1],[0,1,1,0],[0,-1,1,0],[0,1,-1,0],[0,-1,-1,0]];
+function mkPaint(mode,measured){if(!measured){MK.col=mode==='rangoli'?MK_RCOL[0]:MK_DCOL[1];MK.size=mode==='rangoli'?7:8;mkTools(mode);requestAnimationFrame(()=>{if(MK.mode===mode)mkPaint(mode,true)});return}
+  const st=$('mk-stage');const r=st.getBoundingClientRect();let W=Math.max(200,Math.floor(r.width-6)),H=Math.max(200,Math.floor(r.height-6));if(mode==='rangoli'){W=H=Math.min(W,H,640)}else{W=Math.min(W,900);H=Math.min(H,900)}
+  const dpr=Math.min(2,devicePixelRatio||1);Object.assign(MK,{W,H,dpr});
+  st.innerHTML=`<div class="mk-cwrap ${mode}" style="width:${W}px;height:${H}px"><canvas id="mk-cv"></canvas>${mode==='rangoli'?'<canvas id="mk-guide" aria-hidden="true"></canvas>':''}<div class="mk-copy" id="mk-copy" hidden></div></div>`;
+  const cv=$('mk-cv');[cv,$('mk-guide')].forEach(c=>{if(!c)return;c.width=W*dpr;c.height=H*dpr;c.style.width=W+'px';c.style.height=H+'px'});
+  const x=cv.getContext('2d');MK.cv=cv;MK.x=x;if(!x)return;x.setTransform(dpr,0,0,dpr,0,0);x.lineCap='round';x.lineJoin='round';
+  mkClear();if(mode==='rangoli')mkGuide();
+  let down=null,moved=false;const P=e=>{const b=cv.getBoundingClientRect();return [(e.clientX-b.left)*(W/b.width),(e.clientY-b.top)*(H/b.height)]};
+  cv.onpointerdown=e=>{e.preventDefault();try{cv.setPointerCapture(e.pointerId)}catch(_){}mkSnap();down=P(e);moved=false;if(MK.tool==='stamp')return;mkLine(down,down)};
+  cv.onpointermove=e=>{if(!down||MK.tool==='stamp')return;const p=P(e);if(Math.hypot(p[0]-down[0],p[1]-down[1])<1.5)return;moved=true;mkLine(down,p);down=p};
+  cv.onpointerup=cv.onpointercancel=e=>{if(down&&MK.tool==='stamp'&&e.type==='pointerup')mkStampAt(down);down=null}}
+function mkClear(){const {x,W,H}=MK;if(!x)return;x.save();x.globalCompositeOperation='source-over';x.fillStyle=MK.mode==='rangoli'?'#5b1f2e':'#ffffff';x.fillRect(0,0,W,H);x.restore()}
+function mkGuide(){const g=$('mk-guide');if(!g)return;const c=g.getContext('2d'),{W,H,dpr}=MK;c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,W,H);c.strokeStyle='rgba(255,255,255,.18)';c.lineWidth=1.5;c.setLineDash([5,7]);
+  c.beginPath();c.moveTo(W/2,0);c.lineTo(W/2,H);c.moveTo(0,H/2);c.lineTo(W,H/2);c.moveTo(0,0);c.lineTo(W,H);c.moveTo(W,0);c.lineTo(0,H);c.stroke();c.beginPath();c.arc(W/2,H/2,W*.42,0,Math.PI*2);c.stroke();
+  c.setLineDash([]);c.fillStyle='rgba(255,255,255,.06)';c.beginPath();c.moveTo(W/2,H/2);c.lineTo(W/2,0);c.lineTo(0,0);c.closePath();c.fill()}
+function mkSnap(){const {x,cv}=MK;if(!x)return;try{MK.undo.push(x.getImageData(0,0,cv.width,cv.height));if(MK.undo.length>6)MK.undo.shift()}catch(e){}}
+function mkPts(p){if(MK.mode!=='rangoli')return [p];const cx=MK.W/2,cy=MK.H/2,dx=p[0]-cx,dy=p[1]-cy;return MK_T.map(([a,b,c,d])=>[cx+a*dx+b*dy,cy+c*dx+d*dy])}
+function mkLine(a,b){const {x}=MK;if(!x)return;MK.dirty=true;x.save();if(MK.tool==='erase'){x.globalCompositeOperation='source-over';x.strokeStyle=MK.mode==='rangoli'?'#5b1f2e':'#ffffff'}else x.strokeStyle=MK.col;
+  x.lineWidth=MK.tool==='erase'?MK.size*2.5:MK.size;const A=mkPts(a),B=mkPts(b);for(let i=0;i<A.length;i++){x.beginPath();x.moveTo(A[i][0],A[i][1]);x.lineTo(B[i][0]+.01,B[i][1]);x.stroke()}x.restore()}
+function mkStampAt(p){const {x}=MK;if(!x||!MK.stamp)return;MK.dirty=true;const sz=MK.mode==='rangoli'?MK.size*4+14:MK.size*5+22;x.save();x.textAlign='center';x.textBaseline='middle';x.font=`${sz}px "Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif`;
+  mkPts(p).forEach(q=>{if(MK.stamp==='●'){x.fillStyle=MK.col;x.beginPath();x.arc(q[0],q[1],sz*.32,0,Math.PI*2);x.fill()}else x.fillText(MK.stamp,q[0],q[1])});x.restore();FX.pop()}
+function mkTools(mode){const t=$('mk-tools');t.innerHTML='';const cols=mode==='rangoli'?MK_RCOL:MK_DCOL,stamps=mode==='rangoli'?MK_RSTAMP:MK_DSTAMP;
+  const row1=document.createElement('div');row1.className='mk-row1';t.appendChild(row1);const row2=document.createElement('div');row2.className='mk-row2';t.appendChild(row2);
+  const pick=(sel,b)=>{t.querySelectorAll(sel).forEach(z=>z.classList.remove('on'));b.classList.add('on')};
+  cols.forEach((c,i)=>{const b=mkBtn(row1,'mk-col'+(i===(mode==='rangoli'?0:1)?' on':''),'',`Colour ${i+1}`,b=>{FX.tap();MK.col=c;if(MK.tool==='erase')MK.tool='pen';pick('.mk-col',b);if(MK.tool==='pen')pick('.mk-tool',$('mk-pen'))});b.style.background=c});
+  [[5,'S'],[9,'M'],[16,'L']].forEach(([s,l],i)=>{const b=mkBtn(row1,'mk-size'+(i===(mode==='rangoli'?0:1)?' on':''),`<i style="width:${s+4}px;height:${s+4}px"></i>`,`Size ${l}`,b=>{FX.tap();MK.size=s;pick('.mk-size',b)})});
+  const pen=mkBtn(row2,'mk-tool on','✏️','Draw lines',b=>{FX.tap();MK.tool='pen';MK.stamp=null;pick('.mk-tool',b)});pen.id='mk-pen';
+  mkBtn(row2,'mk-tool','🧽','Rub out',b=>{FX.tap();MK.tool='erase';MK.stamp=null;pick('.mk-tool',b)});
+  stamps.forEach(s=>mkBtn(row2,'mk-tool mk-stamp',s==='●'?'<i class="mk-dot"></i>':s,'Stamp '+s,b=>{FX.tap();MK.tool='stamp';MK.stamp=s;pick('.mk-tool',b)}));
+  const acts=[['round','↶','Undo',()=>{FX.swish();const u=MK.undo.pop();if(u&&MK.x)MK.x.putImageData(u,0,0)}],['round','🗑️','Start again',()=>{mkSnap();mkClear();MK.dirty=false;FX.swish()}]];
+  if(mode==='rangoli'&&ageR()>=6)acts.push(['pill-btn','🎯 Copy','Copy a rangoli',()=>{FX.tap();mkCopy()}]);
+  acts.push(['big-btn go mk-done',ICON.check||'✓','Done, keep it',()=>mkDone()]);mkActs(acts)}
+
+/* ---- copy-this-rangoli challenges for ages 6 and 7 (not scored) ---- */
+const MK_COPY=[[{t:'line',a:[0,-.8,.56,-.56],c:'#ffd23f',w:7},{t:'stamp',e:'🌸',p:[.35,-.35]},{t:'stamp',e:'●',p:[0,0],c:'#ff6fa8',w:16}],
+  [{t:'line',a:[0,-.25,0,-.75],c:'#3fc380',w:9},{t:'stamp',e:'🪔',p:[.5,-.5]},{t:'line',a:[.2,-.2,.62,-.2],c:'#ffffff',w:5}],
+  [{t:'line',a:[.1,-.1,.7,-.7],c:'#ff8c1a',w:9},{t:'line',a:[0,-.6,.42,-.6],c:'#33a1fd',w:7},{t:'stamp',e:'🌼',p:[0,-.85]},{t:'stamp',e:'●',p:[.3,-.3],c:'#ffffff',w:9}]];
+function mkCopy(){const box=$('mk-copy');if(!box)return;const i=(S.mkCopyN=(S.mkCopyN||0)+1)%MK_COPY.length;save();const n=96;
+  box.innerHTML=`<canvas width="${n*2}" height="${n*2}" style="width:${n}px;height:${n}px"></canvas><small>Copy me</small>`;box.hidden=false;const c=box.querySelector('canvas').getContext('2d');c.scale(2,2);
+  c.fillStyle='#5b1f2e';c.fillRect(0,0,n,n);c.lineCap='round';const ctr=n/2,R=n/2;const pts=(px,py)=>MK_T.map(([a,b,cc,d])=>[ctr+(a*px+b*py)*R,ctr+(cc*px+d*py)*R]);
+  MK_COPY[i].forEach(op=>{if(op.t==='line'){c.strokeStyle=op.c;c.lineWidth=op.w*n/MK.W*1.6;const A=pts(op.a[0],op.a[1]),B=pts(op.a[2],op.a[3]);A.forEach((p,k)=>{c.beginPath();c.moveTo(p[0],p[1]);c.lineTo(B[k][0],B[k][1]);c.stroke()})}
+    else{c.textAlign='center';c.textBaseline='middle';c.font='12px sans-serif';pts(op.p[0],op.p[1]).forEach(p=>{if(op.e==='●'){c.fillStyle=op.c;c.beginPath();c.arc(p[0],p[1],op.w*n/MK.W,0,Math.PI*2);c.fill()}else c.fillText(op.e,p[0],p[1])})}});
+  MK.copy=i;mkSay('P_mk_copy')}
+
+/* ---- Story scene: a place, then animals, people and things ---- */
+function mkScene(){const st=$('mk-stage');MK.scene=MK.scene&&MK.scene.keep?MK.scene:{bg:'forest',night:false,items:[]};st.innerHTML='';
+  const t=$('mk-tools');t.innerHTML='';const row1=document.createElement('div');row1.className='mk-row1 mk-bgs';t.appendChild(row1);const tabs=document.createElement('div');tabs.className='mk-tabs';t.appendChild(tabs);const tray=document.createElement('div');tray.className='mk-row2 mk-tray';t.appendChild(tray);
+  MK_BG.forEach(([k,ic])=>{const b=mkBtn(row1,'mk-bgb'+(k===MK.scene.bg?' on':''),ic,'Place: '+k,b=>{FX.tap();MK.scene.bg=k;row1.querySelectorAll('.mk-bgb').forEach(z=>z.classList.remove('on'));b.classList.add('on');mkDrawBg()})});
+  mkBtn(row1,'mk-bgb mk-night'+(MK.scene.night?' on':''),'🌙','Night',b=>{FX.tap();MK.scene.night=!MK.scene.night;b.classList.toggle('on',MK.scene.night);mkDrawBg()});
+  const showTray=k=>{tray.innerHTML='';MK_TRAY[k].forEach(e=>mkBtn(tray,'mk-stk',e,'Add '+e,()=>{FX.pop();mkAdd(e)}));tabs.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.k===k))};
+  [['animals','🐾 Animals'],['people','🧒🏽 People'],['things','🌳 Things']].forEach(([k,l])=>{const b=mkBtn(tabs,'mk-tab',l,l,()=>{FX.tap();showTray(k)});b.dataset.k=k});showTray('animals');
+  mkActs([['round','↶','Take off the last one',()=>{FX.swish();MK.scene.items.pop();MK.sel=null;mkItems()}],['round','🗑️','Start again',()=>{FX.swish();MK.scene.items=[];MK.sel=null;mkItems()}],['big-btn go mk-done',ICON.check||'✓','Done, keep it',()=>mkDone()]]);
+  requestAnimationFrame(()=>{if(MK.mode!=='scene')return;const r=st.getBoundingClientRect();let W=Math.floor(r.width-6),H=Math.floor(W*.75);if(H>r.height-6){H=Math.floor(r.height-6);W=Math.floor(H/.75)}MK.W=W;MK.H=H;
+  st.innerHTML=`<div class="mk-scene" id="mk-scene" style="width:${W}px;height:${H}px"><svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" id="mk-bg"></svg><div class="mk-items" id="mk-items"></div><div class="mk-selbar" id="mk-selbar" hidden></div></div>`;
+  mkDrawBg();mkItems();
+  $('mk-scene').onpointerdown=e=>{if(e.target.closest('.mk-it,.mk-selbar'))return;MK.sel=null;mkItems()}})}
+function mkDrawBg(){const g=$('mk-bg');if(!g)return;const r=bgSVG(MK.scene.bg+(MK.scene.night?'N':''));g.innerHTML=r.svg;MK.dirty=true}
+function mkAdd(e){const it={e,x:30+Math.random()*40,y:50+Math.random()*25,s:16,f:false};MK.scene.items.push(it);MK.sel=it;MK.dirty=true;mkItems()}
+function mkItems(){const box=$('mk-items'),bar=$('mk-selbar');if(!box)return;box.innerHTML='';const {W,H}=MK;
+  MK.scene.items.forEach(it=>{const d=document.createElement('div');d.className='mk-it'+(it===MK.sel?' sel':'');d.textContent=it.e;d.style.left=it.x+'%';d.style.top=it.y+'%';d.style.fontSize=(it.s/100*W)+'px';if(it.f)d.style.transform='translate(-50%,-50%) scaleX(-1)';
+    let st=null;d.onpointerdown=e=>{e.preventDefault();e.stopPropagation();try{d.setPointerCapture(e.pointerId)}catch(_){}const b=$('mk-scene').getBoundingClientRect();st={b,ox:it.x-(e.clientX-b.left)/b.width*100,oy:it.y-(e.clientY-b.top)/b.height*100};if(MK.sel!==it){MK.sel=it;box.querySelectorAll('.mk-it').forEach(z=>z.classList.remove('sel'));d.classList.add('sel');mkSelBar()}};
+    d.onpointermove=e=>{if(!st)return;it.x=Math.max(0,Math.min(100,(e.clientX-st.b.left)/st.b.width*100+st.ox));it.y=Math.max(0,Math.min(100,(e.clientY-st.b.top)/st.b.height*100+st.oy));d.style.left=it.x+'%';d.style.top=it.y+'%';mkSelBar()};
+    d.onpointerup=d.onpointercancel=()=>{st=null};box.appendChild(d)});mkSelBar()}
+function mkSelBar(){const bar=$('mk-selbar');if(!bar)return;const it=MK.sel;if(!it||!MK.scene.items.includes(it)){bar.hidden=true;return}bar.hidden=false;{const sc=$('mk-scene'),bw=bar.offsetWidth||170,sw=sc?sc.clientWidth:MK.W;bar.style.left=Math.max(bw/2+2,Math.min(sw-bw/2-2,it.x/100*sw))+'px'}bar.style.top=Math.max(0,it.y-it.s/0.75*0.55-11)+'%';
+  if(!bar.dataset.built){bar.dataset.built=1;[['➕','Bigger',()=>{MK.sel.s=Math.min(44,MK.sel.s*1.25)}],['➖','Smaller',()=>{MK.sel.s=Math.max(6,MK.sel.s/1.25)}],['↔️','Turn round',()=>{MK.sel.f=!MK.sel.f}],['🗑️','Take off',()=>{MK.scene.items=MK.scene.items.filter(z=>z!==MK.sel);MK.sel=null}]].forEach(([h,l,fn])=>mkBtn(bar,'mk-sb',h,l,()=>{FX.tap();if(!MK.sel)return;fn();mkItems()}))}}
+async function mkSceneImg(){const W=800,H=600,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');const r=bgSVG(MK.scene.bg+(MK.scene.night?'N':''));
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">${r.svg}</svg>`;
+  await new Promise(res=>{const im=new Image();im.onload=()=>{x.drawImage(im,0,0,W,H);res()};im.onerror=res;im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)});
+  x.textAlign='center';x.textBaseline='middle';MK.scene.items.forEach(it=>{x.save();x.translate(it.x/100*W,it.y/100*H);if(it.f)x.scale(-1,1);x.font=`${it.s/100*W}px "Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif`;x.fillText(it.e,0,0);x.restore()});return c.toDataURL('image/jpeg',.85)}
+function mkPaintImg(){const {cv,W,H}=MK;const s=Math.min(1,800/Math.max(W,H));const c=document.createElement('canvas');c.width=Math.round(W*s);c.height=Math.round(H*s);const x=c.getContext('2d');x.drawImage(cv,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.85)}
+
+/* ---- keep it ---- */
+async function mkDone(){const m=MK.mode;const empty=m==='scene'?!MK.scene.items.length:!MK.dirty;if(empty){FX.boing();mkSay('P_mk_empty');return}
+  let img=null;try{img=m==='scene'?await mkSceneImg():mkPaintImg()}catch(e){}
+  if(img){try{await mkPut({id:'m'+Date.now().toString(36),kid:mkKid(),type:m,t:Date.now(),d:today(),img})}catch(e){img=null}}
+  gc('/mk/'+m+'/done','Make: finished a '+MK_NAMES[m]);confetti();FX.fanfare();sayRaw(m==='scene'?['P_mk_saved',400,'P_mk_tell']:['P_mk_saved'],null);MK.saved=true;
+  mkActs([['pill-btn','🖼️ My makes','My makes',()=>{FX.tap();mkOpen('gallery')}],['pill-btn primary','✨ Make a new one','Make a new one',()=>{FX.tap();mkOpen(m)}]]);
+  if(!img){const a=$('mk-act');a.insertAdjacentHTML('afterbegin','<p class="note">This phone could not keep the picture.</p>')}}
+
+/* ---- My makes ---- */
+async function mkGallery(){const st=$('mk-stage');st.innerHTML='<p class="note">Loading…</p>';const list=await mkList();if(MK.mode!=='gallery')return;
+  st.innerHTML=list.length?`<div class="mk-grid">${list.map(r=>`<button class="mk-th" data-id="${r.id}" aria-label="${MK_NAMES[r.type]||'Picture'} from ${r.d}"><img src="${r.img}" alt=""><small>${MK_NAMES[r.type]||''}</small></button>`).join('')}</div>`:`<p class="mk-none">Nothing here yet. Make a rangoli, a drawing or a story scene, then press ✓.</p>`;
+  $('mk-tools').innerHTML=`<p class="mk-note">These pictures stay on this phone. The 12 newest are kept.</p>`;
+  st.querySelectorAll('.mk-th').forEach(b=>b.onclick=()=>{FX.tap();mkView(list.find(r=>r.id===b.dataset.id))});mkActs([]);if(list.length)mkSay('P_mk_gallery')}
+function mkView(r){if(!r)return;const st=$('mk-stage');st.innerHTML=`<div class="mk-big"><img src="${r.img}" alt="${MK_NAMES[r.type]||'Picture'}"><small>${MK_NAMES[r.type]||''} · ${r.d}</small></div>`;let arm=false;
+  mkActs([['round','🗑️','Delete this picture',b=>{if(!arm){arm=true;FX.tap();b.classList.add('mk-arm');b.innerHTML='🗑️?';setTimeout(()=>{arm=false;if(document.body.contains(b)){b.classList.remove('mk-arm');b.innerHTML='🗑️'}},2500);return}FX.swish();mkDel(r.id).then(mkGallery)}],
+    ['pill-btn primary','⬇️ Save to phone','Grown-up: save to phone',()=>{FX.tap();openGate(()=>mkExport(r))}]])}
+async function mkExport(r){const name=`haathi-${r.type}-${r.d}.jpg`;let blob=null;try{blob=await (await fetch(r.img)).blob()}catch(e){}if(!blob)return;
+  try{const f=new File([blob],name,{type:'image/jpeg'});if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'A picture from Haathi'});gc('/mk/export','Make: saved to phone');return}}catch(e){if(e&&e.name==='AbortError')return}
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);gc('/mk/export','Make: saved to phone')}
+
+/* ---- the Make shelf: the sandbox sits on top; the Magic slate tile is replaced by Draw ---- */
+{const r5s=r5Shelf;r5Shelf=function(kind,items){r5s(kind,items);if(kind==='make'){const i=items.findIndex(x=>x.id==='slate');if(i>=0)items.splice(i,1)}}}
+{const os=openShelf;openShelf=function(kind,speak){os(kind,speak);if(kind!=='make')return;const b=$('corner-body');const sec=document.createElement('div');sec.className='mk-home';
+  sec.innerHTML=`<h3 class="tb-h">🎨 Make anything</h3><div class="mk-tiles">${[['rangoli','🌸','Rangoli'],['draw','🖍️','Draw'],['scene','🏞️','Story scene'],['gallery','🖼️','My makes']].map(([m,i,l])=>`<button class="mk-tile" data-m="${m}"><span>${i}</span><b>${l}</b></button>`).join('')}</div><h3 class="tb-h">✏️ Writing games</h3>`;
+  b.insertBefore(sec,b.firstChild);sec.querySelectorAll('.mk-tile').forEach(t=>t.onclick=()=>{unlockAudio();FX.tap();mkOpen(t.dataset.m)})}}
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&MK.mode)stopVoice()});
+
 /* ======================= BOOT ======================= */
 if(S.profile&&S.placed!==3)placeByAge();
 document.addEventListener('visibilitychange',()=>{if(document.hidden){save();stopVoice();sync(false);document.querySelectorAll('canvas').forEach(c=>c.dispatchEvent(new PointerEvent('pointercancel')))}else{if(actx&&actx.state!=='running')try{actx.resume()}catch(e){}}});
 window.addEventListener('pageshow',()=>{if(actx&&actx.state!=='running')try{actx.resume()}catch(e){}});
 document.addEventListener('pointerdown',()=>{if(actx&&actx.state!=='running')actx.resume()},{passive:true});
-window.__haathi={MERGE,REPL,mergeRound,micOn,cornerNode,cornerLocked,stPilotMerge,openStory,openStories,SR:()=>SR,BEDTIME,tierOf:id=>tierOf(kindOfId(id),id),newUI:v=>{if(v!=null)NEWUI=!!v;return NEWUI},composeAdv,go,ACT,roundDone:ok=>roundDone(ok),RUN:()=>RUN,curChapter,placeByAge:()=>placeByAge(),SK,LS,CS,DIG,PREP,DOTPICS,S:()=>S,compose,learn,startRun,sceneHTML,openStory,r5:{sgPick,sgOpen,sgPending,r5WeekText,r5Areas,r5Insight,gsCards,SG_T,SG_BANK},r6:{tbOpen,tbS,tbLevel,TB:()=>TB,tbOfferDue,tbPick,scene2,TBOOKS,ndIcon},r7:{BLEND_W,RID,AO,DH_FOOD,pureSnd,openShelf,dNode}};
+window.__haathi={MERGE,REPL,mergeRound,micOn,cornerNode,cornerLocked,stPilotMerge,openStory,openStories,SR:()=>SR,BEDTIME,tierOf:id=>tierOf(kindOfId(id),id),newUI:v=>{if(v!=null)NEWUI=!!v;return NEWUI},composeAdv,go,ACT,roundDone:ok=>roundDone(ok),RUN:()=>RUN,curChapter,placeByAge:()=>placeByAge(),SK,LS,CS,DIG,PREP,DOTPICS,S:()=>S,compose,learn,startRun,sceneHTML,openStory,r5:{sgPick,sgOpen,sgPending,r5WeekText,r5Areas,r5Insight,gsCards,SG_T,SG_BANK},r6:{tbOpen,tbS,tbLevel,TB:()=>TB,tbOfferDue,tbPick,scene2,TBOOKS,ndIcon},r7:{BLEND_W,RID,AO,DH_FOOD,pureSnd,openShelf,dNode},r8:{MK,mkOpen,mkList,mkDone,mkAdd,mkPut,mkDel,mkKid}};
 go('start');
 })();
