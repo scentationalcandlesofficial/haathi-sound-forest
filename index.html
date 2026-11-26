@@ -9,7 +9,28 @@
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<style>*,*::before,*::after{box-sizing:border-box}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);height:100%}body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}</style>
+<style>*,*::before,*::after{box-sizing:border-box}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);height:100%}body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}
+/* ---------- Release 9: sound hint, titles that never stand on end, cards that always fit, child lock ---------- */
+.snd-hint{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 10px);transform:translateX(-50%);z-index:70;background:#fff;border-radius:999px;padding:10px 20px;font-family:var(--f-display);font-weight:800;font-size:19px;color:var(--leaf);box-shadow:0 4px 0 var(--shadow),0 0 0 3px var(--mango);display:flex;gap:8px;align-items:center}
+#play-title{overflow-wrap:normal;word-break:normal;hyphens:none;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;line-height:1.08}
+@media (max-width:480px){#play-title{min-width:0}}
+.rounds.r9c{max-width:none;flex-wrap:nowrap;align-items:center;gap:6px;flex:none}
+.r9bar{display:block;width:clamp(36px,11vw,90px);height:12px;border-radius:7px;background:#fff;border:2px solid var(--shadow);overflow:hidden}.r9bar i{display:block;height:100%;width:0;background:var(--mango);border-radius:5px;transition:width .3s}
+.r9cnt{font-family:var(--f-display);font-weight:800;font-size:15px;color:var(--leaf);white-space:nowrap}
+.fc-wrap{flex:1 1 0;min-height:120px;width:100%;display:flex;align-items:center;justify-content:center;container-type:size}
+.fc-pic{line-height:1.15}
+@supports (width:1cqh){.fc-wrap .fcard{width:min(340px,86cqw,calc(100cqh*.75 - 8px));aspect-ratio:3/4}.fc-wrap .fc-pic{font-size:min(170px,36cqw,26cqh)}.fc-wrap .fc-name{font-size:min(44px,9cqw,7cqh)}.fc-wrap .fc-snd{font-size:min(18px,4.5cqh)}}
+@media (max-height:620px){#play-body .card-note{display:none}}
+#r9lock .sheet>.row{position:sticky;bottom:-22px;background:#fff;padding:10px 0 4px;margin-top:-4px}
+.r9steps{display:flex;flex-direction:column;gap:10px}.r9steps details{background:#f4f8f5;border-radius:14px;padding:10px 12px}.r9steps summary{font-family:var(--f-display);font-weight:800;font-size:17px;cursor:pointer;color:var(--leaf)}
+.r9steps ol{margin:8px 0 4px;padding-left:22px;line-height:1.45}.r9steps li{margin-bottom:4px}
+.r9toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);transform:translateX(-50%);z-index:70;background:#fff;border-radius:18px;padding:10px 16px;max-width:min(92vw,420px);text-align:center;font-family:var(--f-display);font-weight:700;font-size:16px;color:var(--leaf);box-shadow:0 4px 0 var(--shadow)}
+@media (max-width:380px){#s-play .topbar{gap:4px}#s-play .topbar .round{width:44px;height:44px}.r9bar{display:none}#play-title{font-size:14px}}
+.r9many .fc-count{display:none}
+html.r9lock{touch-action:pan-x pan-y}
+html.r9lock,html.r9lock body{overscroll-behavior:none}
+html.r9lock body{-webkit-touch-callout:none}
+</style>
 <title>Haathi's Sound Forest</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Baloo+2:wght@500;700;800&display=swap">
@@ -911,6 +932,10 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
       <p>Easy, Medium and Hard are no longer shown to the child. The app moves them on its own, and you can set them in the Settings tab on this page.</p>
       <button class="pill-btn primary" id="nd-note-ok" style="align-self:flex-start">Got it</button>
     </div>
+    <div class="panel" style="grid-column:1/-1;border:3px solid var(--mango)" id="lock-note" hidden><h3>New: lock the phone to Haathi</h3>
+      <p>So your child cannot leave the game with the Home or Back buttons. It takes one minute to set up.</p>
+      <div class="row" style="justify-content:flex-start;gap:8px"><button class="pill-btn primary" id="lock-note-how" type="button">Show me how</button><button class="pill-btn" id="lock-note-ok" type="button">Not now</button></div>
+    </div>
     <div class="pt-stack" id="pt-today"></div>
     <details class="panel pt-det" style="grid-column:1/-1"><summary>More ideas for this week</summary><p id="p-tip"></p>
       <div id="ai-zone"></div></details>
@@ -939,8 +964,11 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
       <div class="field"><label for="ps-name">Nickname</label><input id="ps-name" maxlength="16"></div>
       <div class="field"><label for="ps-age">Age</label><select id="ps-age"><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select></div>
       <div class="field"><label for="ps-lang">Spoken instructions</label><select id="ps-lang"><option value="en">English (with some Hindi praise)</option><option value="hi">हिंदी / Hinglish (letters and words stay English)</option></select></div>
+      <div class="field"><label for="ps-vspeed">Haathi's speed</label><select id="ps-vspeed"><option value="auto">Set by age (a bit slower for ages 3 and 4)</option><option value="normal">Normal</option><option value="slow">A bit slower</option><option value="slower">Slow</option></select>
+        <button class="pill-btn small" id="ps-hearspeed" type="button" style="align-self:flex-start;margin-top:6px">🔊 Hear this speed</button></div>
       <div class="field"><label for="ps-limit">Session limit</label><select id="ps-limit"><option value="10">10 minutes</option><option value="15">15 minutes</option><option value="20">20 minutes</option></select></div>
       <label class="check"><input type="checkbox" id="ps-sfx"> Sound effects</label>
+      <label class="check"><input type="checkbox" id="ps-fxsoft"> Keep sound effects softer than Haathi's voice</label>
       <label class="check"><input type="checkbox" id="ps-countnums"> Show numbers on objects while counting</label>
       <label class="check"><input type="checkbox" id="ps-moves"> Movement breaks after every 3 games</label>
       <label class="check"><input type="checkbox" id="ps-automode"> Move between Easy, Medium and Hard automatically (you are told each time)</label>
@@ -957,6 +985,21 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
       <div class="row" style="justify-content:flex-start;gap:8px;margin-top:8px"><button class="pill-btn" id="p-reload">↻ Reload the app</button><button class="pill-btn" id="p-reset">Start over for this child</button></div>
       <p class="note">Reload fixes a stuck screen and keeps all progress. Start over clears this child's stars, stickers and levels (name, age and settings stay).</p>
       <span id="ps-saved" class="note" hidden>Saved.</span>
+    </div>
+    <div class="panel" id="lock-panel"><h3>Child lock</h3>
+      <label class="check"><input type="checkbox" id="ps-lock"> <span><b>Game mode.</b> The game fills the screen, stays upright, and the Back button stays inside the game.</span></label>
+      <label class="check"><input type="checkbox" id="ps-keepon"> Keep the screen on while my child plays</label>
+      <p class="note">A web app cannot block the phone's Home button by itself. The phone can: lock it to Haathi with the steps below. Unlocking then needs your PIN.</p>
+      <div id="lock-steps"></div>
+    </div>
+    <div class="panel" id="fix-panel"><h3>Something is wrong?</h3>
+      <p class="note">Sound gone, a stuck screen, a picture cut off? Try these in order.</p>
+      <div class="row" style="justify-content:flex-start;gap:8px"><button class="pill-btn" id="fx-check" type="button">🔊 Sound check</button><button class="pill-btn" id="fx-reload2" type="button">↻ Reload the app</button></div>
+      <p class="note" id="fx-result" hidden></p>
+      <div class="field"><label for="fx-what">What happened? (optional)</label><textarea id="fx-what" rows="2" maxlength="400" style="font:inherit;font-size:17px;padding:9px 12px;border-radius:14px;border:2px solid var(--shadow)" placeholder="e.g. no voice in Picture cards after the phone locked"></textarea></div>
+      <div class="row" style="justify-content:flex-start;gap:8px"><a class="pill-btn primary" id="fx-wa" href="https://wa.me/" target="_blank" rel="noopener" style="text-decoration:none">Send a report on WhatsApp</a><button class="pill-btn" id="fx-copy" type="button">Copy report</button></div>
+      <p class="note">The report has the phone model, app version, the last screen and any error messages. No names, no recordings, nothing your child typed or drew.</p>
+      <textarea id="fx-preview" rows="6" readonly hidden style="font:inherit;font-size:13px;padding:9px;border-radius:12px;border:2px solid var(--shadow)"></textarea>
     </div>
     <div class="panel" style="grid-column:1/-1"><h3>Sound Studio: record real letter sounds</h3>
       <p class="note">Until a sound is recorded, the games use the picture word instead (for example "sun" for s), because computer voices say single sounds wrongly. Record in a quiet room. Say only the sound, short and clean, with no "uh" after it. On Android, "Record" opens the phone's recorder. On iPhone, record in Voice Memos first, save it to Files, then choose it here.</p>
@@ -999,6 +1042,12 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
   <p id="gate-msg" class="danger" hidden>That's not it. Try again.</p>
 </div></div>
 
+<div class="overlay" id="r9lock" hidden><div class="sheet" style="max-height:88vh;overflow-y:auto;text-align:left">
+  <h3>Before you hand over the phone</h3>
+  <p>Lock the phone to Haathi, so your child stays in the game.</p>
+  <div id="r9lock-steps"></div>
+  <div class="row"><button class="pill-btn primary" id="r9lock-ok" type="button">Done</button></div>
+</div></div>
 <div class="overlay" id="bye" hidden><div class="sheet">
   <div class="haathi" id="bye-haathi" style="width:170px;height:180px;margin:0 auto"></div>
   <h3>Haathi is sleepy</h3><p id="bye-text">Great playing today. See you tomorrow!</p>
@@ -1011,6 +1060,7 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
 <canvas class="confetti" id="confetti"></canvas>
 
 <script src="clips.js"></script>
+<script src="sounds.js"></script>
 <script src="discover-data.js"></script>
 <script src="stories/stories.js"></script>
 <script src="books/books.js"></script>

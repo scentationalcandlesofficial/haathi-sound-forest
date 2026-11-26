@@ -271,41 +271,99 @@ function curChapter(){let c=S.chapters[S.chapters.length-1];if(!c||c.done){compo
 function curNodeIdx(c){return c.nodes.findIndex(n=>n.stars==null)}
 
 /* ======================= AUDIO ======================= */
+/* Release 9. Voice lines are decoded only when they are needed and kept in a small cache. Before, every line (about
+   40 minutes of speech) was decoded at start: on a phone that is hundreds of MB, and each new line waited behind the
+   backlog until it timed out, so Haathi went silent. A paused or interrupted sound system (screen lock, a call,
+   Bluetooth) is woken up, and rebuilt if it stays stuck. Slower speech for little ones is time-stretched, so the voice
+   keeps its pitch. Effects go through their own, softer channel so they never drown the voice. */
 const VOICE=(window.HAATHI_VOICES&&window.HAATHI_VOICES.A)||{};
-let actx=null,master=null;const BUF={},REC={};let decoding=null;
+{const R=window.HAATHI_REAL||{};for(const k in R)VOICE['RS_'+k]=R[k]}
+let actx=null,master=null,vbus=null,fxbus=null;const BUF=new Map(),DEC=new Map(),REC={};let recLoaded=false,bufBytes=0;const BUF_MAX=40e6;
+const AUDLOG=[];function alog(m){AUDLOG.push(new Date().toTimeString().slice(0,8)+' '+m);if(AUDLOG.length>40)AUDLOG.shift()}
+const FXVOL=()=>S.settings&&S.settings.fxSoft===false?1:.65;
+function mkCtx(){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return null;const c=new AC();const m=c.createGain();
+  try{const k=c.createDynamicsCompressor();k.threshold.value=-16;k.knee.value=12;k.ratio.value=3;k.attack.value=.004;k.release.value=.25;m.connect(k);k.connect(c.destination)}catch(e){m.connect(c.destination)}
+  const v=c.createGain(),f=c.createGain();f.gain.value=FXVOL();v.connect(m);f.connect(m);
+  c.onstatechange=()=>{alog('sound '+c.state);if(c===actx&&c.state!=='running'&&c.state!=='closed'&&!document.hidden)setTimeout(()=>{if(c===actx&&c.state!=='running'&&!document.hidden)try{c.resume()}catch(e){}},400)};
+  actx=c;master=m;vbus=v;fxbus=f;return c}
 function unlockAudio(){try{
-  if(!actx){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;actx=new AC();master=actx.createGain();master.connect(actx.destination)}
+  if(!actx&&!mkCtx())return;
   if(actx.state!=='running')actx.resume();
   const b=actx.createBuffer(1,1,22050),s=actx.createBufferSource();s.buffer=b;s.connect(master);s.start(0);
-  if(!decoding){decoding=decodeAll();loadRecordings()}
-}catch(e){}}
+  if(!recLoaded){recLoaded=true;loadRecordings()}
+  wakeLockOn();
+}catch(e){alog('unlock failed '+e.message)}}
+async function wakeAudio(){if(!actx)return false;if(actx.state==='running')return true;
+  try{await Promise.race([actx.resume(),sleep(700)])}catch(e){}
+  if(actx.state==='running')return true;
+  /* still stuck (an iPhone after a call stays 'interrupted', some phones lose the output after Bluetooth changes): start a fresh one */
+  const ua=navigator.userActivation;if(document.hidden||(ua&&!ua.hasBeenActive))return false;
+  try{stopVoice();const old=actx;mkCtx();alog('sound rebuilt');if(old&&old.close)old.close().catch(()=>{});await Promise.race([actx.resume(),sleep(600)])}catch(e){}
+  return actx.state==='running'}
 function b64ToBuf(b){const bin=atob(b),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u.buffer}
-function decodeAB(ab){return new Promise(res=>{let done=false;const f=v=>{if(!done){done=true;res(v)}};setTimeout(()=>f(null),4000);try{const p=actx.decodeAudioData(ab,f,()=>f(null));if(p&&p.catch)p.catch(()=>f(null))}catch(e){f(null)}})}
-async function decodeOne(k){if(BUF[k])return BUF[k];if(!VOICE[k]||!actx)return null;const d=await decodeAB(b64ToBuf(VOICE[k]));if(d)BUF[k]=d;return d}
-async function decodeAll(){for(const k of Object.keys(VOICE).sort((a,b)=>(a[0]==='P'?-1:1)-(b[0]==='P'?-1:1)))await decodeOne(k)}
+function decodeAB(ab,ms){return new Promise(res=>{let done=false;const f=v=>{if(!done){done=true;res(v)}};setTimeout(()=>f(null),ms||9000);try{const p=actx.decodeAudioData(ab,f,()=>f(null));if(p&&p.catch)p.catch(()=>f(null))}catch(e){f(null)}})}
+/* how fast Haathi talks: Settings "Haathi's speed"; by default ages 3 and 4 hear it a bit slower */
+function vSpeed(){const v=S.settings&&S.settings.vspeed;if(v==='normal')return 1;if(v==='slow')return .86;if(v==='slower')return .78;return ((S.profile&&S.profile.age)||5)<=4?.86:1}
+const PACE=()=>vSpeed()<1?1.3:1;
+const STRETCHY=k=>!/^(S_|R_|RS_)/.test(k);
+function bufPut(ck,d){if(BUF.has(ck))return;BUF.set(ck,d);bufBytes+=d.length*d.numberOfChannels*4;
+  for(const [k,b] of BUF){if(bufBytes<=BUF_MAX)break;BUF.delete(k);bufBytes-=b.length*b.numberOfChannels*4}}
+function decodeOne(k,extra){if(!VOICE[k]||!actx)return Promise.resolve(null);const sp=STRETCHY(k)?Math.round(vSpeed()*(extra||1)*100)/100:1;const ck=k+'@'+sp;
+  const hit=BUF.get(ck);if(hit){BUF.delete(ck);BUF.set(ck,hit);return Promise.resolve(hit)}
+  if(DEC.has(ck))return DEC.get(ck);
+  const p=(async()=>{let d=await decodeAB(b64ToBuf(VOICE[k]));if(!d){alog('decode retry '+k);await sleep(150);d=await decodeAB(b64ToBuf(VOICE[k]),12000)}
+    if(!d){alog('decode failed '+k);return null}if(sp<.995)d=tStretch(d,sp);bufPut(ck,d);return d})();
+  DEC.set(ck,p);p.then(()=>DEC.delete(ck),()=>DEC.delete(ck));return p}
+/* WSOLA time-stretch: longer sound, same pitch. 28 ms frames, half overlap, the next frame is chosen within 8 ms to line
+   up with the last one, so there are no clicks. About 20 ms of work for a 3 second line. */
+function tStretch(buf,speed){try{const sr=buf.sampleRate,ch=buf.numberOfChannels,N=Math.round(sr*.028)&~1,H=N>>1,tol=Math.round(sr*.008),inL=buf.length;
+  if(inL<N*2)return buf;const src=[];for(let c=0;c<ch;c++)src.push(buf.getChannelData(c));const mono=src[0];
+  const cap=Math.ceil(inL/speed)+N,acc=[];for(let c=0;c<ch;c++)acc.push(new Float32Array(cap));
+  const win=new Float32Array(N);for(let i=0;i<N;i++)win[i]=.5-.5*Math.cos(2*Math.PI*i/N);
+  let prev=0,op=0,k=0;
+  for(;;k++,op+=H){const ideal=Math.round(k*H*speed);if(ideal+N>=inL||op+N>cap)break;let best=ideal;
+    if(k>0){const nat=prev+H;let bc=-Infinity;const lo=Math.max(0,ideal-tol),hi=Math.min(inL-N-1,ideal+tol);
+      for(let d=lo;d<=hi;d+=2){let c=0;for(let i=0;i<H;i+=4)c+=mono[nat+i]*mono[d+i];if(c>bc){bc=c;best=d}}}
+    for(let c=0;c<ch;c++){const s=src[c],o=acc[c];for(let i=0;i<N;i++)o[op+i]+=s[best+i]*win[i]}prev=best}
+  const L=Math.max(1,op+H);const out=actx.createBuffer(ch,L,sr);for(let c=0;c<ch;c++)out.getChannelData(c).set(acc[c].subarray(0,L));return out}catch(e){alog('stretch failed');return buf}}
 let vTok=0,playing=[];
 function stopVoice(){vTok++;playing.forEach(s=>{try{s.stop()}catch(e){}});playing=[]}
-function playBuf(buf,rate){return new Promise(res=>{let done=false;const fin=()=>{if(done)return;done=true;playing=playing.filter(x=>x!==s);res()};const s=actx.createBufferSource();s.buffer=buf;s.playbackRate.value=rate||1;s.connect(master);s.onended=fin;playing.push(s);
+function playBuf(buf,rate){return new Promise(res=>{let done=false;const fin=()=>{if(done)return;done=true;playing=playing.filter(x=>x!==s);res()};const s=actx.createBufferSource();s.buffer=buf;s.playbackRate.value=rate||1;s.connect(vbus||master);s.onended=fin;playing.push(s);
   setTimeout(fin,Math.ceil(buf.duration/(rate||1)*1000)+600);try{s.start()}catch(e){fin()}})}
 /* a voice line started inside one game never 'finishes' into a different game */
 function say(seq,caption,opt){const r=RUN;return new Promise(res=>{sayRaw(seq,caption,opt).then(v=>{if(RUN===r||!r)res(v)})})}
+/* a real recording (sounds.js) replaces Haathi saying the animal's sound, when there is one */
+const realKey=it=>it.startsWith('SND_')&&VOICE['RS_'+it.slice(4)]?'RS_'+it.slice(4):it;
+const hiKey=it=>S.settings&&S.settings.lang==='hi'&&it.startsWith('P_')&&window.HAATHI_VOICES&&HAATHI_VOICES.A['H'+it]?'H'+it:it;
 async function sayRaw(seq,caption,opt){
-  opt=opt||{};stopVoice();const tok=vTok;if(caption!=null&&$('cap'))$('cap').textContent=caption;
+  opt=opt||{};stopVoice();const tok=vTok;if(caption!=null&&$('cap'))$('cap').textContent=caption;const pace=PACE();
+  /* opt.slow: the model word or sound is said a little slower again; instructions keep the normal pace */
+  const ex=it=>opt.slow&&!/^H?P_/.test(it)?.9:1;
+  if(actx)seq.forEach(it=>{if(typeof it==='string'&&!it.startsWith('R_')){const k=realKey(hiKey(it));decodeOne(k,ex(k))}});
   for(let it of seq){if(tok!==vTok)return;
-    if(typeof it==='number'){await sleep(it);continue}
+    if(typeof it==='number'){await sleep(Math.round(it*pace));continue}
     if(typeof it==='function'){it();continue}
-    if(S.settings&&S.settings.lang==='hi'&&it.startsWith('P_')&&window.HAATHI_VOICES&&HAATHI_VOICES.A['H'+it])it='H'+it;
+    it=realKey(hiKey(it));
     if(window.__SAY)window.__SAY.push(it);
-    let buf=null;if(it.startsWith('R_'))buf=recBuf(it.slice(2));else{buf=BUF[it];if(!buf&&actx)buf=await decodeOne(it)}
+    let buf=null;if(it.startsWith('R_'))buf=recBuf(it.slice(2));else if(actx)buf=await decodeOne(it,ex(it));
     if(tok!==vTok)return;
-    if(buf&&actx&&actx.state!=='running'){try{actx.resume()}catch(e){}await sleep(150)}
-    if(buf&&actx&&actx.state==='running'){await playBuf(buf,opt.slow?.9:1);await sleep(70)}}
+    if(buf&&actx&&actx.state!=='running')await wakeAudio();
+    if(tok!==vTok)return;
+    if(buf&&actx&&actx.state==='running'){sndHint(false);await playBuf(buf,1);await sleep(70)}
+    else if(actx&&!document.hidden){alog('not played '+it+(buf?' (sound '+actx.state+')':' (no audio)'));if(buf)sndHint(true)}}
 }
+/* if the phone keeps the sound off, a small button asks for one tap, which is all a browser needs to turn it back on */
+function sndHint(on){let b=$('snd-hint');if(!on){if(b)b.hidden=true;return}
+  if(!b){b=document.createElement('button');b.id='snd-hint';b.className='snd-hint';b.innerHTML='🔇 <span>Tap for sound</span>';document.body.appendChild(b);
+    b.onclick=async()=>{b.hidden=true;unlockAudio();await wakeAudio();if(RUN&&RUN.prompt)RUN.prompt()}}
+  b.hidden=false}
+let wlock=null;
+async function wakeLockOn(){if(devS().keepOn===false||!navigator.wakeLock||document.hidden||wlock)return;try{wlock=await navigator.wakeLock.request('screen');wlock.addEventListener('release',()=>{wlock=null})}catch(e){}}
 function recBuf(l){return REC[l]||REC[SAME[l]]||null}
 const hasRec=l=>!!recBuf(l);
 const W=w=>'W_'+w, N=n=>'N_'+n, L_=l=>'L_'+l;
-function tone(f,t0,dur,type,vol,f2){if(!actx||!S.settings.sfx)return;const o=actx.createOscillator(),g=actx.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t0);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t0+dur);g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(vol||.2,t0+.015);g.gain.exponentialRampToValueAtTime(.0001,t0+dur);o.connect(g);g.connect(master);o.start(t0);o.stop(t0+dur+.05)}
-function noise(t0,dur,vol,fq){if(!actx||!S.settings.sfx)return;const n=actx.createBuffer(1,Math.floor(actx.sampleRate*dur),actx.sampleRate),d=n.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length);const s=actx.createBufferSource();s.buffer=n;const f=actx.createBiquadFilter();f.type='bandpass';f.frequency.value=fq||1200;const g=actx.createGain();g.gain.value=vol||.2;s.connect(f);f.connect(g);g.connect(master);s.start(t0)}
+function tone(f,t0,dur,type,vol,f2){if(!actx||!S.settings.sfx)return;const o=actx.createOscillator(),g=actx.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t0);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t0+dur);g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(vol||.2,t0+.015);g.gain.exponentialRampToValueAtTime(.0001,t0+dur);o.connect(g);g.connect(fxbus||master);o.start(t0);o.stop(t0+dur+.05)}
+function noise(t0,dur,vol,fq){if(!actx||!S.settings.sfx)return;const n=actx.createBuffer(1,Math.floor(actx.sampleRate*dur),actx.sampleRate),d=n.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length);const s=actx.createBufferSource();s.buffer=n;const f=actx.createBiquadFilter();f.type='bandpass';f.frequency.value=fq||1200;const g=actx.createGain();g.gain.value=vol||.2;s.connect(f);f.connect(g);g.connect(fxbus||master);s.start(t0)}
 const T=()=>actx?actx.currentTime:0;
 const FX={
  tap(){tone(660,T(),.08,'triangle',.12,880)}, pop(){tone(500,T(),.12,'sine',.3,1400);noise(T(),.08,.25,2500)},
@@ -315,7 +373,7 @@ const FX={
  boing(){tone(300,T(),.35,'sine',.18,150);tone(220,T()+.12,.3,'sine',.12,330)},
  tick(n){tone(500+Math.min(n,30)*25,T(),.1,'triangle',.14)}, coin(){tone(1300,T(),.08,'square',.06);tone(1800,T()+.07,.15,'square',.05)},
  sparkle(){for(let i=0;i<5;i++)tone(1400+Math.random()*1400,T()+i*.05,.12,'sine',.06)}, swish(){noise(T(),.25,.12,1800)},
- trumpet(){if(!actx||!S.settings.sfx)return;const t=T(),o=actx.createOscillator(),f=actx.createBiquadFilter(),g=actx.createGain();o.type='sawtooth';o.frequency.setValueAtTime(240,t);o.frequency.exponentialRampToValueAtTime(520,t+.25);o.frequency.setValueAtTime(520,t+.6);o.frequency.exponentialRampToValueAtTime(380,t+1);f.type='lowpass';f.frequency.setValueAtTime(600,t);f.frequency.linearRampToValueAtTime(2400,t+.3);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.22,t+.08);g.gain.setValueAtTime(.22,t+.8);g.gain.exponentialRampToValueAtTime(.0001,t+1.1);o.connect(f);f.connect(g);g.connect(master);o.start(t);o.stop(t+1.2)}
+ trumpet(){if(!actx||!S.settings.sfx)return;const t=T(),o=actx.createOscillator(),f=actx.createBiquadFilter(),g=actx.createGain();o.type='sawtooth';o.frequency.setValueAtTime(240,t);o.frequency.exponentialRampToValueAtTime(520,t+.25);o.frequency.setValueAtTime(520,t+.6);o.frequency.exponentialRampToValueAtTime(380,t+1);f.type='lowpass';f.frequency.setValueAtTime(600,t);f.frequency.linearRampToValueAtTime(2400,t+.3);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.22,t+.08);g.gain.setValueAtTime(.22,t+.8);g.gain.exponentialRampToValueAtTime(.0001,t+1.1);o.connect(f);f.connect(g);g.connect(fxbus||master);o.start(t);o.stop(t+1.2)}
 };
 
 /* ---- Sound Studio ---- */
@@ -529,8 +587,9 @@ ACT.meet=(n)=>{const l=n.l,[w,pic]=KEYW(l);
   RUN.prompt=intro;FX.sparkle();intro().then(()=>{if(RUN&&RUN.node===n&&!sayTurn.on)sayTurn(l,w)});sayTurn.on=false;
   actions([['go','Next',()=>sayTurn(l,w),ICON.next]]);
 };
-function sayTurn(l,w){sayTurn.on=true;
-  const turn=()=>say(hasRec(l)?['P_say_with_me',300,'R_'+l,500,'R_'+l,500,'P_your_turn']:['P_say_first',300,W(w),500,'P_your_turn'],hasRec(l)?`Say it with me: ${SHOW[l]}! Your turn!`:`Say the first sound of "${w}" together. Your turn!`);
+function sayTurn(l,w){sayTurn.on=true;const little=vSpeed()<1;
+  /* little ones hear the model once more, slower, with longer gaps (PACE) before it is their turn */
+  const turn=()=>say(hasRec(l)?['P_say_with_me',300,'R_'+l,500,'R_'+l,...(little?[500,'R_'+l]:[]),500,'P_your_turn']:['P_say_first',300,W(w),500,...(little?[W(w),500]:[]),'P_your_turn'],hasRec(l)?`Say it with me: ${SHOW[l]}! Your turn!`:`Say the first sound of "${w}" together. Your turn!`,{slow:little});
   RUN.prompt=turn;turn();
   actions([['soft','Again',turn],...sayItAct(hasRec(l)?['R_'+l]:[W(w)],w),['star','Said it!',()=>{S.said=(S.said||0)+1;save();burst($('actions'),16);FX.chime();say(['P_great_saying'],'Wonderful saying!').then(()=>roundDone(true))}],['soft','Skip',()=>roundDone(true)]]);
 }
@@ -955,8 +1014,8 @@ ACT.maketen=(n)=>{const tot=n.max;const have=fresh('mt'+tot,[...Array(tot-1).key
   RUN.prompt=()=>say([tot===10?'P_make_ten':'P_make_five'],`How many more to make ${tot}?`);RUN.prompt();let wrong=false;const L=once(ok=>learnN(n,ok));
   numChoices(ans,tot,$('nc'),(b,v)=>{const ok=v===ans;L(ok);if(ok){b.classList.add('right');body().querySelectorAll('.tf b:not(.on)').forEach(x=>x.classList.add('on'));FX.chime();
       say([N(have),'P_and',N(ans),'P_makes',N(tot)],`${have} + ${ans} = ${tot}`).then(()=>roundDone(!wrong))}else{wrong=true;FX.boing();anim(b,'wiggle',500);say(['P_count_again'],'Count the empty spaces.')}},1,tot-1)};
-function drum(){if(!actx)return;const s0=S.settings.sfx;S.settings.sfx=true;tone(110,T(),.25,'sine',.5,60);noise(T(),.12,.25,300);S.settings.sfx=s0}
-ACT.beats=(n)=>{const v=fresh('beats',[...Array(n.max).keys()].map(i=>i+1));body().innerHTML=`<div class="pic" id="drum" style="font-size:110px">🥁</div><div class="choices" id="nc" hidden></div>`;
+function drum(){if(!actx)return;{const b=BUF.get('RS_drum@1');if(b){try{const s=actx.createBufferSource();s.buffer=b;s.connect(fxbus||master);s.start()}catch(e){}return}}const s0=S.settings.sfx;S.settings.sfx=true;tone(110,T(),.25,'sine',.5,60);noise(T(),.12,.25,300);S.settings.sfx=s0}
+ACT.beats=(n)=>{if(actx)decodeOne('RS_drum');const v=fresh('beats',[...Array(n.max).keys()].map(i=>i+1));body().innerHTML=`<div class="pic" id="drum" style="font-size:110px">🥁</div><div class="choices" id="nc" hidden></div>`;
   let wrong=false;const L=once(ok=>learnN(n,ok));
   const play=async()=>{const nc=$('nc');if(nc)nc.hidden=true;await say(['P_beats'],'Listen to the drum. How many beats?');await sleep(300);
     for(let i=0;i<v;i++){if(!alive('beats'))return;drum();anim($('drum'),'chomp',400);await sleep(700)}if($('nc'))$('nc').hidden=false};
@@ -1136,7 +1195,7 @@ ACT.d_memory=(n)=>{const pairs=ageNow()<=3?3:ageNow()===4?4:6;const ks=shuffle(d
         if(done===pairs){const ok=tries<=pairs+3;learnN(n,ok);say([rnd(PRAISE)],'All pairs found!').then(()=>roundDone(ok))}}else{b1.classList.remove('open');b2.classList.remove('open');FX.boing()}open=[];lock=false},900)}};$('mg').appendChild(b)});
   RUN.prompt=()=>say(['P_d_memory'],'Find the matching pairs!');RUN.prompt()};
 ACT.d_sound=(n)=>{const pool=dPool(n.sec).filter(k=>DSC.sounds[k]);const all=DSEC[n.sec].items.map(i=>i.k).filter(k=>DSC.sounds[k]);const t=deck('ds'+n.sec,pool.length>=3?pool:all);
-  pickRound({items:dOpts(pool.length>=3?pool:all,t,nopt()).map(k=>({h:dCard(k),v:k,label:DI(k).n})),ans:t,say:['P_d_says',300,'SND_'+t],cap:`Who says "${DSC.sounds[t]}"`,right:[DN(t),300,'SND_'+t],rightCap:`The ${DI(t).n.toLowerCase()} says ${DSC.sounds[t]}`,wrong:it=>[DN(it.v),300,'P_listen_again','SND_'+t]})};
+  pickRound({items:dOpts(pool.length>=3?pool:all,t,nopt()).map(k=>({h:dCard(k),v:k,label:DI(k).n})),ans:t,say:['P_d_says',300,'SND_'+t],cap:VOICE['RS_'+t]?'Who makes this sound?':`Who says "${DSC.sounds[t]}"`,right:[DN(t),300,'SND_'+t],rightCap:`The ${DI(t).n.toLowerCase()} says ${DSC.sounds[t]}`,wrong:it=>[DN(it.v),300,'P_listen_again','SND_'+t]})};
 ACT.d_quiz=(n,round)=>{const qs=DSC.quiz[n.sec]||[];const q=deck('dq'+n.sec,qs.map(x=>x[0]));const [id,v,text]=qs.find(x=>x[0]===q);
   pickRound({top:`<div class="card-note" style="font-size:clamp(18px,4.6vw,24px)">${text}</div>`,items:[{h:'<span style="font-size:56px">👍</span>',v:1,label:'true'},{h:'<span style="font-size:56px">👎</span>',v:0,label:'not true'}],ans:v,
     say:['Q_'+id,...(round===0?[300,'P_d_quiz']:[])],cap:text,right:[v?'P_d_true':'P_d_false'],rightCap:v?"Yes! That's true!":"Right! That's not true!",wrong:()=>['P_d_wrong_t','Q_'+id]})};
@@ -1516,12 +1575,12 @@ function modeSuggest(n,stars,box){const kind=kindOfNode(n);if(!kind)return;S.tie
 const CARD_DECKS=['fruits','vegetables','indianfood','vehicles','farm','wild','birds','voices','sea','bugs','body','colours','clothes','home','music','helpers','feelings','food'];
 const hasVoices=id=>DSEC[id]&&DSEC[id].items.filter(i=>DSC.sounds[i.k]).length>=3;
 ACT.cards=(n,round)=>{const sc=DSEC[n.sec];if(!n._ord)n._ord=shuffle(sc.items.map(i=>i.k)).slice(0,12);const k=n._ord[round%n._ord.length];const it=DI(k);const snd=DSC.sounds[k];
-  body().innerHTML=`<div class="fcard" id="fc"><div class="fc-pic">${it.e}</div><div class="fc-name">${it.n}</div>${snd?`<div class="fc-snd">🔊 ${snd}</div>`:''}<div class="fc-count">${round+1} / ${n._ord.length}</div></div><p class="card-note">Tap the card to hear it again. Swipe or tap Next for the next card.</p>`;
-  const c=$('fc');RUN.prompt=()=>say([...(round===0?['SEC_'+n.sec,400]:[]),DN(k),...(snd?[450,'SND_'+k]:[]),...(round%3===1?[700,'P_your_turn']:[])],it.n);RUN.prompt();anim(c,'dance');
+  body().innerHTML=`<div class="fc-wrap"><div class="fcard" id="fc"><div class="fc-pic">${it.e}</div><div class="fc-name">${it.n}</div>${snd?`<div class="fc-snd">🔊 ${snd}</div>`:''}<div class="fc-count">${round+1} / ${n._ord.length}</div></div></div><p class="card-note">Tap the card to hear it again. Swipe or tap Next for the next card.</p>`;
+  const c=$('fc');RUN.prompt=()=>say([...(round===0?['SEC_'+n.sec,400]:[]),DN(k),...(snd?[450,'SND_'+k]:VOICE['RS_'+k]?[450,'RS_'+k]:[]),...(round%3===1?[700,'P_your_turn']:[])],it.n);RUN.prompt();anim(c,'dance');
   const next=()=>{if(c.dataset.done)return;c.dataset.done=1;learnN(n,true);FX.swish&&FX.swish();c.classList.add('fly');setTimeout(()=>roundDone(true),250)};
   let x0=null,moved=false;c.onpointerdown=e=>{x0=e.clientX;moved=false};c.onpointermove=e=>{if(x0!=null&&Math.abs(e.clientX-x0)>12){moved=true;c.style.transform=`translateX(${e.clientX-x0}px) rotate(${(e.clientX-x0)/20}deg)`}};
   c.onpointerup=c.onpointercancel=e=>{const dx=x0==null?0:e.clientX-x0;x0=null;c.style.transform='';if(Math.abs(dx)>60)next()};
-  c.onclick=()=>{if(moved)return;FX.tap();anim(c,'bumpn',300);say([DN(k),...(snd?[300,'SND_'+k]:[])],it.n)};
+  c.onclick=()=>{if(moved)return;FX.tap();anim(c,'bumpn',300);say([DN(k),...(snd?[300,'SND_'+k]:VOICE['RS_'+k]?[300,'RS_'+k]:[])],it.n)};
   actions([['soft','Hear again',()=>RUN.prompt()],...sayItAct([DN(k)],it.n),['go','Next card',next,ICON.next]])};
 function cardNode(id,g){const sc=DSEC[id];const n={sec:id,skill:'d_'+id,title:sc.name};
   if(g==='cards')return Object.assign(n,{t:'cards',rounds:Math.min(12,sc.items.length),title:sc.name+': Picture cards'});
@@ -1619,7 +1678,7 @@ function stRender(){const {s,p}=SR;const el=$('s-story');el.classList.toggle('ni
   if(p>=s.pages.length){if(SR.next)$('st-nextep').onclick=()=>{FX.tap();openStory(SR.next)};$('st-again').onclick=()=>{FX.tap();SR.p=-1;stRender()};$('st-more').onclick=()=>{stStop();FX.tap();go('corner');openStories()};$('st-sleep').onclick=()=>{stStop();stLights(true)}}
   stPlay()}
 async function stPlay(){stAudio.pause();clearTimeout(SR&&SR.tm);$('st-play').textContent='▶';if(!SR||SR.mode!=='read')return;const pg=SR.s.pages[SR.p];SR.queue=pg&&pg.sh&&!SR.shDone?[SR.s.id+'_'+SR.p+'_sh']:[];SR.shDone=false;const key=SR.queue.length?SR.queue.shift():stKey();if(pg&&pg.sh&&key.endsWith('_sh'))SR.inSh=true;else SR.inSh=false;const myP=SR.p;const u=await stBlob(key);if(!SR||SR.p!==myP)return;
-  if(!u){$('st-play').textContent='▶';return}stAudio.src=u;stAudio.playbackRate=1;try{await stAudio.play();$('st-play').textContent='⏸'}catch(e){$('st-play').textContent='▶'}}
+  if(!u){$('st-play').textContent='▶';return}stAudio.src=u;try{stAudio.preservesPitch=true;stAudio.webkitPreservesPitch=true}catch(e){}stAudio.defaultPlaybackRate=stAudio.playbackRate=Math.max(.88,vSpeed());try{await stAudio.play();$('st-play').textContent='⏸'}catch(e){$('st-play').textContent='▶'}}
 function stStop(){stAudio.pause();if(SR)clearTimeout(SR.tm);$('st-play').textContent='▶'}
 /* light up the words roughly in step with the voice */
 stAudio.ontimeupdate=()=>{const t=$('st-text');if(!t||!stAudio.duration||(SR&&SR.inSh))return;const ws=[...t.querySelectorAll('span')];const lead=.25,tail=.4;const f=Math.max(0,Math.min(1,(stAudio.currentTime-lead)/Math.max(.1,stAudio.duration-lead-tail)));
@@ -2057,7 +2116,7 @@ async function sayIt(model,capText){if(sayRec)return;stopVoice();let stream;
   const stop=()=>{try{if(rec.state==='recording')rec.stop()}catch(e){}};ov.querySelector('button').onclick=stop;const tm=setTimeout(stop,3500);
   rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
   rec.onstop=async()=>{clearTimeout(tm);stream.getTracks().forEach(t=>t.stop());ov.remove();sayRec=null;const url=URL.createObjectURL(new Blob(chunks,{type:rec.mimeType||'audio/webm'}));
-    await sayRaw(['P_sayit_listen',250,...model],capText||null);try{const a=new Audio(url);a.onended=()=>URL.revokeObjectURL(url);await a.play()}catch(e){URL.revokeObjectURL(url)}};
+    await sayRaw(['P_sayit_listen',250,...model],capText||null,{slow:vSpeed()<1});try{const a=new Audio(url);a.onended=()=>URL.revokeObjectURL(url);await a.play()}catch(e){URL.revokeObjectURL(url)}};
   try{rec.start()}catch(e){stop();ov.remove();sayRec=null}}
 const sayItAct=(model,cap)=>micOn()?[['star','🎤 Say it',()=>sayIt(model,cap)]]:[];
 
@@ -2917,11 +2976,106 @@ async function mkExport(r){const name=`haathi-${r.type}-${r.d}.jpg`;let blob=nul
   b.insertBefore(sec,b.firstChild);sec.querySelectorAll('.mk-tile').forEach(t=>t.onclick=()=>{unlockAudio();FX.tap();mkOpen(t.dataset.m)})}}
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&MK.mode)stopVoice()});
 
+/* ======================= RELEASE 9: child lock, steady sound, speed by age, problem report ======================= */
+const R9_VER='r9 / haathi-v40';
+/* device-wide switches (not per child): child lock, keep the screen on, lock guide seen */
+const DEV_KEY='haathi-device';
+function devS(){let d=null;try{d=JSON.parse(localStorage.getItem(DEV_KEY)||'null')}catch(e){}return Object.assign({lock:true,keepOn:true,guide:false},d||{})}
+function devSet(p){const d=Object.assign(devS(),p);try{localStorage.setItem(DEV_KEY,JSON.stringify(d))}catch(e){}return d}
+const lockOn=()=>devS().lock!==false;
+
+/* ---- what the report can say: recent errors and the last screens (no names, nothing the child made) ---- */
+const ERRLOG=[];function elog(m){ERRLOG.push(new Date().toTimeString().slice(0,8)+' '+String(m).slice(0,160));if(ERRLOG.length>12)ERRLOG.shift()}
+window.addEventListener('error',e=>elog((e.message||'error')+(e.filename?' @'+e.filename.split('/').pop()+':'+e.lineno:'')));
+window.addEventListener('unhandledrejection',e=>elog('promise: '+((e.reason&&e.reason.message)||e.reason)));
+const TRAIL=[];
+{const g0=go;go=function(name){g0(name);const nm=current;if(nm!=='parent'){const g=nm==='play'&&RUN&&RUN.node?': '+(RUN.node.title||TITLES[RUN.node.t]||RUN.node.t):'';TRAIL.push(nm+g);if(TRAIL.length>8)TRAIL.shift()}
+  document.documentElement.classList.toggle('r9lock',lockOn()&&nm!=='parent'&&nm!=='setup');sndHint(false)}}
+
+/* ---- picture-card titles: more than 6 rounds show a small bar and "3/12" instead of a column of dots ---- */
+{const sr0=setRounds;setRounds=function(){const r=$('rounds');document.body.classList.toggle('r9many',!!RUN&&RUN.rounds>6);if(!RUN||RUN.rounds<=6){r.classList.remove('r9c');return sr0()}
+  r.className='rounds r9c';const done=Math.min(RUN.round,RUN.rounds);r.innerHTML=`<span class="r9bar"><i style="width:${Math.round(100*done/RUN.rounds)}%"></i></span><span class="r9cnt">${Math.min(RUN.round+1,RUN.rounds)}/${RUN.rounds}</span>`;r.setAttribute('aria-label',`Round ${Math.min(RUN.round+1,RUN.rounds)} of ${RUN.rounds}`)}}
+
+/* ---- child lock: full screen, upright, Back stays inside the game. The Home button needs the phone's own pinning ---- */
+const touchDev=()=>!!(window.matchMedia&&matchMedia('(pointer:coarse)').matches);
+let lockArmed=false;
+function lockArm(){if(!lockOn()||!S.profile)return;try{history.pushState({h9:1},'');lockArmed=true}catch(e){}}
+function fsOn(){if(!lockOn()||!touchDev()||current==='parent'||current==='setup')return;const d=document.documentElement;if(document.fullscreenElement||!d.requestFullscreen)return;
+  try{const p=d.requestFullscreen({navigationUI:'hide'});if(p&&p.then)p.then(()=>{try{if(screen.orientation&&screen.orientation.lock)screen.orientation.lock('portrait').catch(()=>{})}catch(e){}}).catch(()=>{})}catch(e){}}
+/* pointerup, not pointerdown: on a touch screen only the lift counts as a real tap for full screen */
+document.addEventListener('pointerup',()=>{if(!S.profile)return;if(!lockArmed)lockArm();fsOn()},{capture:true,passive:true});
+window.addEventListener('popstate',()=>{lockArmed=false;if(!lockOn()||!S.profile)return;lockArm();r9Back()});
+document.addEventListener('contextmenu',e=>{if(lockOn()&&current!=='parent')e.preventDefault()});
+function r9Toast(t){let el=$('r9toast');if(!el){el=document.createElement('div');el.id='r9toast';el.className='r9toast';el.setAttribute('role','status');document.body.appendChild(el)}el.textContent=t;el.hidden=false;clearTimeout(r9Toast.tm);r9Toast.tm=setTimeout(()=>{el.hidden=true},2800)}
+/* the phone's Back button does what the game's own back arrow does; on the home screen it does nothing */
+function r9Back(){
+  if(!$('gate').hidden){$('gate').hidden=true;return}
+  if(!$('r9lock').hidden||!$('bye').hidden)return;
+  for(const id of ['book','reward']){const el=$(id);if(el&&!el.hidden){const c=el.querySelector('[data-close],.close,.bk-close,button[aria-label*="lose"]');if(c)c.click();return}}
+  const sgv=$('sg');if(sgv&&!sgv.hidden){const c=sgv.querySelector('[data-close],.close,button[aria-label*="lose"],button[aria-label*="ack"]');if(c){c.click();return}}
+  const mk=document.querySelector('.mk-overlay:not([hidden])');if(mk){const c=mk.querySelector('button');if(c){c.click();return}}
+  const map={play:'play-back',story:'st-back',make:'mk-back',book:'tb-back',path:'nd-path-home',lib:'nd-lib-home'};
+  if(map[current]&&$(map[current])){$(map[current]).click();return}
+  if(current==='corner'||current==='parent'){const b=document.querySelector('#s-'+current+' [data-back]');if(b){b.click();return}}
+  r9Toast("Haathi stays open. Grown-ups: use the phone's Home button to leave.")}
+
+/* ---- the lock guide: Android app pinning, iPhone Guided Access ---- */
+function lockSteps(){const ios=/iPhone|iPad|iPod/.test(navigator.userAgent),and=/Android/.test(navigator.userAgent);
+  return `<div class="r9steps"><details ${ios?'':'open'}><summary>Android phone</summary><ol>
+    <li>Open <b>Settings</b> and search for <b>pin</b>. Turn on <b>App pinning</b> (Samsung calls it <b>Pin windows</b> or <b>Pin app</b>), and turn on <b>Ask for PIN before unpinning</b>.</li>
+    <li>Open Haathi.</li>
+    <li>Open the recent apps screen: swipe up from the bottom and hold, or tap the square button.</li>
+    <li>Tap the Haathi icon at the top of its window, then <b>Pin</b>.</li>
+    <li>To leave: swipe up and hold (or hold Back and the square button together), then enter your PIN.</li></ol></details>
+  <details ${ios&&!and?'open':''}><summary>iPhone</summary><ol>
+    <li>Open <b>Settings &gt; Accessibility &gt; Guided Access</b> and turn it on. Tap <b>Passcode Settings</b> and set a passcode.</li>
+    <li>Open Haathi.</li>
+    <li>Press the side button three times quickly (the Home button on older iPhones), then tap <b>Start</b>.</li>
+    <li>To leave: press it three times again, enter the passcode, tap <b>End</b>.</li></ol></details>
+  <p class="note">Also turn on <b>Do Not Disturb</b>, so calls and messages do not pop up over the game. Menu names differ a little between phone makers.</p></div>`}
+function showLockGuide(after,btn){$('r9lock-steps').innerHTML=lockSteps();$('r9lock-ok').textContent=btn||'Done';$('r9lock').hidden=false;
+  $('r9lock-ok').onclick=()=>{FX.tap();devSet({guide:true});$('r9lock').hidden=true;lockNote();if(after)after()}}
+function lockNote(){const n=$('lock-note');if(n)n.hidden=!!devS().guide}
+$('lock-note-how').onclick=()=>{FX.tap();showLockGuide()};
+$('lock-note-ok').onclick=()=>{FX.tap();devSet({guide:true});lockNote()};
+/* first setup on this phone: show the guide once, before the child gets the phone */
+{const b=$('btn-setup-done');const o=b.onclick;b.onclick=e=>{if(!devS().guide&&!kidsIdx().list.length)showLockGuide(()=>o.call(b,e),'Continue');else o.call(b,e)}}
+
+/* ---- Grown-ups: speed, softer effects, lock switches, sound check, problem report ---- */
+let r9Model='';
+try{if(navigator.userAgentData&&navigator.userAgentData.getHighEntropyValues)navigator.userAgentData.getHighEntropyValues(['model','platformVersion']).then(v=>{r9Model=[v.model,v.platformVersion&&('OS '+v.platformVersion)].filter(Boolean).join(', ')}).catch(()=>{})}catch(e){}
+function uaShort(){const u=navigator.userAgent;const a=u.match(/Android ([\d.]+);\s*([^;)]*)/),i=u.match(/(iPhone|iPad)[^)]*OS (\d+[_\d]*)/),c=u.match(/(Chrome|CriOS|Firefox|FxiOS|SamsungBrowser|Version)\/(\d+)/);
+  return [a?'Android '+a[1]+(a[2]&&a[2]!=='K'?', '+a[2]:''):i?i[1]+' iOS '+i[2].replace(/_/g,'.'):(navigator.platform||'other'),r9Model,c?c[1].replace('Version','Safari')+' '+c[2]:''].filter(Boolean).join(' · ')}
+function r9Report(){const d=devS();
+  return ['Haathi problem report','What happened: '+(($('fx-what')&&$('fx-what').value.trim())||'(not written)'),'App: '+R9_VER,'Phone: '+uaShort(),
+    'Screen: '+innerWidth+'x'+innerHeight+' @'+(Math.round(devicePixelRatio*100)/100)+((window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||document.fullscreenElement?' (installed or full screen)':' (in browser)'),
+    'Settings: age '+(S.profile?S.profile.age:'-')+', speed '+(S.settings.vspeed||'auto')+', language '+(S.settings.lang||'en')+', lock '+(d.lock!==false?'on':'off'),
+    'Last screens: '+(TRAIL.join(' > ')||'-'),
+    'Sound: '+(actx?actx.state+', '+actx.sampleRate+' Hz, '+BUF.size+' lines ready':'not started yet'),
+    'Sound log: '+(AUDLOG.slice(-10).join(' | ')||'none'),
+    'Errors: '+(ERRLOG.slice(-6).join(' | ')||'none')].join('\n')}
+function r9Fill(){const d=devS();$('ps-vspeed').value=S.settings.vspeed||'auto';$('ps-fxsoft').checked=S.settings.fxSoft!==false;$('ps-lock').checked=d.lock!==false;$('ps-keepon').checked=d.keepOn!==false;
+  $('lock-steps').innerHTML=lockSteps();lockNote();$('fx-result').hidden=true}
+{const rp=renderParent;renderParent=function(){rp();r9Fill()}}
+$('ps-save').addEventListener('click',()=>{S.settings.vspeed=$('ps-vspeed').value;S.settings.fxSoft=$('ps-fxsoft').checked;if(fxbus)fxbus.gain.value=FXVOL();save()});
+$('ps-lock').onchange=()=>{const on=$('ps-lock').checked;devSet({lock:on});if(!on&&document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(()=>{});gc('/parent/lock-'+(on?'on':'off'),'Child lock '+(on?'on':'off'))};
+$('ps-keepon').onchange=()=>{const on=$('ps-keepon').checked;devSet({keepOn:on});if(!on&&wlock){try{wlock.release()}catch(e){}wlock=null}};
+$('ps-hearspeed').onclick=()=>{unlockAudio();FX.tap();const old=S.settings.vspeed;S.settings.vspeed=$('ps-vspeed').value;const age=S.profile.age;S.profile.age=+$('ps-age').value||age;
+  sayRaw(['P_say_with_me',300,'W_sun'],null).then(()=>{S.settings.vspeed=old;S.profile.age=age})};
+$('fx-check').onclick=async()=>{unlockAudio();const r=$('fx-result');r.hidden=false;r.textContent='Checking…';const ok=await wakeAudio();const s0=S.settings.sfx;S.settings.sfx=true;FX.chime();S.settings.sfx=s0;await sleep(500);await sayRaw(['P_welcome'],null);
+  gc('/parent/soundcheck-'+(ok?'ok':'blocked'),'Sound check');
+  r.textContent=ok&&actx.state==='running'?'Sound is on. You should have heard a chime and Haathi. If not: turn the volume up, switch off silent mode, disconnect Bluetooth headphones, then press Reload.':'The phone is holding the sound back. Tap Sound check once more. If it stays silent, press Reload.'};
+$('fx-reload2').onclick=()=>{const b=$('p-reload');if(b)b.click();else location.reload()};
+$('fx-wa').onclick=()=>{FX.tap();gc('/parent/report','Problem report sent');$('fx-wa').href='https://wa.me/?text='+encodeURIComponent(r9Report())};
+$('fx-copy').onclick=async()=>{FX.tap();const t=r9Report();let ok=false;try{await navigator.clipboard.writeText(t);ok=true}catch(e){}const pv=$('fx-preview');pv.value=t;pv.hidden=false;if(!ok){pv.focus();pv.select()}$('fx-result').hidden=false;$('fx-result').textContent=ok?'Copied. Paste it into a message.':'Select the text below and copy it.'};
+{const b0=badge;badge=function(){b0();if(!devS().guide&&S.profile)['btn-parent','nd-parent'].forEach(id=>{const b=$(id);if(b)b.classList.add('has-news')})}}
+const R9T={vSpeed,tStretch,devS,devSet,r9Back,r9Report,lockSteps,BUF:()=>BUF,AUDLOG,ERRLOG,TRAIL,decodeOne,cardNode,setRounds:()=>setRounds(),wakeAudio,lockOn,sndHint,showLockGuide};
+
 /* ======================= BOOT ======================= */
 if(S.profile&&S.placed!==3)placeByAge();
-document.addEventListener('visibilitychange',()=>{if(document.hidden){save();stopVoice();sync(false);document.querySelectorAll('canvas').forEach(c=>c.dispatchEvent(new PointerEvent('pointercancel')))}else{if(actx&&actx.state!=='running')try{actx.resume()}catch(e){}}});
-window.addEventListener('pageshow',()=>{if(actx&&actx.state!=='running')try{actx.resume()}catch(e){}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){save();stopVoice();sync(false);document.querySelectorAll('canvas').forEach(c=>c.dispatchEvent(new PointerEvent('pointercancel')))}else{if(actx&&actx.state!=='running')wakeAudio();wakeLockOn()}});
+window.addEventListener('pageshow',()=>{if(actx&&actx.state!=='running')wakeAudio()});
 document.addEventListener('pointerdown',()=>{if(actx&&actx.state!=='running')actx.resume()},{passive:true});
-window.__haathi={MERGE,REPL,mergeRound,micOn,cornerNode,cornerLocked,stPilotMerge,openStory,openStories,SR:()=>SR,BEDTIME,tierOf:id=>tierOf(kindOfId(id),id),newUI:v=>{if(v!=null)NEWUI=!!v;return NEWUI},composeAdv,go,ACT,roundDone:ok=>roundDone(ok),RUN:()=>RUN,curChapter,placeByAge:()=>placeByAge(),SK,LS,CS,DIG,PREP,DOTPICS,S:()=>S,compose,learn,startRun,sceneHTML,openStory,r5:{sgPick,sgOpen,sgPending,r5WeekText,r5Areas,r5Insight,gsCards,SG_T,SG_BANK},r6:{tbOpen,tbS,tbLevel,TB:()=>TB,tbOfferDue,tbPick,scene2,TBOOKS,ndIcon},r7:{BLEND_W,RID,AO,DH_FOOD,pureSnd,openShelf,dNode},r8:{MK,mkOpen,mkList,mkDone,mkAdd,mkPut,mkDel,mkKid}};
+window.__haathi={MERGE,REPL,mergeRound,micOn,cornerNode,cornerLocked,stPilotMerge,openStory,openStories,SR:()=>SR,BEDTIME,tierOf:id=>tierOf(kindOfId(id),id),newUI:v=>{if(v!=null)NEWUI=!!v;return NEWUI},composeAdv,go,ACT,roundDone:ok=>roundDone(ok),RUN:()=>RUN,curChapter,placeByAge:()=>placeByAge(),SK,LS,CS,DIG,PREP,DOTPICS,S:()=>S,compose,learn,startRun,sceneHTML,openStory,r5:{sgPick,sgOpen,sgPending,r5WeekText,r5Areas,r5Insight,gsCards,SG_T,SG_BANK},r6:{tbOpen,tbS,tbLevel,TB:()=>TB,tbOfferDue,tbPick,scene2,TBOOKS,ndIcon},r7:{BLEND_W,RID,AO,DH_FOOD,pureSnd,openShelf,dNode},r8:{MK,mkOpen,mkList,mkDone,mkAdd,mkPut,mkDel,mkKid},r9:R9T};
 go('start');
 })();

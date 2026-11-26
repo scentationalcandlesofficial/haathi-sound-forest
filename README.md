@@ -130,6 +130,17 @@ The Grown-ups page, still behind the same sum, now has three tabs.
 - 8 new voice lines (`P_mk_*`) in English and Hindi. New anonymous counts: a sandbox tool opened, a picture kept, a picture saved to the phone.
 - **Code:** the block marked RELEASE 8 in `app.js` and the styles marked release 8 in `index.html`.
 
+## Release 9 (feedback round: child lock, steady sound, real sounds, speed by age)
+- **Child lock (game mode):** on by default. The game fills the screen and stays upright on Android, and the phone's Back button does what the game's own back arrow does (on the home screen it does nothing). Long-press menus are off on child screens. Leaving or changing settings still needs the grown-up sum. A web app cannot block the Home button, so the first setup on a phone, and a card in Grown-ups, show how to lock the phone to Haathi: App pinning on Android, Guided Access on iPhone, plus Do Not Disturb. Switches in Grown-ups > Settings > Child lock, saved for the whole phone.
+- **Keep the screen on** while the child plays (Wake Lock), on by default, same panel.
+- **Voice no longer drops:** lines are decoded when needed and kept in a small cache (about 40 MB) instead of decoding every line at start (hundreds of MB on a phone, and new lines queued behind the backlog until they timed out). A paused or interrupted sound system is woken, and rebuilt if it stays stuck. If the phone still holds the sound back, a "Tap for sound" button appears and replays the line.
+- **Speed by age:** "Haathi's speed" in Settings (set by age, normal, a bit slower, slow). By default ages 3 and 4 hear speech 14% slower with longer pauses; the voice is time-stretched in the app (WSOLA), so its pitch stays the same. Stories follow the same setting. In "Say it with me" the youngest hear the model sound three times, a little slower again.
+- **Real sounds:** 16 recordings from BigSoundBank (CC0), trimmed to the best 1 to 3 seconds and set to one loudness, in `sounds.js` (played as `RS_*`): cow, dog, duck, sheep, horse, rooster, hen, goat, frog, bee, owl, mouse, sparrow, parrot, bell, drum. They replace Haathi saying "Moo!" in picture cards, Learn and "Whose voice is this?", and the drum game uses the real drum. Animals without a recording yet keep Haathi's voice. The trim of each sound is kept with the build scripts (`gen/realsnd/`, outside this repository).
+- **Effects** go through their own softer channel (setting "Keep sound effects softer than Haathi's voice"), with a gentle compressor on everything.
+- **Fixed:** picture-card titles standing on end (more than 6 rounds now show a small bar and "3/12", titles wrap on 2 lines at most), and cards cut off on small or sideways screens (the card now sizes to the space left).
+- **Something is wrong?** panel in Grown-ups > Settings: Sound check, Reload, and a WhatsApp or copy report with the phone model, app version, last screens, sound log and error messages. No names, recordings or anything the child made.
+- **Code:** the audio section of `app.js` (rewritten), the block marked RELEASE 9 in `app.js`, and the styles marked release 9 in `index.html`. Cache `haathi-v40`.
+
 Not built yet from the review: Step F.
 
 ### Backup of the old app
