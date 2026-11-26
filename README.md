@@ -139,7 +139,8 @@ The Grown-ups page, still behind the same sum, now has three tabs.
 - **Effects** go through their own softer channel (setting "Keep sound effects softer than Haathi's voice"), with a gentle compressor on everything.
 - **Fixed:** picture-card titles standing on end (more than 6 rounds now show a small bar and "3/12", titles wrap on 2 lines at most), and cards cut off on small or sideways screens (the card now sizes to the space left).
 - **Something is wrong?** panel in Grown-ups > Settings: Sound check, Reload, and a WhatsApp or copy report with the phone model, app version, last screens, sound log and error messages. No names, recordings or anything the child made.
-- **Code:** the audio section of `app.js` (rewritten), the block marked RELEASE 9 in `app.js`, and the styles marked release 9 in `index.html`. Cache `haathi-v40`.
+- **Letter detective, leaf game (9.1):** the leaf covered the bottom of the card, not the letter, so small letters like a, c, e, o and s showed the same arc and could not be told apart, and the leaf could not be moved. Now the leaf covers the lower part of the letter's own shape (ages 3 and 4 see more), and each tap on the leaf slides it down a bit with a rustle. A wrong answer also peeks once. Finding the letter without peeking gets its own praise. Two new voice lines, `P_hid_peek` and `P_hid_nopeek`, in English and Hindi.
+- **Code:** the audio section of `app.js` (rewritten), the block marked RELEASE 9 in `app.js`, and the styles marked release 9 in `index.html`. Cache `haathi-v41`.
 
 Not built yet from the review: Step F.
 

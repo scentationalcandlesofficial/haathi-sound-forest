@@ -2977,7 +2977,7 @@ async function mkExport(r){const name=`haathi-${r.type}-${r.d}.jpg`;let blob=nul
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&MK.mode)stopVoice()});
 
 /* ======================= RELEASE 9: child lock, steady sound, speed by age, problem report ======================= */
-const R9_VER='r9 / haathi-v40';
+const R9_VER='r9.1 / haathi-v41';
 /* device-wide switches (not per child): child lock, keep the screen on, lock guide seen */
 const DEV_KEY='haathi-device';
 function devS(){let d=null;try{d=JSON.parse(localStorage.getItem(DEV_KEY)||'null')}catch(e){}return Object.assign({lock:true,keepOn:true,guide:false},d||{})}
@@ -3069,6 +3069,26 @@ $('fx-reload2').onclick=()=>{const b=$('p-reload');if(b)b.click();else location.
 $('fx-wa').onclick=()=>{FX.tap();gc('/parent/report','Problem report sent');$('fx-wa').href='https://wa.me/?text='+encodeURIComponent(r9Report())};
 $('fx-copy').onclick=async()=>{FX.tap();const t=r9Report();let ok=false;try{await navigator.clipboard.writeText(t);ok=true}catch(e){}const pv=$('fx-preview');pv.value=t;pv.hidden=false;if(!ok){pv.focus();pv.select()}$('fx-result').hidden=false;$('fx-result').textContent=ok?'Copied. Paste it into a message.':'Select the text below and copy it.'};
 {const b0=badge;badge=function(){b0();if(!devS().guide&&S.profile)['btn-parent','nd-parent'].forEach(id=>{const b=$(id);if(b)b.classList.add('has-news')})}}
+/* ---- Letter detective, leaf game: the leaf now covers the letter's own shape, and tapping it peeks a little more.
+   Before, it covered the bottom of the card, so a, c, e, o and s all showed the same small arc and could not be told apart. */
+const LEAF_SVG='<svg viewBox="0 0 200 120" preserveAspectRatio="none" aria-hidden="true"><path d="M0 46 Q100 -30 200 46 L200 120 L0 120 Z" fill="#3f9b5e"/><path d="M0 46 Q100 -30 200 46" fill="none" stroke="#2d7a47" stroke-width="5"/><path d="M100 8 L100 120" stroke="#9fd8a8" stroke-width="5" stroke-linecap="round"/><path d="M100 40 L58 22 M100 40 L142 22 M100 70 L48 50 M100 70 L152 50 M100 100 L44 82 M100 100 L156 82" stroke="#8fcf98" stroke-width="4" stroke-linecap="round" fill="none"/></svg>';
+ACT.hidden=()=>{const t=fresh('hid',ALPHA);const opts=shuffle([t,...others(ALPHA,t,nopt()-1)]);const little=((S.profile&&S.profile.age)||4)<=4;
+  let frac=little?.42:.32,peeks=0;
+  const place=()=>{const hb=$('hb');if(!hb)return;const sp=hb.querySelector('span'),bl=hb.querySelector('.r9bl'),lf=hb.querySelector('.r9leaf');if(!sp||!bl||!lf)return;
+    const box=hb.getBoundingClientRect();let top=null,bot=null;
+    try{const cv=place.cv||(place.cv=document.createElement('canvas'));const x=cv.getContext('2d');const cs=getComputedStyle(sp);x.font=`${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;const m=x.measureText(t);
+      const base=bl.getBoundingClientRect().top-box.top;if(m&&isFinite(m.actualBoundingBoxAscent)){top=base-m.actualBoundingBoxAscent;bot=base+(m.actualBoundingBoxDescent||0)}}catch(e){}
+    if(top==null){const r=sp.getBoundingClientRect();top=r.top-box.top+r.height*.25;bot=r.top-box.top+r.height*.8}
+    const y=frac>=1?box.height+4:Math.max(0,top+(bot-top)*frac-box.height*.07);lf.style.transform=`translateY(${Math.round(y)}px)`};
+  const peek=auto=>{if(frac>=1)return;peeks++;frac=Math.min(1,frac+(little?.22:.18));FX.swish();const lf=$('hb')&&$('hb').querySelector('.r9leaf');if(lf){lf.classList.remove('r9tease');anim(lf.querySelector('svg'),'wiggle',400)}place();if(!auto)gc('/g/hidden/peek','Leaf peek')};
+  pickRound({top:`<div class="hidebox r9hide" id="hb"><span>${t}<b class="r9bl"></b></span><button class="r9leaf r9tease" type="button" aria-label="Tap the leaf to peek">${LEAF_SVG}</button></div><p class="r9peek">Tap the leaf to peek</p>`,
+    items:opts.map(v=>({h:letH(v),v})),ans:t,say:['P_hidden',300,'P_hid_peek'],cap:'A leaf is hiding a letter. Tap the leaf to peek!',
+    wrong:()=>{peek(true);return [rnd(RETRY),300,'P_hid_peek']},
+    onRight:()=>{frac=1;place();const p=body().querySelector('.r9peek');if(p)p.hidden=true;if(!peeks)FX.sparkle()},
+    /* read when the right letter is tapped, so the praise knows whether the child peeked */
+    get right(){return peeks?[L_(t),250,rnd(PRAISE)]:[L_(t),250,'P_hid_nopeek']},get rightCap(){return peeks?`It was ${t}!`:`It was ${t}! You did not even peek!`}});
+  const hb=$('hb');if(!hb)return;hb.querySelector('.r9leaf').onclick=()=>peek(false);
+  requestAnimationFrame(place);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(place)};
 const R9T={vSpeed,tStretch,devS,devSet,r9Back,r9Report,lockSteps,BUF:()=>BUF,AUDLOG,ERRLOG,TRAIL,decodeOne,cardNode,setRounds:()=>setRounds(),wakeAudio,lockOn,sndHint,showLockGuide};
 
 /* ======================= BOOT ======================= */
