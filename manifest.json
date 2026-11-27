@@ -2,7 +2,7 @@
  "name": "Haathi's Sound Forest",
  "short_name": "Haathi",
  "start_url": "./",
- "display": "standalone",
+ "display": "fullscreen",
  "orientation": "portrait",
  "background_color": "#eaf6ef",
  "theme_color": "#1f6b4a",
@@ -28,5 +28,9 @@
  ],
  "id": "./",
  "scope": "./",
- "description": "Phonics, maths, writing and world-knowledge games for children aged 3 to 7."
+ "description": "Phonics, maths, writing and world-knowledge games for children aged 3 to 7.",
+ "display_override": [
+  "fullscreen",
+  "standalone"
+ ]
 }

@@ -1833,7 +1833,8 @@ let installEvt=null;
 const UA=navigator.userAgent||'';
 const isIOS=/iPhone|iPad|iPod/i.test(UA)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 const inApp=/FBAN|FBAV|FB_IAB|Instagram|WhatsApp|Line\/|Snapchat|; wv\)/i.test(UA);
-const isStandalone=()=>(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
+/* installed: the home-screen app opens in fullscreen (Release 9.2) or standalone display mode; the browser never goes full screen any more */
+const isStandalone=()=>!!(window.matchMedia&&(matchMedia('(display-mode: fullscreen)').matches||matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: minimal-ui)').matches))||navigator.standalone===true;
 function installHelp(html){const h=$('install-help');h.hidden=false;h.innerHTML=html}
 function refreshInstall(){const b=$('btn-install');if(!b)return;if(isStandalone()){b.hidden=true;$('install-help').hidden=true;return}b.hidden=false}
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;refreshInstall()});
@@ -2977,7 +2978,7 @@ async function mkExport(r){const name=`haathi-${r.type}-${r.d}.jpg`;let blob=nul
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&MK.mode)stopVoice()});
 
 /* ======================= RELEASE 9: child lock, steady sound, speed by age, problem report ======================= */
-const R9_VER='r9.1 / haathi-v41';
+const R9_VER='r9.2 / haathi-v42';
 /* device-wide switches (not per child): child lock, keep the screen on, lock guide seen */
 const DEV_KEY='haathi-device';
 function devS(){let d=null;try{d=JSON.parse(localStorage.getItem(DEV_KEY)||'null')}catch(e){}return Object.assign({lock:true,keepOn:true,guide:false},d||{})}
@@ -3000,10 +3001,10 @@ const TRAIL=[];
 const touchDev=()=>!!(window.matchMedia&&matchMedia('(pointer:coarse)').matches);
 let lockArmed=false;
 function lockArm(){if(!lockOn()||!S.profile)return;try{history.pushState({h9:1},'');lockArmed=true}catch(e){}}
-function fsOn(){if(!lockOn()||!touchDev()||current==='parent'||current==='setup')return;const d=document.documentElement;if(document.fullscreenElement||!d.requestFullscreen)return;
-  try{const p=d.requestFullscreen({navigationUI:'hide'});if(p&&p.then)p.then(()=>{try{if(screen.orientation&&screen.orientation.lock)screen.orientation.lock('portrait').catch(()=>{})}catch(e){}}).catch(()=>{})}catch(e){}}
-/* pointerup, not pointerdown: on a touch screen only the lift counts as a real tap for full screen */
-document.addEventListener('pointerup',()=>{if(!S.profile)return;if(!lockArmed)lockArm();fsOn()},{capture:true,passive:true});
+/* Game mode (9.2): the installed app opens full screen by itself (manifest display: fullscreen), with the phone's bars
+   hidden and no notice. The page no longer asks the browser for full screen: that showed Chrome's "drag from the top to
+   exit" notice on every tap, and Back left full screen at once. Back is kept inside the game either way. */
+document.addEventListener('pointerup',()=>{if(!S.profile)return;if(!lockArmed)lockArm()},{capture:true,passive:true});
 window.addEventListener('popstate',()=>{lockArmed=false;if(!lockOn()||!S.profile)return;lockArm();r9Back()});
 document.addEventListener('contextmenu',e=>{if(lockOn()&&current!=='parent')e.preventDefault()});
 function r9Toast(t){let el=$('r9toast');if(!el){el=document.createElement('div');el.id='r9toast';el.className='r9toast';el.setAttribute('role','status');document.body.appendChild(el)}el.textContent=t;el.hidden=false;clearTimeout(r9Toast.tm);r9Toast.tm=setTimeout(()=>{el.hidden=true},2800)}
@@ -3048,17 +3049,21 @@ function uaShort(){const u=navigator.userAgent;const a=u.match(/Android ([\d.]+)
   return [a?'Android '+a[1]+(a[2]&&a[2]!=='K'?', '+a[2]:''):i?i[1]+' iOS '+i[2].replace(/_/g,'.'):(navigator.platform||'other'),r9Model,c?c[1].replace('Version','Safari')+' '+c[2]:''].filter(Boolean).join(' · ')}
 function r9Report(){const d=devS();
   return ['Haathi problem report','What happened: '+(($('fx-what')&&$('fx-what').value.trim())||'(not written)'),'App: '+R9_VER,'Phone: '+uaShort(),
-    'Screen: '+innerWidth+'x'+innerHeight+' @'+(Math.round(devicePixelRatio*100)/100)+((window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||document.fullscreenElement?' (installed or full screen)':' (in browser)'),
+    'Screen: '+innerWidth+'x'+innerHeight+' @'+(Math.round(devicePixelRatio*100)/100)+(isStandalone()?' (installed app'+(matchMedia('(display-mode: fullscreen)').matches?', full screen)':', not full screen yet)'):' (in browser)'),
     'Settings: age '+(S.profile?S.profile.age:'-')+', speed '+(S.settings.vspeed||'auto')+', language '+(S.settings.lang||'en')+', lock '+(d.lock!==false?'on':'off'),
     'Last screens: '+(TRAIL.join(' > ')||'-'),
     'Sound: '+(actx?actx.state+', '+actx.sampleRate+' Hz, '+BUF.size+' lines ready':'not started yet'),
     'Sound log: '+(AUDLOG.slice(-10).join(' | ')||'none'),
     'Errors: '+(ERRLOG.slice(-6).join(' | ')||'none')].join('\n')}
+function gmStatus(){const el=$('gm-status'),b=$('gm-install');if(!el)return;const inst=isStandalone(),fs=window.matchMedia&&matchMedia('(display-mode: fullscreen)').matches;
+  el.innerHTML=inst?(fs?'<b>Game mode is on.</b> Haathi is installed and opens full screen.':'<b>Almost there.</b> Haathi is installed, and the phone will switch it to full screen within a day or two. To get it now, remove Haathi from the home screen and install it again.'):'<b>Game mode needs Haathi installed</b> on this phone. Install it, then open Haathi from the home screen icon.';
+  if(b)b.hidden=inst}
 function r9Fill(){const d=devS();$('ps-vspeed').value=S.settings.vspeed||'auto';$('ps-fxsoft').checked=S.settings.fxSoft!==false;$('ps-lock').checked=d.lock!==false;$('ps-keepon').checked=d.keepOn!==false;
-  $('lock-steps').innerHTML=lockSteps();lockNote();$('fx-result').hidden=true}
+  $('lock-steps').innerHTML=lockSteps();lockNote();gmStatus();$('fx-result').hidden=true}
 {const rp=renderParent;renderParent=function(){rp();r9Fill()}}
 $('ps-save').addEventListener('click',()=>{S.settings.vspeed=$('ps-vspeed').value;S.settings.fxSoft=$('ps-fxsoft').checked;if(fxbus)fxbus.gain.value=FXVOL();save()});
-$('ps-lock').onchange=()=>{const on=$('ps-lock').checked;devSet({lock:on});if(!on&&document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(()=>{});gc('/parent/lock-'+(on?'on':'off'),'Child lock '+(on?'on':'off'))};
+$('gm-install').onclick=()=>{FX.tap();const b=$('btn-install');if(b)b.click()};
+$('ps-lock').onchange=()=>{const on=$('ps-lock').checked;devSet({lock:on});gc('/parent/lock-'+(on?'on':'off'),'Child lock '+(on?'on':'off'))};
 $('ps-keepon').onchange=()=>{const on=$('ps-keepon').checked;devSet({keepOn:on});if(!on&&wlock){try{wlock.release()}catch(e){}wlock=null}};
 $('ps-hearspeed').onclick=()=>{unlockAudio();FX.tap();const old=S.settings.vspeed;S.settings.vspeed=$('ps-vspeed').value;const age=S.profile.age;S.profile.age=+$('ps-age').value||age;
   sayRaw(['P_say_with_me',300,'W_sun'],null).then(()=>{S.settings.vspeed=old;S.profile.age=age})};

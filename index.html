@@ -993,9 +993,11 @@ input,select{font:inherit;font-size:19px;padding:9px 12px;border-radius:14px;bor
       <span id="ps-saved" class="note" hidden>Saved.</span>
     </div>
     <div class="panel" id="lock-panel"><h3>Child lock</h3>
-      <label class="check"><input type="checkbox" id="ps-lock"> <span><b>Game mode.</b> The game fills the screen, stays upright, and the Back button stays inside the game.</span></label>
+      <p class="note" id="gm-status" style="margin:0 0 4px"></p>
+      <button class="pill-btn small primary" id="gm-install" type="button" hidden style="align-self:flex-start">📲 Install Haathi</button>
+      <label class="check"><input type="checkbox" id="ps-lock"> <span><b>Keep Back inside the game.</b> The phone's Back button works like the game's own back arrow, and long-press menus are off.</span></label>
       <label class="check"><input type="checkbox" id="ps-keepon"> Keep the screen on while my child plays</label>
-      <p class="note">A web app cannot block the phone's Home button by itself. The phone can: lock it to Haathi with the steps below. Unlocking then needs your PIN.</p>
+      <p class="note">No app, not even a big game, can block the phone's Home button. The phone itself can: lock it to Haathi with the steps below, and unlocking then needs your PIN.</p>
       <div id="lock-steps"></div>
     </div>
     <div class="panel" id="fix-panel"><h3>Something is wrong?</h3>
