@@ -2978,7 +2978,7 @@ async function mkExport(r){const name=`haathi-${r.type}-${r.d}.jpg`;let blob=nul
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&MK.mode)stopVoice()});
 
 /* ======================= RELEASE 9: child lock, steady sound, speed by age, problem report ======================= */
-const R9_VER='r9.2 / haathi-v42';
+const R9_VER='r9.3 / haathi-v43';
 /* device-wide switches (not per child): child lock, keep the screen on, lock guide seen */
 const DEV_KEY='haathi-device';
 function devS(){let d=null;try{d=JSON.parse(localStorage.getItem(DEV_KEY)||'null')}catch(e){}return Object.assign({lock:true,keepOn:true,guide:false},d||{})}
@@ -2991,7 +2991,15 @@ window.addEventListener('error',e=>elog((e.message||'error')+(e.filename?' @'+e.
 window.addEventListener('unhandledrejection',e=>elog('promise: '+((e.reason&&e.reason.message)||e.reason)));
 const TRAIL=[];
 {const g0=go;go=function(name){g0(name);const nm=current;if(nm!=='parent'){const g=nm==='play'&&RUN&&RUN.node?': '+(RUN.node.title||TITLES[RUN.node.t]||RUN.node.t):'';TRAIL.push(nm+g);if(TRAIL.length>8)TRAIL.shift()}
-  document.documentElement.classList.toggle('r9lock',lockOn()&&nm!=='parent'&&nm!=='setup');sndHint(false)}}
+  document.documentElement.classList.toggle('r9lock',lockOn()&&nm!=='parent'&&nm!=='setup');sndHint(false);updMaybe()}}
+/* ---- updates (9.3): a new version takes over at the next calm moment (home screen, or coming back to the app),
+   instead of needing the app to be closed and opened twice ---- */
+let updPending=false;
+function updMaybe(){if(updPending&&['start','home','map'].includes(current))location.reload()}
+if('serviceWorker' in navigator){const hadCtrl=!!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!hadCtrl)return;updPending=true;updMaybe()});
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)return;try{navigator.serviceWorker.getRegistration().then(r=>{if(r)r.update()}).catch(()=>{})}catch(e){}updMaybe()})}
+
 
 /* ---- picture-card titles: more than 6 rounds show a small bar and "3/12" instead of a column of dots ---- */
 {const sr0=setRounds;setRounds=function(){const r=$('rounds');document.body.classList.toggle('r9many',!!RUN&&RUN.rounds>6);if(!RUN||RUN.rounds<=6){r.classList.remove('r9c');return sr0()}
@@ -3057,7 +3065,7 @@ function r9Report(){const d=devS();
     'Errors: '+(ERRLOG.slice(-6).join(' | ')||'none')].join('\n')}
 function gmStatus(){const el=$('gm-status'),b=$('gm-install');if(!el)return;const inst=isStandalone(),fs=window.matchMedia&&matchMedia('(display-mode: fullscreen)').matches;
   el.innerHTML=inst?(fs?'<b>Game mode is on.</b> Haathi is installed and opens full screen.':'<b>Almost there.</b> Haathi is installed, and the phone will switch it to full screen within a day or two. To get it now, remove Haathi from the home screen and install it again.'):'<b>Game mode needs Haathi installed</b> on this phone. Install it, then open Haathi from the home screen icon.';
-  if(b)b.hidden=inst}
+  if(b)b.hidden=inst;const v=$('app-ver');if(v)v.textContent='Haathi version '+R9_VER.split(' ')[0].slice(1)}
 function r9Fill(){const d=devS();$('ps-vspeed').value=S.settings.vspeed||'auto';$('ps-fxsoft').checked=S.settings.fxSoft!==false;$('ps-lock').checked=d.lock!==false;$('ps-keepon').checked=d.keepOn!==false;
   $('lock-steps').innerHTML=lockSteps();lockNote();gmStatus();$('fx-result').hidden=true}
 {const rp=renderParent;renderParent=function(){rp();r9Fill()}}

@@ -1,7 +1,8 @@
 // Offline support: cache the game, refresh it in the background when online.
-const CACHE='haathi-v42';
+const CACHE='haathi-v43';
 const FILES=['./','index.html','app.js','clips.js','sounds.js','discover-data.js','stories/stories.js','stories/pilot.js','books/books.js','riddles/riddles.js','config.json','manifest.json','icon-192.png','icon-512.png'];
-self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting()))});
+/* cache:'reload' skips the browser's own 10-minute cache, so a new version never stores an old file */
+self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES.map(f=>new Request(f,{cache:'reload'})))).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;
   e.respondWith(caches.match(e.request).then(hit=>{const net=fetch(e.request).then(r=>{if(r&&r.ok&&new URL(e.request.url).origin===location.origin){const cp=r.clone();caches.open(CACHE).then(c=>c.put(e.request,cp))}return r}).catch(()=>hit);return hit||net}))});
