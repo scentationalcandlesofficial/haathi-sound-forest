@@ -2978,7 +2978,7 @@ async function mkExport(r){const name=`haathi-${r.type}-${r.d}.jpg`;let blob=nul
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&MK.mode)stopVoice()});
 
 /* ======================= RELEASE 9: child lock, steady sound, speed by age, problem report ======================= */
-const R9_VER='r9.3 / haathi-v43';
+const R9_VER='r9.4 / haathi-v44';
 /* device-wide switches (not per child): child lock, keep the screen on, lock guide seen */
 const DEV_KEY='haathi-device';
 function devS(){let d=null;try{d=JSON.parse(localStorage.getItem(DEV_KEY)||'null')}catch(e){}return Object.assign({lock:true,keepOn:true,guide:false},d||{})}
@@ -3007,13 +3007,20 @@ if('serviceWorker' in navigator){const hadCtrl=!!navigator.serviceWorker.control
 
 /* ---- child lock: full screen, upright, Back stays inside the game. The Home button needs the phone's own pinning ---- */
 const touchDev=()=>!!(window.matchMedia&&matchMedia('(pointer:coarse)').matches);
-let lockArmed=false;
-function lockArm(){if(!lockOn()||!S.profile)return;try{history.pushState({h9:1},'');lockArmed=true}catch(e){}}
+/* Back stays inside the game (9.4). Chrome lets the Back button skip a page that adds history steps without a real tap
+   since the last Back, and then Back leaves the app (on a pinned phone the app was left stuck and blank). So a step is
+   added only right after a tap, one per tap, with up to 5 in reserve, and Back uses one up; nothing is added on Back.
+   Where Chrome has CloseWatcher (version 126 and later), Back goes to that first and the history steps are the reserve. */
+let trapDepth=0;const TRAP_MAX=5;
+function lockArm(){if(!lockOn()||!S.profile||trapDepth>=TRAP_MAX)return;try{history.pushState({h9:Date.now()},'');trapDepth++}catch(e){}}
+let cw=null;
+function cwArm(){if(cw||!lockOn()||!S.profile||typeof window.CloseWatcher!=='function')return;try{cw=new CloseWatcher();cw.onclose=()=>{cw=null;r9Back();setTimeout(cwArm,0)}}catch(e){cw=null}}
+function cwOff(){if(cw){const c=cw;cw=null;try{c.onclose=null;c.destroy()}catch(e){}}}
 /* Game mode (9.2): the installed app opens full screen by itself (manifest display: fullscreen), with the phone's bars
    hidden and no notice. The page no longer asks the browser for full screen: that showed Chrome's "drag from the top to
    exit" notice on every tap, and Back left full screen at once. Back is kept inside the game either way. */
-document.addEventListener('pointerup',()=>{if(!S.profile)return;if(!lockArmed)lockArm()},{capture:true,passive:true});
-window.addEventListener('popstate',()=>{lockArmed=false;if(!lockOn()||!S.profile)return;lockArm();r9Back()});
+document.addEventListener('pointerup',()=>{if(!S.profile)return;lockArm();cwArm()},{capture:true,passive:true});
+window.addEventListener('popstate',()=>{if(trapDepth>0)trapDepth--;if(!lockOn()||!S.profile)return;r9Back()});
 document.addEventListener('contextmenu',e=>{if(lockOn()&&current!=='parent')e.preventDefault()});
 function r9Toast(t){let el=$('r9toast');if(!el){el=document.createElement('div');el.id='r9toast';el.className='r9toast';el.setAttribute('role','status');document.body.appendChild(el)}el.textContent=t;el.hidden=false;clearTimeout(r9Toast.tm);r9Toast.tm=setTimeout(()=>{el.hidden=true},2800)}
 /* the phone's Back button does what the game's own back arrow does; on the home screen it does nothing */
@@ -3026,7 +3033,7 @@ function r9Back(){
   const map={play:'play-back',story:'st-back',make:'mk-back',book:'tb-back',path:'nd-path-home',lib:'nd-lib-home'};
   if(map[current]&&$(map[current])){$(map[current]).click();return}
   if(current==='corner'||current==='parent'){const b=document.querySelector('#s-'+current+' [data-back]');if(b){b.click();return}}
-  r9Toast("Haathi stays open. Grown-ups: use the phone's Home button to leave.")}
+  /* on the home screen Back simply does nothing, with no message */}
 
 /* ---- the lock guide: Android app pinning, iPhone Guided Access ---- */
 function lockSteps(){const ios=/iPhone|iPad|iPod/.test(navigator.userAgent),and=/Android/.test(navigator.userAgent);
@@ -3071,7 +3078,7 @@ function r9Fill(){const d=devS();$('ps-vspeed').value=S.settings.vspeed||'auto';
 {const rp=renderParent;renderParent=function(){rp();r9Fill()}}
 $('ps-save').addEventListener('click',()=>{S.settings.vspeed=$('ps-vspeed').value;S.settings.fxSoft=$('ps-fxsoft').checked;if(fxbus)fxbus.gain.value=FXVOL();save()});
 $('gm-install').onclick=()=>{FX.tap();const b=$('btn-install');if(b)b.click()};
-$('ps-lock').onchange=()=>{const on=$('ps-lock').checked;devSet({lock:on});gc('/parent/lock-'+(on?'on':'off'),'Child lock '+(on?'on':'off'))};
+$('ps-lock').onchange=()=>{const on=$('ps-lock').checked;devSet({lock:on});if(!on)cwOff();gc('/parent/lock-'+(on?'on':'off'),'Child lock '+(on?'on':'off'))};
 $('ps-keepon').onchange=()=>{const on=$('ps-keepon').checked;devSet({keepOn:on});if(!on&&wlock){try{wlock.release()}catch(e){}wlock=null}};
 $('ps-hearspeed').onclick=()=>{unlockAudio();FX.tap();const old=S.settings.vspeed;S.settings.vspeed=$('ps-vspeed').value;const age=S.profile.age;S.profile.age=+$('ps-age').value||age;
   sayRaw(['P_say_with_me',300,'W_sun'],null).then(()=>{S.settings.vspeed=old;S.profile.age=age})};
@@ -3102,7 +3109,7 @@ ACT.hidden=()=>{const t=fresh('hid',ALPHA);const opts=shuffle([t,...others(ALPHA
     get right(){return peeks?[L_(t),250,rnd(PRAISE)]:[L_(t),250,'P_hid_nopeek']},get rightCap(){return peeks?`It was ${t}!`:`It was ${t}! You did not even peek!`}});
   const hb=$('hb');if(!hb)return;hb.querySelector('.r9leaf').onclick=()=>peek(false);
   requestAnimationFrame(place);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(place)};
-const R9T={vSpeed,tStretch,devS,devSet,r9Back,r9Report,lockSteps,BUF:()=>BUF,AUDLOG,ERRLOG,TRAIL,decodeOne,cardNode,setRounds:()=>setRounds(),wakeAudio,lockOn,sndHint,showLockGuide};
+const R9T={trap:()=>({trapDepth,cw:!!cw}),vSpeed,tStretch,devS,devSet,r9Back,r9Report,lockSteps,BUF:()=>BUF,AUDLOG,ERRLOG,TRAIL,decodeOne,cardNode,setRounds:()=>setRounds(),wakeAudio,lockOn,sndHint,showLockGuide};
 
 /* ======================= BOOT ======================= */
 if(S.profile&&S.placed!==3)placeByAge();
